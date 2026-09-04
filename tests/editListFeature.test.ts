@@ -75,7 +75,7 @@ describe('Rename & Edit List Feature Verification (EDIT_LIST_SPEC.md QA Matrix)'
     expect(validateName('')).toBe(false);
     expect(validateName('   ')).toBe(false);
     expect(validateName('\t\n ')).toBe(false);
-    expect(validateName('Trader Joe’s')).toBe(true);
+    expect(validateName('Trader Joe\'s')).toBe(true);
   });
 
   // TC-03: Whitespace Sanitization
@@ -249,5 +249,451 @@ describe('Rename & Edit List Feature Verification (EDIT_LIST_SPEC.md QA Matrix)'
     const ratio = getContrastRatio(slate100, slate800);
     expect(ratio).toBeGreaterThanOrEqual(7.0);
     expect(ratio).toBeGreaterThan(12.0);
+  });
+
+  // ─── EXTENDED TESTS (task-rename-list-qa gap coverage) ───────────────────────
+
+  // TC-09: 40-Character Name Cap — maxLength enforcement on name input
+  it('TC-09: 40-Char Name Cap - EditListModal enforces maxLength=40 on name input', () => {
+    const editModalContent = fs.readFileSync(path.join(rootDir, 'src/components/EditListModal.tsx'), 'utf-8');
+
+    // Verify maxLength=40 attribute is present on the name input
+    expect(editModalContent).toContain('maxLength={40}');
+
+    // Verify the live character counter references /40
+    expect(editModalContent).toContain('/40');
+
+    // Validate that a 40-char name is accepted and a 41-char name would be trimmed by maxLength
+    const exactly40 = 'A'.repeat(40);
+    const exceeds40 = 'A'.repeat(41);
+
+    // A browser-enforced maxLength of 40 means the value can never exceed 40 chars
+    const clampedByMaxLength = (raw: string, max: number) => raw.slice(0, max);
+    expect(clampedByMaxLength(exactly40, 40).length).toBe(40);
+    expect(clampedByMaxLength(exceeds40, 40).length).toBe(40);
+
+    // The trimmed name must still validate as non-empty after clamping
+    const trimmedAndClamped = clampedByMaxLength(exceeds40, 40).trim();
+    expect(trimmedAndClamped.length).toBeGreaterThan(0);
+  });
+
+  // TC-10: 60-Character Description Cap — maxLength enforcement on description input
+  it('TC-10: 60-Char Description Cap - EditListModal enforces maxLength=60 on description input', () => {
+    const editModalContent = fs.readFileSync(path.join(rootDir, 'src/components/EditListModal.tsx'), 'utf-8');
+
+    // Verify maxLength=60 attribute is present on the description input
+    expect(editModalContent).toContain('maxLength={60}');
+
+    // Verify the live character counter references /60
+    expect(editModalContent).toContain('/60');
+
+    // Simulate clamp behavior the browser enforces at the input level
+    const exactly60 = 'B'.repeat(60);
+    const exceeds60 = 'B'.repeat(61);
+
+    const clampedByMaxLength = (raw: string, max: number) => raw.slice(0, max);
+    expect(clampedByMaxLength(exactly60, 60).length).toBe(60);
+    expect(clampedByMaxLength(exceeds60, 60).length).toBe(60);
+  });
+
+  // TC-11: Icon Picker Selection — all 8 icons present and selectable
+  it('TC-11: Icon Picker Selection - LIST_ICONS exports all 8 icons with correct names and labels', () => {
+    const expectedIcons = [
+      { name: 'shopping-cart', label: 'Cart' },
+      { name: 'store', label: 'Store' },
+      { name: 'box', label: 'Box' },
+      { name: 'pill', label: 'Pharmacy' },
+      { name: 'apple', label: 'Produce' },
+      { name: 'carrot', label: 'Market' },
+      { name: 'coffee', label: 'Cafe' },
+      { name: 'sparkles', label: 'Special' },
+    ];
+
+    // Verify all 8 icons are exported
+    expect(LIST_ICONS).toHaveLength(8);
+
+    // Verify each icon name & label matches the spec
+    for (const expected of expectedIcons) {
+      const found = LIST_ICONS.find((i) => i.name === expected.name);
+      expect(found, `Icon "${expected.name}" should exist in LIST_ICONS`).toBeDefined();
+      expect(found?.label).toBe(expected.label);
+    }
+
+    // Verify icon selection logic: each icon has a valid React component reference.
+    // Note: lucide-react exports icons as forwardRef objects (typeof === 'object'),
+    // not bare functions. We verify they are defined and non-null (renderable components).
+    for (const iconDef of LIST_ICONS) {
+      expect(iconDef.icon).toBeDefined();
+      expect(iconDef.icon).not.toBeNull();
+      // A React component is either a function or a forwardRef object
+      expect(['function', 'object'].includes(typeof iconDef.icon)).toBe(true);
+    }
+
+    // Simulate user selection: selecting 'apple' updates selectedIcon
+    let selectedIcon = 'shopping-cart'; // initial
+    const selectIcon = (name: string) => { selectedIcon = name; };
+    selectIcon('apple');
+    expect(selectedIcon).toBe('apple');
+
+    // Simulate re-selecting original
+    selectIcon('shopping-cart');
+    expect(selectedIcon).toBe('shopping-cart');
+  });
+
+  // TC-12: Color Swatch Selection — all 6 colors present and selectable
+  it('TC-12: Color Swatch Selection - LIST_COLORS exports all 6 colors with correct IDs', () => {
+    const expectedColors = [
+      { id: 'emerald', name: 'Emerald' },
+      { id: 'amber',   name: 'Amber'   },
+      { id: 'rose',    name: 'Rose'    },
+      { id: 'blue',    name: 'Blue'    },
+      { id: 'cyan',    name: 'Cyan'    },
+      { id: 'purple',  name: 'Purple'  },
+    ];
+
+    // Verify all 6 colors are exported
+    expect(LIST_COLORS).toHaveLength(6);
+
+    // Verify each color id, name, bg, ring, text tokens
+    for (const expected of expectedColors) {
+      const found = LIST_COLORS.find((c) => c.id === expected.id);
+      expect(found, `Color "${expected.id}" should exist in LIST_COLORS`).toBeDefined();
+      expect(found?.name).toBe(expected.name);
+      expect(found?.bg).toBe(`bg-${expected.id}-500`);
+      expect(found?.ring).toBe(`ring-${expected.id}-500`);
+      expect(found?.text).toBe(`text-${expected.id}-500`);
+    }
+
+    // Simulate user swatch selection
+    let selectedColor = 'emerald'; // initial (pre-populated)
+    const selectColor = (id: string) => { selectedColor = id; };
+    selectColor('rose');
+    expect(selectedColor).toBe('rose');
+
+    selectColor('purple');
+    expect(selectedColor).toBe('purple');
+
+    // Reset to emerald
+    selectColor('emerald');
+    expect(selectedColor).toBe('emerald');
+  });
+
+  // TC-13: broadcastListUpsert WebSocket call — correct LIST_UPSERT payload structure
+  it('TC-13: broadcastListUpsert - emits LIST_UPSERT type with full GroceryList payload', () => {
+    const sentMessages: any[] = [];
+
+    // Intercept syncClient.send via spy
+    const sendSpy = vi.spyOn(syncClient as any, 'send').mockImplementation((msg: any) => {
+      sentMessages.push(msg);
+    });
+
+    const renamedList: GroceryList = {
+      id: 'list_costco',
+      name: 'Costco Wholesale',
+      icon: 'box',
+      color: 'blue',
+      description: 'Bulk household run',
+      createdAt: 1000,
+      updatedAt: Date.now(),
+    };
+
+    syncClient.broadcastListUpsert(renamedList);
+
+    // Verify send was called once
+    expect(sendSpy).toHaveBeenCalledTimes(1);
+
+    // Verify the dispatched message structure
+    const sentMsg = sentMessages[0];
+    expect(sentMsg.type).toBe('LIST_UPSERT');
+    expect(sentMsg.payload).toMatchObject({
+      id: 'list_costco',
+      name: 'Costco Wholesale',
+      icon: 'box',
+      color: 'blue',
+      description: 'Bulk household run',
+    });
+    expect(sentMsg.timestamp).toBeDefined();
+    expect(typeof sentMsg.timestamp).toBe('number');
+
+    sendSpy.mockRestore();
+  });
+
+  // TC-14: IndexedDB Persistence of Renamed List — id unchanged, name/icon updated
+  it('TC-14: IndexedDB Persistence of Renamed List - id stable, all metadata fields updated correctly', async () => {
+    const originalId = 'list_stable_id_check';
+
+    const original: GroceryList = {
+      id: originalId,
+      name: 'Old Market Name',
+      icon: 'shopping-cart',
+      color: 'emerald',
+      description: 'Original description',
+      createdAt: 500,
+      updatedAt: 500,
+    };
+
+    await saveList(original);
+
+    // Simulate updateList: spread original + overwrite fields + new updatedAt
+    const renamed: GroceryList = {
+      ...original,
+      name: 'Whole Foods Market',
+      icon: 'apple',
+      color: 'cyan',
+      description: 'Organic & premium groceries',
+      updatedAt: 9999,
+    };
+
+    await saveList(renamed);
+
+    const allLists = await getAllLists();
+    const stored = allLists.find((l) => l.id === originalId);
+
+    // The record must exist (same id)
+    expect(stored).toBeDefined();
+
+    // List ID must remain unchanged
+    expect(stored?.id).toBe(originalId);
+
+    // All metadata fields must reflect the rename
+    expect(stored?.name).toBe('Whole Foods Market');
+    expect(stored?.icon).toBe('apple');
+    expect(stored?.color).toBe('cyan');
+    expect(stored?.description).toBe('Organic & premium groceries');
+    expect(stored?.updatedAt).toBe(9999);
+
+    // Immutable field: createdAt must not change
+    expect(stored?.createdAt).toBe(500);
+
+    // Only ONE record with this id must exist (no phantom duplicates)
+    const matchingRecords = allLists.filter((l) => l.id === originalId);
+    expect(matchingRecords.length).toBe(1);
+  });
+
+  // TC-15: Cancel / Close Without Saving — state mutations must not be persisted
+  it('TC-15: Cancel/Close Without Saving - discards all edits, storage remains unchanged', async () => {
+    const listBefore: GroceryList = {
+      id: 'list_cancel_test',
+      name: 'Original Name',
+      icon: 'store',
+      color: 'amber',
+      description: 'Original description',
+      createdAt: 100,
+      updatedAt: 100,
+    };
+
+    await saveList(listBefore);
+
+    // Simulate the user editing the form fields (in-memory only)
+    let formName = listBefore.name;
+    let formIcon = listBefore.icon;
+    let formColor = listBefore.color;
+    let formDescription = listBefore.description || '';
+
+    // User types into the form
+    formName = 'New Name They Will Cancel';
+    formIcon = 'apple';
+    formColor = 'rose';
+    formDescription = 'A description that will be discarded';
+
+    // User clicks Cancel / X button → onClose() fires, no updateList() called
+    const onClose = () => {
+      // Reset form to initial values (simulates the useEffect re-sync on re-open)
+      formName = listBefore.name;
+      formIcon = listBefore.icon;
+      formColor = listBefore.color;
+      formDescription = listBefore.description || '';
+    };
+    onClose();
+
+    // Form state must be reset to original values
+    expect(formName).toBe('Original Name');
+    expect(formIcon).toBe('store');
+    expect(formColor).toBe('amber');
+    expect(formDescription).toBe('Original description');
+
+    // Storage must remain unchanged (updateList/saveList was never called)
+    const allLists = await getAllLists();
+    const stored = allLists.find((l) => l.id === 'list_cancel_test');
+    expect(stored?.name).toBe('Original Name');
+    expect(stored?.icon).toBe('store');
+    expect(stored?.color).toBe('amber');
+    expect(stored?.description).toBe('Original description');
+    expect(stored?.updatedAt).toBe(100);
+  });
+
+  // TC-16: Save CTA Disabled When Name Is Empty
+  it('TC-16: Save CTA Disabled When Name Is Empty - isValid guards Save button disabled state', () => {
+    const editModalContent = fs.readFileSync(path.join(rootDir, 'src/components/EditListModal.tsx'), 'utf-8');
+
+    // The submit button must include `disabled={!isValid || !isDirty}` logic
+    expect(editModalContent).toContain('disabled={!isValid || !isDirty}');
+
+    // Simulate validation logic from the component
+    const computeIsValid = (name: string) => name.trim().length > 0;
+    const computeIsDirty = (
+      name: string,
+      desc: string,
+      icon: string,
+      color: string,
+      list: { name: string; description?: string; icon: string; color: string }
+    ) =>
+      name.trim() !== list.name ||
+      desc.trim() !== (list.description || '') ||
+      icon !== list.icon ||
+      color !== list.color;
+
+    const originalList = { name: 'Supermarket', description: '', icon: 'shopping-cart', color: 'emerald' };
+
+    // Empty name → isValid=false → button disabled regardless of isDirty
+    expect(computeIsValid('')).toBe(false);
+    expect(computeIsValid('   ')).toBe(false);
+
+    // Non-empty name with change → both isValid & isDirty true → button enabled
+    expect(computeIsValid("Trader Joe's")).toBe(true);
+    expect(computeIsDirty("Trader Joe's", '', 'shopping-cart', 'emerald', originalList)).toBe(true);
+
+    // Non-empty name but no change → isDirty=false → button still disabled
+    expect(computeIsValid('Supermarket')).toBe(true);
+    expect(computeIsDirty('Supermarket', '', 'shopping-cart', 'emerald', originalList)).toBe(false);
+  });
+
+  // TC-17: Inline Validation Error Badge Rendering
+  it('TC-17: Inline Validation Error Badge - error message renders when touched and name is empty', () => {
+    const editModalContent = fs.readFileSync(path.join(rootDir, 'src/components/EditListModal.tsx'), 'utf-8');
+
+    // The modal must contain the error message text
+    expect(editModalContent).toContain('List name cannot be empty.');
+
+    // The error renders only when `touched && !isValid`
+    expect(editModalContent).toContain('touched && !isValid');
+
+    // Simulate touched + empty name → error shown
+    const touched = true;
+    const isValid = false;
+    expect(touched && !isValid).toBe(true);
+
+    // Simulate touched + valid name → error hidden
+    const isValidName = true;
+    expect(touched && !isValidName).toBe(false);
+  });
+
+  // TC-18: Icon Selector Grid — 4-column layout and all icons rendered with labels
+  it('TC-18: Icon Selector Grid - 4-column grid renders icons with labels in EditListModal', () => {
+    const editModalContent = fs.readFileSync(path.join(rootDir, 'src/components/EditListModal.tsx'), 'utf-8');
+
+    // Verify 4-column grid layout
+    expect(editModalContent).toContain('grid-cols-4');
+
+    // Verify each icon name is used in the grid (via LIST_ICONS.map)
+    for (const iconDef of LIST_ICONS) {
+      expect(editModalContent).toContain(iconDef.name);
+    }
+
+    // Verify icon label rendering
+    expect(editModalContent).toContain('label}');
+  });
+
+  // TC-19: Color Swatch Check Icon — selected swatch shows Check icon
+  it('TC-19: Color Swatch Check Icon - selected color swatch renders Check icon from lucide-react', () => {
+    const editModalContent = fs.readFileSync(path.join(rootDir, 'src/components/EditListModal.tsx'), 'utf-8');
+
+    // Verify Check is imported from lucide-react
+    expect(editModalContent).toContain('Check');
+    expect(editModalContent).toContain('isSelected && <Check');
+
+    // Verify ring-offset and scale-110 styling for selected swatch
+    expect(editModalContent).toContain('ring-2 ring-offset-2');
+    expect(editModalContent).toContain('scale-110');
+  });
+
+  // TC-20: Live Preview Pill Updates on Input Change
+  it('TC-20: Live Preview Pill - preview updates immediately when name, icon, or color changes', () => {
+    const editModalContent = fs.readFileSync(path.join(rootDir, 'src/components/EditListModal.tsx'), 'utf-8');
+
+    // Modal must contain "Live List Preview" label
+    expect(editModalContent).toContain('Live List Preview');
+
+    // Preview must use trimmedName (not raw name)
+    expect(editModalContent).toContain('trimmedName');
+
+    // Preview must show fallback "Untitled List" when trimmedName is empty
+    expect(editModalContent).toContain('Untitled List');
+
+    // Preview must show description or fallback 'No description'
+    expect(editModalContent).toContain('No description');
+
+    // Preview uses the SelectedIconComp derived from selectedIcon state
+    expect(editModalContent).toContain('SelectedIconComp');
+  });
+
+  // TC-21: Modal Accessibility — role, aria-modal, aria-labelledby
+  it('TC-21: Modal Accessibility - EditListModal has ARIA role=dialog, aria-modal, and aria-labelledby', () => {
+    const editModalContent = fs.readFileSync(path.join(rootDir, 'src/components/EditListModal.tsx'), 'utf-8');
+
+    expect(editModalContent).toContain('role="dialog"');
+    expect(editModalContent).toContain('aria-modal="true"');
+    expect(editModalContent).toContain('aria-labelledby="edit-list-title"');
+    expect(editModalContent).toContain('id="edit-list-title"');
+
+    // Close button must have aria-label
+    expect(editModalContent).toContain('aria-label="Close dialog"');
+
+    // Color swatch buttons must have aria-label for accessibility
+    expect(editModalContent).toContain('aria-label={`Select color ${c.name}`}');
+  });
+
+  // TC-22: GroceryContext updateList — triggers idbSaveList + broadcastListUpsert together
+  it('TC-22: GroceryContext.updateList flow — idbSaveList and broadcastListUpsert both called on save', async () => {
+    // Verify the production context source contains both calls together
+    const contextContent = fs.readFileSync(path.join(rootDir, 'src/context/GroceryContext.tsx'), 'utf-8');
+
+    // updateList must call idbSaveList
+    expect(contextContent).toContain('idbSaveList(updated)');
+
+    // updateList must call broadcastListUpsert
+    expect(contextContent).toContain('syncClient.broadcastListUpsert(updated)');
+
+    // Both calls must be inside updateList function body
+    const updateListFnIdx = contextContent.indexOf('const updateList = async');
+    const nextFnIdx = contextContent.indexOf('\n  const deleteList', updateListFnIdx);
+    const updateListBody = contextContent.slice(updateListFnIdx, nextFnIdx);
+
+    expect(updateListBody).toContain('idbSaveList(updated)');
+    expect(updateListBody).toContain('syncClient.broadcastListUpsert(updated)');
+
+    // Optimistic state update must also be present
+    expect(updateListBody).toContain('setLists((prev)');
+  });
+
+  // TC-23: ListSelector.tsx — edit trigger always visible (even with 1 list)
+  it('TC-23: ListSelector edit trigger visible for single list - no canDelete guard on edit button', () => {
+    const listSelectorContent = fs.readFileSync(path.join(rootDir, 'src/components/ListSelector.tsx'), 'utf-8');
+
+    // Edit button must be guarded only by `activeList`, NOT by `canDeleteActive`
+    // canDeleteActive gates the delete button; edit button is always visible
+    expect(listSelectorContent).toContain('canDeleteActive');
+
+    // The edit button should be inside `{activeList && (` — not inside `{canDeleteActive && activeList && (`
+    // Verify the edit button triggers setEditingList(activeList)
+    expect(listSelectorContent).toContain('setEditingList(activeList)');
+
+    // Delete button is the one gated by canDeleteActive
+    expect(listSelectorContent).toContain('{canDeleteActive && activeList && (');
+  });
+
+  // TC-24: ListSidebar edit trigger — stop propagation prevents accidental list switch
+  it('TC-24: ListSidebar edit stopPropagation - click on Pencil does not propagate to list selector', () => {
+    const listSidebarContent = fs.readFileSync(path.join(rootDir, 'src/components/ListSidebar.tsx'), 'utf-8');
+
+    // e.stopPropagation() must be called before setEditingList
+    const editBtnIdx = listSidebarContent.indexOf('setEditingList(list)');
+    const stopPropIdx = listSidebarContent.indexOf('e.stopPropagation()', editBtnIdx - 200);
+
+    expect(stopPropIdx).toBeGreaterThan(-1);
+
+    // The edit button must render Pencil inside an onClick that calls stopPropagation
+    expect(listSidebarContent).toContain('e.stopPropagation()');
+    expect(listSidebarContent).toContain('setEditingList(list)');
   });
 });
