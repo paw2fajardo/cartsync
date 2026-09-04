@@ -1,0 +1,34 @@
+{
+  "name": "Koffan Grocery & Household Lists",
+  "short_name": "Grocery",
+  "description": "Minimalist local-first grocery list with real-time household sync and device attribution",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#10b981",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["shopping", "productivity", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Quick Add Item",
+      "short_name": "Add",
+      "description": "Quickly add an item to current list",
+      "url": "/?action=quickadd",
+      "icons": [{ "src": "/icon-192.svg", "sizes": "192x192" }]
+    }
+  ]
+}
