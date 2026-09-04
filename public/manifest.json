@@ -1,6 +1,6 @@
 {
-  "name": "Koffan Grocery & Household Lists",
-  "short_name": "Grocery",
+  "name": "CartSync Grocery & Household Lists",
+  "short_name": "CartSync",
   "description": "Minimalist local-first grocery list with real-time household sync and device attribution",
   "start_url": "/",
   "display": "standalone",

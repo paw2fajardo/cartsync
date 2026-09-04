@@ -5,7 +5,7 @@ import { GroceryItemCard } from './GroceryItemCard';
 
 export const CompletedList: React.FC = () => {
   const { completedItems, clearCompleted, uncheckAll, activeList } = useGrocery();
-  const [isOpen, setIsOpen] = useState(true);
+  const [isOpen, setIsOpen] = useState(false);
 
   if (completedItems.length === 0) return null;
 

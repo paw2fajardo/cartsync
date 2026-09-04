@@ -153,8 +153,8 @@ describe('Local-First Storage (IndexedDB & LocalStorage Fallback) Verification',
     await saveList(sampleList);
     await saveItem(sampleItem);
 
-    const rawLists = localStorage.getItem('koffan_lists_v1');
-    const rawItems = localStorage.getItem('koffan_items_v1');
+    const rawLists = localStorage.getItem('cartsync_lists_v1');
+    const rawItems = localStorage.getItem('cartsync_items_v1');
 
     expect(rawLists).not.toBeNull();
     expect(rawItems).not.toBeNull();

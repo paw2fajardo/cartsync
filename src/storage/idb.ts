@@ -1,6 +1,6 @@
 import { GroceryItem, GroceryList } from '../types';
 
-const DB_NAME = 'koffan_grocery_db';
+const DB_NAME = 'cartsync_db';
 const DB_VERSION = 1;
 
 let dbPromise: Promise<IDBDatabase> | null = null;
@@ -47,8 +47,8 @@ function openDB(): Promise<IDBDatabase> {
 }
 
 // Fallback to localStorage if IndexedDB is blocked in some environments
-const LS_LISTS_KEY = 'koffan_lists_v1';
-const LS_ITEMS_KEY = 'koffan_items_v1';
+const LS_LISTS_KEY = 'cartsync_lists_v1';
+const LS_ITEMS_KEY = 'cartsync_items_v1';
 
 export async function getAllLists(): Promise<GroceryList[]> {
   try {

@@ -12,3 +12,6 @@ dist-ssr
 *.sln
 *.sw?
 server/household-data.json
+*.db
+*.db-shm
+*.db-wal

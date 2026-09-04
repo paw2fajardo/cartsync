@@ -3,7 +3,7 @@ import { detectDevice, saveDeviceProfile } from '../src/utils/deviceDetector';
 import { DeviceProfile } from '../src/types';
 
 describe('Device Detector & Attribution Verification', () => {
-  const STORAGE_KEY = 'koffan_device_profile_v1';
+  const STORAGE_KEY = 'cartsync_device_profile_v1';
 
   beforeEach(() => {
     localStorage.clear();

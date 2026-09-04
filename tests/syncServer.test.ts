@@ -9,15 +9,18 @@ describe.sequential('WebSocket & Express Household Sync Server Verification', ()
   const SERVER_URL = `http://localhost:${TEST_PORT}`;
   const WS_URL = `ws://localhost:${TEST_PORT}`;
   const serverScript = path.resolve(__dirname, '../server/index.js');
-  const dataFile = path.resolve(__dirname, '../server/household-data.json');
+  const testDbFile = path.resolve(__dirname, '../server/test-cartsync.db');
 
   let serverProcess: ChildProcess;
-  const initialDataFileExisted = fs.existsSync(dataFile);
 
   beforeAll(async () => {
-    // Start server process on dedicated test port
+    if (fs.existsSync(testDbFile)) {
+      try { fs.unlinkSync(testDbFile); } catch (_) {}
+    }
+
+    // Start server process on dedicated test port with isolated test DB
     serverProcess = spawn('node', [serverScript], {
-      env: { ...process.env, PORT: String(TEST_PORT) },
+      env: { ...process.env, PORT: String(TEST_PORT), CART_SYNC_DB_PATH: testDbFile },
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 
@@ -44,11 +47,9 @@ describe.sequential('WebSocket & Express Household Sync Server Verification', ()
     if (serverProcess) {
       serverProcess.kill();
     }
-    // Clean up temporary data file created during test run if it did not exist prior
-    if (!initialDataFileExisted && fs.existsSync(dataFile)) {
-      try {
-        fs.unlinkSync(dataFile);
-      } catch (_) {}
+    // Clean up temporary sqlite db
+    if (fs.existsSync(testDbFile)) {
+      try { fs.unlinkSync(testDbFile); } catch (_) {}
     }
   });
 
@@ -59,7 +60,8 @@ describe.sequential('WebSocket & Express Household Sync Server Verification', ()
 
       const data = await res.json();
       expect(data.status).toBe('ok');
-      expect(data.app).toBe('Koffan Grocery Sync Server');
+      expect(data.app).toBe('CartSync Grocery Sync Server');
+      expect(data.database).toContain('sqlite3');
       expect(typeof data.version).toBe('number');
       expect(typeof data.activeWsConnections).toBe('number');
       expect(typeof data.uptimeSeconds).toBe('number');

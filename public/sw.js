@@ -1,4 +1,4 @@
-const CACHE_NAME = 'koffan-grocery-v1';
+const CACHE_NAME = 'cartsync-v1';
 const STATIC_ASSETS = [
   '/',
   '/index.html',

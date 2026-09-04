@@ -1,6 +1,6 @@
 import { DeviceIcon, DeviceProfile } from '../types';
 
-const DEVICE_STORAGE_KEY = 'koffan_device_profile_v1';
+const DEVICE_STORAGE_KEY = 'cartsync_device_profile_v1';
 
 const AVATAR_COLORS = [
   '#10b981', // emerald
