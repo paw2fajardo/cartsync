@@ -8,24 +8,34 @@ describe('CartSync SQLite Persistence Layer Verification', () => {
   const testDbPath = path.resolve(__dirname, '../server/test-unit-cartsync.db');
   let db: CartSyncDatabase;
 
+  function cleanupDbFiles() {
+    for (const ext of ['', '-wal', '-shm']) {
+      const f = testDbPath + ext;
+      if (fs.existsSync(f)) {
+        try {
+          fs.unlinkSync(f);
+        } catch (_) {}
+      }
+    }
+  }
+
   beforeEach(() => {
-    if (fs.existsSync(testDbPath)) {
+    if (db) {
       try {
-        fs.unlinkSync(testDbPath);
+        db.close();
       } catch (_) {}
     }
+    cleanupDbFiles();
     db = new CartSyncDatabase(testDbPath);
   });
 
   afterEach(() => {
     if (db) {
-      db.close();
-    }
-    if (fs.existsSync(testDbPath)) {
       try {
-        fs.unlinkSync(testDbPath);
+        db.close();
       } catch (_) {}
     }
+    cleanupDbFiles();
   });
 
   it('should initialize and auto-seed default lists and items if empty', () => {

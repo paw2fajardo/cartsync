@@ -13,10 +13,19 @@ describe.sequential('WebSocket & Express Household Sync Server Verification', ()
 
   let serverProcess: ChildProcess;
 
-  beforeAll(async () => {
-    if (fs.existsSync(testDbFile)) {
-      try { fs.unlinkSync(testDbFile); } catch (_) {}
+  function cleanupDbFiles(filePath: string) {
+    for (const ext of ['', '-wal', '-shm']) {
+      const f = filePath + ext;
+      if (fs.existsSync(f)) {
+        try {
+          fs.unlinkSync(f);
+        } catch (_) {}
+      }
     }
+  }
+
+  beforeAll(async () => {
+    cleanupDbFiles(testDbFile);
 
     // Start server process on dedicated test port with isolated test DB
     serverProcess = spawn('node', [serverScript], {
@@ -46,11 +55,11 @@ describe.sequential('WebSocket & Express Household Sync Server Verification', ()
   afterAll(async () => {
     if (serverProcess) {
       serverProcess.kill();
+      // Wait briefly for process to exit and release file locks
+      await new Promise((r) => setTimeout(r, 300));
     }
     // Clean up temporary sqlite db
-    if (fs.existsSync(testDbFile)) {
-      try { fs.unlinkSync(testDbFile); } catch (_) {}
-    }
+    cleanupDbFiles(testDbFile);
   });
 
   describe('REST Endpoints', () => {

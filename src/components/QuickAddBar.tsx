@@ -65,21 +65,21 @@ export const QuickAddBar: React.FC = () => {
   const currentCategoryColor = CATEGORY_COLORS[category] || CATEGORY_COLORS.Other;
 
   return (
-    <div className="fixed bottom-0 inset-x-0 z-30 bg-white/95 dark:bg-zinc-950/95 backdrop-blur-lg border-t border-zinc-200/80 dark:border-zinc-800/80 px-4 py-3 pb-safe shadow-lg">
+    <div className="fixed bottom-0 inset-x-0 z-30 bg-white/90 dark:bg-zinc-950/90 backdrop-blur-xl border-t border-zinc-200/70 dark:border-zinc-800/70 px-4 py-3 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.04)] dark:shadow-[0_-4px_20px_rgba(0,0,0,0.3)]">
       <div className="max-w-2xl mx-auto space-y-2">
         {/* Optional Expanded Tray for Note / Custom Category */}
         {showOptions && (
-          <div className="flex flex-wrap items-center gap-2 p-2 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/70 dark:border-zinc-800 animate-in fade-in slide-in-from-bottom-2 duration-150 text-xs">
+          <div className="flex flex-wrap items-center gap-2 p-2.5 rounded-2xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 animate-in fade-in slide-in-from-bottom-2 duration-150 text-xs shadow-xs">
             {/* Category Select */}
             <div className="flex items-center gap-1.5">
-              <span className="text-[11px] text-zinc-500">Category:</span>
+              <span className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">Category:</span>
               <select
                 value={category}
                 onChange={(e) => {
                   setCategory(e.target.value as ItemCategory);
                   setIsCategoryCustomized(true);
                 }}
-                className="text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2 py-1 text-zinc-800 dark:text-zinc-200 font-medium focus:outline-hidden"
+                className="text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-1 text-zinc-800 dark:text-zinc-200 font-medium focus:outline-hidden cursor-pointer"
               >
                 {ALL_CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
@@ -96,7 +96,7 @@ export const QuickAddBar: React.FC = () => {
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Optional note (e.g., brand, flavor)..."
-                className="w-full text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg px-2.5 py-1 text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 focus:outline-hidden"
+                className="w-full text-xs bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-xl px-2.5 py-1 text-zinc-800 dark:text-zinc-200 placeholder:text-zinc-400 focus:outline-hidden focus:border-emerald-500"
                 maxLength={60}
               />
             </div>
@@ -104,7 +104,7 @@ export const QuickAddBar: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowOptions(false)}
-              className="p-1 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200"
+              className="p-1 rounded-lg text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800 cursor-pointer"
               title="Close options"
             >
               <X className="w-3.5 h-3.5" />
@@ -114,21 +114,21 @@ export const QuickAddBar: React.FC = () => {
 
         {/* Main Floating Quick-Add Input */}
         <form onSubmit={handleAdd} className="flex items-center gap-2">
-          <div className="relative flex-1 flex items-center bg-zinc-100 dark:bg-zinc-900 rounded-2xl border border-zinc-200/80 dark:border-zinc-800 focus-within:border-emerald-500 focus-within:ring-1 focus-within:ring-emerald-500/20 transition-all px-3 py-2">
+          <div className="relative flex-1 flex items-center bg-zinc-100/90 dark:bg-zinc-900 rounded-2xl border border-zinc-200/70 dark:border-zinc-800 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all px-3.5 py-1.5 h-11">
             <input
               ref={inputRef}
               type="text"
               value={inputText}
               onChange={handleInputChange}
               placeholder={`Add to ${activeList?.name || 'list'} (e.g. "Milk 2L", "3 Lemons")...`}
-              className="flex-1 bg-transparent text-sm font-medium text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-hidden pr-2"
+              className="flex-1 bg-transparent text-[14px] font-medium text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-hidden pr-2"
             />
 
             {/* Subtle Live NLP Category / Quantity Badge */}
             {parsedPreview && (
               <div className="flex items-center gap-1.5 shrink-0 pl-1">
                 {parsedPreview.quantity > 1 && (
-                  <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded-md">
+                  <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100/80 dark:bg-emerald-950/80 px-1.5 py-0.5 rounded-md">
                     {parsedPreview.quantity} {parsedPreview.unit || ''}
                   </span>
                 )}
@@ -144,10 +144,10 @@ export const QuickAddBar: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowOptions(!showOptions)}
-              className={`ml-1.5 p-1 rounded-lg transition-colors shrink-0 ${
+              className={`ml-1.5 p-1.5 rounded-xl transition-colors shrink-0 cursor-pointer ${
                 showOptions || note || isCategoryCustomized
-                  ? 'text-emerald-600 bg-emerald-100 dark:bg-emerald-950'
-                  : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300'
+                  ? 'text-emerald-600 bg-emerald-100/80 dark:bg-emerald-950/80'
+                  : 'text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 hover:bg-zinc-200/50 dark:hover:bg-zinc-800'
               }`}
               title="Add details (category, note)"
             >
@@ -159,10 +159,10 @@ export const QuickAddBar: React.FC = () => {
           <button
             type="submit"
             disabled={!inputText.trim()}
-            className="h-10 px-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 disabled:opacity-40 disabled:hover:bg-emerald-500 text-white text-sm font-semibold flex items-center justify-center gap-1.5 shadow-sm shadow-emerald-500/25 transition-all shrink-0 active:scale-95"
+            className="h-11 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-400 disabled:opacity-30 text-white text-sm font-semibold flex items-center justify-center gap-1.5 shadow-sm shadow-emerald-600/20 active:scale-95 transition-all shrink-0 cursor-pointer"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
-            <span className="hidden sm:inline">Add</span>
+            <span className="hidden sm:inline tracking-tight">Add</span>
           </button>
         </form>
       </div>

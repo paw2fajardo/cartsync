@@ -23,11 +23,11 @@ export default {
       },
       fontFamily: {
         sans: [
-          'Inter',
+          '"Plus Jakarta Sans"',
           '-apple-system',
           'BlinkMacSystemFont',
-          '"Segoe UI"',
-          'Roboto',
+          '"SF Pro Text"',
+          'system-ui',
           'sans-serif'
         ]
       }

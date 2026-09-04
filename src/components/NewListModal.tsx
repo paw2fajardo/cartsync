@@ -42,21 +42,22 @@ export const NewListModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
               Create New List
             </h2>
-            <p className="text-xs text-zinc-600 dark:text-zinc-300">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Add a new shopping list or store category
             </p>
           </div>
           <button
+            type="button"
             onClick={closeNewListModal}
-            className="p-2 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            className="p-2 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-95 transition-all cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -104,13 +105,13 @@ export const NewListModal: React.FC = () => {
                   type="button"
                   key={iconName}
                   onClick={() => setSelectedIcon(iconName)}
-                  className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
+                  className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all cursor-pointer active:scale-95 ${
                     selectedIcon === iconName
                       ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-xs'
                       : 'border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
                   }`}
                 >
-                  <Icon className="w-5 h-5 mb-0.5" />
+                  <Icon className="w-5 h-5 mb-0.5 stroke-[2]" />
                   <span className="text-[10px] font-medium">{label}</span>
                 </button>
               ))}
@@ -128,7 +129,7 @@ export const NewListModal: React.FC = () => {
                   type="button"
                   key={c.id}
                   onClick={() => setSelectedColor(c.id)}
-                  className={`w-8 h-8 rounded-full ${c.bg} flex items-center justify-center transition-transform hover:scale-110 ${
+                  className={`w-8 h-8 rounded-full ${c.bg} flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer ${
                     selectedColor === c.id ? 'ring-2 ring-offset-2 ring-emerald-500' : ''
                   }`}
                   title={c.name}
@@ -142,13 +143,13 @@ export const NewListModal: React.FC = () => {
             <button
               type="button"
               onClick={closeNewListModal}
-              className="px-4 py-2 text-sm font-medium rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+              className="px-4 py-2 text-sm font-medium rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-95 transition-all cursor-pointer"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 text-sm font-semibold rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-500/20 transition-all"
+              className="px-5 py-2 text-sm font-semibold rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer"
             >
               Create List
             </button>

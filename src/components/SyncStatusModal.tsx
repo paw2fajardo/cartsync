@@ -29,8 +29,8 @@ export const SyncStatusModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -53,7 +53,7 @@ export const SyncStatusModal: React.FC = () => {
               <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
                 Household Real-Time Sync
               </h2>
-              <p className="text-xs text-zinc-600 dark:text-zinc-300">
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
                 {syncStatus === 'connected'
                   ? 'Connected to local sync broker'
                   : syncStatus === 'connecting'
@@ -63,8 +63,9 @@ export const SyncStatusModal: React.FC = () => {
             </div>
           </div>
           <button
+            type="button"
             onClick={closeSyncModal}
-            className="p-2 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            className="p-2 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-95 transition-all cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -90,9 +91,10 @@ export const SyncStatusModal: React.FC = () => {
           </div>
 
           <button
+            type="button"
             onClick={handleManualSync}
             disabled={isSyncing}
-            className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 text-xs font-semibold text-zinc-800 dark:text-zinc-200 transition-colors shadow-xs"
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-95 text-xs font-semibold text-zinc-800 dark:text-zinc-200 transition-all shadow-xs cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
             <span>{isSyncing ? 'Synchronizing...' : 'Force Household Sync Now'}</span>
@@ -101,9 +103,9 @@ export const SyncStatusModal: React.FC = () => {
 
         {/* Household Device Roster */}
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs font-semibold text-zinc-600 dark:text-zinc-300 px-1">
+          <div className="flex items-center justify-between text-xs font-semibold text-zinc-700 dark:text-zinc-300 px-1">
             <span>Household Devices</span>
-            <span className="text-zinc-600 dark:text-zinc-300">{activeHouseholdDevices.length} registered</span>
+            <span className="text-zinc-500 dark:text-zinc-400 font-normal">{activeHouseholdDevices.length} registered</span>
           </div>
           <div className="space-y-1.5 max-h-40 overflow-y-auto pr-1">
             {activeHouseholdDevices.map((dev) => {
@@ -124,7 +126,7 @@ export const SyncStatusModal: React.FC = () => {
                       <div className="text-xs font-semibold text-zinc-800 dark:text-zinc-200">
                         {dev.name}
                       </div>
-                      <div className="text-[10px] text-zinc-600 dark:text-zinc-300 font-mono">
+                      <div className="text-[10px] text-zinc-500 dark:text-zinc-400 font-mono">
                         {dev.id}
                       </div>
                     </div>
@@ -149,8 +151,9 @@ export const SyncStatusModal: React.FC = () => {
 
         <div className="pt-1">
           <button
+            type="button"
             onClick={closeSyncModal}
-            className="w-full py-2.5 text-sm font-semibold rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-white transition-colors"
+            className="w-full py-2.5 text-sm font-semibold rounded-xl bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 hover:bg-zinc-800 dark:hover:bg-white active:scale-95 transition-all cursor-pointer"
           >
             Close
           </button>

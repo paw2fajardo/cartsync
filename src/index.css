@@ -5,7 +5,14 @@
 @layer base {
   html {
     -webkit-tap-highlight-color: transparent;
-    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+  }
+  
+  body {
+    overscroll-behavior-y: none;
   }
 }
 
@@ -21,6 +28,9 @@
 /* Mobile safe area padding for standalone PWA */
 @supports (padding: env(safe-area-inset-bottom)) {
   .pb-safe {
-    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+  }
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
   }
 }

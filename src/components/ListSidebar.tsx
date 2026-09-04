@@ -39,7 +39,7 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
       {/* Backdrop */}
       <div
         onClick={onClose}
-        className="fixed inset-0 bg-black/40 backdrop-blur-xs transition-opacity animate-in fade-in"
+        className="fixed inset-0 bg-black/40 backdrop-blur-sm transition-opacity animate-in fade-in"
       />
 
       {/* Drawer */}
@@ -50,13 +50,14 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
             <h2 className="text-base font-bold text-zinc-900 dark:text-white">
               Household Lists
             </h2>
-            <p className="text-xs text-zinc-600 dark:text-zinc-300">
+            <p className="text-xs text-zinc-500 dark:text-zinc-400">
               Manage all grocery & shopping lists
             </p>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="p-1.5 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            className="p-1.5 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-95 transition-all cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -150,14 +151,16 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
                   {/* Delete button (if more than 1 list) */}
                   {lists.length > 1 && (
                     <button
+                      type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         if (confirm(`Delete list "${list.name}" and its items?`)) {
                           deleteList(list.id);
                         }
                       }}
-                      className="absolute right-2 top-2 p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute right-2 top-2 p-1.5 rounded-lg text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 opacity-0 group-hover:opacity-100 active:scale-95 transition-all cursor-pointer"
                       title="Delete list"
+                      aria-label="Delete list"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -168,11 +171,12 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
           </div>
 
           <button
+            type="button"
             onClick={() => {
               openNewListModal();
               onClose();
             }}
-            className="w-full py-2.5 rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-emerald-500 text-zinc-600 dark:text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+            className="w-full py-2.5 rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 hover:border-emerald-500 text-zinc-600 dark:text-zinc-400 hover:text-emerald-600 dark:hover:text-emerald-400 active:scale-95 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>Create Custom List</span>
@@ -187,8 +191,9 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
               <span>Household Roster</span>
             </div>
             <button
+              type="button"
               onClick={openRenameModal}
-              className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline"
+              className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
             >
               Configure
             </button>

@@ -127,8 +127,8 @@ export function parseItemInput(raw: string): ParsedItemInput {
     quantity = 12;
     text = text.replace(/^dozen\s*/i, '');
   } else {
-    // Check leading number with optional unit: "2.5 kg bananas", "3 apples", "2x eggs"
-    const leadingMatch = text.match(/^(\d+(?:\.\d+)?)\s*(x|kg|g|lbs|lb|oz|l|ml|pack|packs|can|cans|box|boxes|bag|bags|bottle|bottles|carton|cartons|bunch|bunches|bunch of|pcs|pc)?\s+(.*)$/i);
+    // Check leading number with optional unit: "2.5 kg bananas", "3 apples", "1 gallon milk"
+    const leadingMatch = text.match(/^(\d+(?:\.\d+)?)\s*(x|kg|g|lbs|lb|oz|l|liter|liters|ml|gallon|gallons|gal|quart|quarts|qt|pint|pints|pt|cup|cups|pack|packs|can|cans|box|boxes|bag|bags|bottle|bottles|carton|cartons|jar|jars|tub|tubs|roll|rolls|loaf|loaves|bunch|bunches|bunch of|pcs|pc)?\s+(.*)$/i);
     if (leadingMatch) {
       quantity = parseFloat(leadingMatch[1]);
       if (leadingMatch[2] && leadingMatch[2].toLowerCase() !== 'x') {
@@ -136,8 +136,8 @@ export function parseItemInput(raw: string): ParsedItemInput {
       }
       text = leadingMatch[3];
     } else {
-      // Check trailing: "bananas x3" or "apples 2"
-      const trailingMatch = text.match(/^(.*?)\s+(?:x\s*|qty:\s*)?(\d+(?:\.\d+)?)\s*(kg|g|lbs|lb|oz|l|ml|pack|packs|can|cans|box|boxes|bag|bags|bottle|bottles|carton|cartons|pcs|pc)?$/i);
+      // Check trailing: "bananas x3" or "ground beef 2 lbs"
+      const trailingMatch = text.match(/^(.*?)\s+(?:x\s*|qty:\s*)?(\d+(?:\.\d+)?)\s*(kg|g|lbs|lb|oz|l|liter|liters|ml|gallon|gallons|gal|quart|quarts|qt|pint|pints|pt|cup|cups|pack|packs|can|cans|box|boxes|bag|bags|bottle|bottles|carton|cartons|jar|jars|tub|tubs|roll|rolls|loaf|loaves|pcs|pc)?$/i);
       if (trailingMatch && trailingMatch[1].trim().length > 0) {
         text = trailingMatch[1].trim();
         quantity = parseFloat(trailingMatch[2]);
@@ -150,9 +150,15 @@ export function parseItemInput(raw: string): ParsedItemInput {
 
   // Capitalize name neatly
   const cleanName = text.trim();
-  const formattedName = cleanName.length > 0
-    ? cleanName.charAt(0).toUpperCase() + cleanName.slice(1)
-    : 'Item';
+  let formattedName = 'Item';
+  if (cleanName.length > 0) {
+    if (cleanName === cleanName.toUpperCase() && cleanName.length > 1) {
+      // Normalize ALL-CAPS input (e.g. from voice dictation or caps lock)
+      formattedName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1).toLowerCase();
+    } else {
+      formattedName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+    }
+  }
 
   const category = categorizeItem(formattedName);
 
