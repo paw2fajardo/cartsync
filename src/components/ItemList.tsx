@@ -30,7 +30,7 @@ export const ItemList: React.FC = () => {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={`Search ${activeList?.name || 'groceries'}...`}
-            className="w-full pl-9 pr-8 py-2 rounded-2xl bg-slate-100/90 dark:bg-slate-850/90 border border-slate-200/70 dark:border-slate-750/70 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+            className="w-full pl-9 pr-8 py-2 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
           />
           {searchQuery ? (
             <button

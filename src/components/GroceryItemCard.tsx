@@ -72,7 +72,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="w-full text-sm font-medium px-3 py-1.5 rounded-xl border border-emerald-500 bg-slate-50 dark:bg-slate-850 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20"
+                className="w-full text-sm font-medium px-3 py-1.5 rounded-xl border border-emerald-500 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20"
                 autoFocus
               />
               <input
@@ -81,7 +81,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                 onChange={(e) => setEditNote(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Item note (optional)"
-                className="w-full text-xs px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-300 focus:outline-hidden"
+                className="w-full text-xs px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden"
               />
               <div className="flex items-center gap-2 pt-1">
                 <button

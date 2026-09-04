@@ -1,4 +1,4 @@
-﻿import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import fs from 'fs';
 import path from 'path';
 import { CATEGORY_COLORS } from '../src/utils/smartCategorizer';
@@ -207,6 +207,41 @@ describe('CartSync UI Redesign QA Audit: Contrast & Visual Ergonomics', () => {
 
       expect(tw).toContain('850:');
       expect(tw).toContain('#161f30');
+    });
+  });
+
+  describe('(d) Dark Mode Input Contrast & Form Controls', () => {
+    it('index.css declares html.dark { color-scheme: dark; } and color-scheme: dark for form controls', () => {
+      const cssPath = path.join(rootDir, 'src/index.css');
+      const cssContent = fs.readFileSync(cssPath, 'utf-8');
+
+      expect(cssContent).toMatch(/html\.dark\s*\{[\s\S]*?color-scheme:\s*dark;/);
+      expect(cssContent).toMatch(/html\.dark\s+input[\s\S]*?color-scheme:\s*dark;/);
+    });
+
+    it('QuickAddBar, ItemList, NewListModal, DeviceModal, and GroceryItemCard inputs have explicit dark backgrounds', () => {
+      const componentsToAudit = [
+        'src/components/QuickAddBar.tsx',
+        'src/components/ItemList.tsx',
+        'src/components/NewListModal.tsx',
+        'src/components/DeviceModal.tsx',
+        'src/components/GroceryItemCard.tsx',
+      ];
+
+      componentsToAudit.forEach((relPath) => {
+        const fullPath = path.join(rootDir, relPath);
+        const content = fs.readFileSync(fullPath, 'utf-8');
+
+        expect(content, `${relPath} must specify dark:bg-slate-800`).toContain('dark:bg-slate-800');
+        expect(content, `${relPath} must specify dark:text-slate-100`).toContain('dark:text-slate-100');
+        expect(content, `${relPath} must specify dark:placeholder:text-slate-500`).toContain('dark:placeholder:text-slate-500');
+      });
+    });
+
+    it('Input text (slate-100) on input background (slate-800) must exceed WCAG AAA (7.0:1)', () => {
+      const ratio = getContrastRatio(PALETTE.slate100, PALETTE.slate800);
+      expect(ratio).toBeGreaterThanOrEqual(7.0);
+      expect(ratio).toBeGreaterThan(12.0);
     });
   });
 });

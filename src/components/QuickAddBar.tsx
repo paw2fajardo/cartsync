@@ -79,7 +79,7 @@ export const QuickAddBar: React.FC = () => {
                   setCategory(e.target.value as ItemCategory);
                   setIsCategoryCustomized(true);
                 }}
-                className="text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1 text-slate-800 dark:text-slate-200 font-medium focus:outline-hidden cursor-pointer"
+                className="text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1 text-slate-900 dark:text-slate-100 font-medium focus:outline-hidden cursor-pointer"
               >
                 {ALL_CATEGORIES.map((cat) => (
                   <option key={cat} value={cat}>
@@ -96,7 +96,7 @@ export const QuickAddBar: React.FC = () => {
                 value={note}
                 onChange={(e) => setNote(e.target.value)}
                 placeholder="Optional note (e.g., brand, flavor)..."
-                className="w-full text-xs bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-hidden focus:border-emerald-500"
+                className="w-full text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:border-emerald-500"
                 maxLength={60}
               />
             </div>
@@ -114,14 +114,14 @@ export const QuickAddBar: React.FC = () => {
 
         {/* Main Floating Quick-Add Input */}
         <form onSubmit={handleAdd} className="flex items-center gap-2">
-          <div className="relative flex-1 flex items-center bg-slate-100/90 dark:bg-slate-850/90 rounded-2xl border border-slate-200/70 dark:border-slate-700/70 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all px-3.5 py-1.5 h-11">
+          <div className="relative flex-1 flex items-center bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200/70 dark:border-slate-700/70 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all px-3.5 py-1.5 h-11">
             <input
               ref={inputRef}
               type="text"
               value={inputText}
               onChange={handleInputChange}
               placeholder={`Add to ${activeList?.name || 'list'} (e.g. "Milk 2L", "3 Lemons")...`}
-              className="flex-1 bg-transparent text-[14px] font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden pr-2"
+              className="flex-1 bg-slate-100 dark:bg-slate-800 text-[14px] font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden pr-2"
             />
 
             {/* Subtle Live NLP Category / Quantity Badge */}
