@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { X, Plus, Trash2, ShoppingCart, Store, Box, Pill, Sparkles, Apple, Carrot, Coffee, Smartphone, Tablet, Laptop, Monitor, Home, Users } from 'lucide-react';
+import { X, Plus, Trash2, Pencil, ShoppingCart, Store, Box, Pill, Sparkles, Apple, Carrot, Coffee, Smartphone, Tablet, Laptop, Monitor, Home, Users } from 'lucide-react';
 import { useGrocery } from '../context/GroceryContext';
 import { useDevice } from '../context/DeviceContext';
 import { DeviceIcon, GroceryList } from '../types';
 import { DeleteListModal } from './DeleteListModal';
+import { EditListModal } from './EditListModal';
 
 interface ListSidebarProps {
   isOpen: boolean;
@@ -33,6 +34,7 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
   const { lists, activeListId, setActiveListId, openNewListModal, items } = useGrocery();
   const { activeHouseholdDevices, openRenameModal } = useDevice();
   const [deletingList, setDeletingList] = useState<GroceryList | null>(null);
+  const [editingList, setEditingList] = useState<GroceryList | null>(null);
 
   if (!isOpen) return null;
 
@@ -96,7 +98,7 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
                         setActiveListId(list.id);
                         onClose();
                       }}
-                      className="cursor-pointer space-y-1.5 pr-8"
+                      className="cursor-pointer space-y-1.5 pr-20"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2.5">
@@ -151,21 +153,38 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
                       )}
                     </div>
 
-                    {/* Touch-Friendly Delete Button (visible on all screens, not hidden behind desktop hover) */}
-                    {lists.length > 1 && (
+                    {/* Action Cluster: Edit (Always Visible) & Delete (If >1 list) */}
+                    <div className="absolute right-2.5 top-2.5 flex items-center gap-1">
+                      {/* Edit List Button */}
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setDeletingList(list);
+                          setEditingList(list);
                         }}
-                        className="absolute right-2.5 top-2.5 p-2 rounded-xl text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-95 transition-all cursor-pointer"
-                        title={`Delete list "${list.name}"`}
-                        aria-label={`Delete list ${list.name}`}
+                        className="p-2 rounded-xl text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 transition-all cursor-pointer"
+                        title={`Edit list "${list.name}"`}
+                        aria-label={`Edit list ${list.name}`}
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Pencil className="w-4 h-4" />
                       </button>
-                    )}
+
+                      {/* Delete List Button */}
+                      {lists.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeletingList(list);
+                          }}
+                          className="p-2 rounded-xl text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-95 transition-all cursor-pointer"
+                          title={`Delete list "${list.name}"`}
+                          aria-label={`Delete list ${list.name}`}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -221,6 +240,13 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
           </div>
         </div>
       </div>
+
+      {/* Edit List Modal */}
+      <EditListModal
+        list={editingList}
+        isOpen={Boolean(editingList)}
+        onClose={() => setEditingList(null)}
+      />
 
       {/* Slider Confirmation Modal for Deleting Lists */}
       <DeleteListModal

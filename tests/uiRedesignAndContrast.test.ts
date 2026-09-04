@@ -224,6 +224,7 @@ describe('CartSync UI Redesign QA Audit: Contrast & Visual Ergonomics', () => {
         'src/components/QuickAddBar.tsx',
         'src/components/ItemList.tsx',
         'src/components/NewListModal.tsx',
+        'src/components/EditListModal.tsx',
         'src/components/DeviceModal.tsx',
         'src/components/GroceryItemCard.tsx',
       ];

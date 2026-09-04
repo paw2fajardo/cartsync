@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Store, Box, Pill, Sparkles, Apple, Carrot, Coffee, Plus, Trash2 } from 'lucide-react';
+import { ShoppingCart, Store, Box, Pill, Sparkles, Apple, Carrot, Coffee, Plus, Trash2, Pencil } from 'lucide-react';
 import { useGrocery } from '../context/GroceryContext';
 import { DeleteListModal } from './DeleteListModal';
+import { EditListModal } from './EditListModal';
 import { GroceryList } from '../types';
 
 const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
@@ -18,6 +19,7 @@ const ICON_MAP: Record<string, React.FC<{ className?: string }>> = {
 export const ListSelector: React.FC = () => {
   const { lists, activeListId, setActiveListId, items, openNewListModal } = useGrocery();
   const [deletingList, setDeletingList] = useState<GroceryList | null>(null);
+  const [editingList, setEditingList] = useState<GroceryList | null>(null);
 
   const activeList = lists.find((l) => l.id === activeListId) || lists[0];
   const canDeleteActive = lists.length > 1;
@@ -77,21 +79,43 @@ export const ListSelector: React.FC = () => {
           })}
         </div>
 
-        {/* Delete Active List Button (visible directly in canvas when more than 1 list exists) */}
-        {canDeleteActive && activeList && (
-          <button
-            type="button"
-            onClick={() => setDeletingList(activeList)}
-            className="p-2 rounded-2xl text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-transparent hover:border-rose-200 dark:hover:border-rose-900/60 active:scale-95 transition-all shrink-0 cursor-pointer"
-            title={`Delete active list "${activeList.name}"`}
-            aria-label={`Delete list ${activeList.name}`}
-          >
-            <Trash2 className="w-4 h-4 stroke-[2]" />
-          </button>
-        )}
+        {/* Right Actions Cluster: Edit & Delete Active List */}
+        <div className="flex items-center gap-1 shrink-0">
+          {/* Edit Active List Button */}
+          {activeList && (
+            <button
+              type="button"
+              onClick={() => setEditingList(activeList)}
+              className="p-2 rounded-2xl text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-transparent hover:border-emerald-200 dark:hover:border-emerald-800/60 active:scale-95 transition-all cursor-pointer"
+              title={`Edit active list "${activeList.name}"`}
+              aria-label={`Edit list ${activeList.name}`}
+            >
+              <Pencil className="w-4 h-4 stroke-[2]" />
+            </button>
+          )}
+
+          {/* Delete Active List Button */}
+          {canDeleteActive && activeList && (
+            <button
+              type="button"
+              onClick={() => setDeletingList(activeList)}
+              className="p-2 rounded-2xl text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 border border-transparent hover:border-rose-200 dark:hover:border-rose-900/60 active:scale-95 transition-all cursor-pointer"
+              title={`Delete active list "${activeList.name}"`}
+              aria-label={`Delete list ${activeList.name}`}
+            >
+              <Trash2 className="w-4 h-4 stroke-[2]" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Confirmation Modal with Slider for Non-Empty Lists */}
+      {/* Modals */}
+      <EditListModal
+        list={editingList}
+        isOpen={Boolean(editingList)}
+        onClose={() => setEditingList(null)}
+      />
+
       <DeleteListModal
         list={deletingList}
         isOpen={Boolean(deletingList)}
