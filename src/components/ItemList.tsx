@@ -24,25 +24,25 @@ export const ItemList: React.FC = () => {
       {/* Optional Search Bar (toggled or shown if searching) */}
       {(showSearch || searchQuery || activeItems.length > 8) && (
         <div className="relative animate-in fade-in duration-150">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={`Search ${activeList?.name || 'groceries'}...`}
-            className="w-full pl-9 pr-8 py-2 rounded-2xl bg-zinc-100/90 dark:bg-zinc-900 border border-zinc-200/70 dark:border-zinc-800 text-xs sm:text-sm text-zinc-900 dark:text-white placeholder:text-zinc-400 focus:outline-hidden focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 transition-all"
+            className="w-full pl-9 pr-8 py-2 rounded-2xl bg-slate-100/90 dark:bg-slate-850/90 border border-slate-200/70 dark:border-slate-750/70 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
           />
           {searchQuery ? (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 p-1 cursor-pointer"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
           ) : (
             <button
               onClick={() => setShowSearch(false)}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 p-1 cursor-pointer"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -52,18 +52,18 @@ export const ItemList: React.FC = () => {
 
       {/* Items Rendering */}
       {activeItems.length === 0 ? (
-        <div className="py-14 px-4 text-center rounded-3xl bg-white/50 dark:bg-zinc-900/40 border border-dashed border-zinc-200/80 dark:border-zinc-800/80 space-y-2.5">
-          <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 mx-auto flex items-center justify-center">
+        <div className="py-14 px-4 text-center rounded-3xl bg-white/60 dark:bg-slate-800/40 border border-dashed border-slate-200/80 dark:border-slate-700/70 backdrop-blur-xs space-y-2.5">
+          <div className="w-11 h-11 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-500 mx-auto flex items-center justify-center shadow-2xs">
             <ShoppingBasket className="w-5 h-5 stroke-[2]" />
           </div>
-          <h3 className="text-sm font-semibold text-zinc-800 dark:text-zinc-200">
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200">
             {totalInList === 0
               ? 'List is empty'
               : searchQuery
               ? 'No matching items'
               : 'All done for this list! 🎉'}
           </h3>
-          <p className="text-xs text-zinc-500 dark:text-zinc-400 max-w-xs mx-auto leading-relaxed">
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
             {totalInList === 0
               ? 'Use the bottom bar to quickly add your grocery items.'
               : searchQuery
@@ -79,10 +79,10 @@ export const ItemList: React.FC = () => {
               <div key={category} className="space-y-1.5">
                 <div className="flex items-center gap-1.5 px-1 pt-1">
                   <span className={`w-1.5 h-1.5 rounded-full ${catStyle.dot}`} />
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     {category}
                   </span>
-                  <span className="text-[10px] font-medium text-zinc-400 dark:text-zinc-500">
+                  <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
                     ({catItems.length})
                   </span>
                 </div>

@@ -62,7 +62,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     // Update mobile status bar theme-color
     const metaThemeColor = document.querySelector('meta[name="theme-color"]');
     if (metaThemeColor) {
-      metaThemeColor.setAttribute('content', isDark ? '#09090b' : '#fafaf9');
+      metaThemeColor.setAttribute('content', isDark ? '#0f172a' : '#f8fafc');
     }
   }, [resolvedTheme]);
 

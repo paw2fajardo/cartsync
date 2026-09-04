@@ -47,8 +47,8 @@ export const DeviceModal: React.FC = () => {
   const SelectedIcon = ICONS.find((i) => i.type === icon)?.icon || Smartphone;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 dark:bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/80 rounded-3xl max-w-md w-full p-6 shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
@@ -59,10 +59,10 @@ export const DeviceModal: React.FC = () => {
               <SelectedIcon className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-zinc-900 dark:text-white">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                 Device Attribution
               </h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 Identify who adds & checks off items
               </p>
             </div>
@@ -70,7 +70,7 @@ export const DeviceModal: React.FC = () => {
           <button
             type="button"
             onClick={closeRenameModal}
-            className="p-2 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-95 transition-all cursor-pointer"
+            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -79,7 +79,7 @@ export const DeviceModal: React.FC = () => {
         <form onSubmit={handleSave} className="space-y-5">
           {/* Name Input */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
               Device Name
             </label>
             <input
@@ -87,7 +87,7 @@ export const DeviceModal: React.FC = () => {
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g., Kitchen iPad, Dad Phone"
-              className="w-full px-3.5 py-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/60 text-zinc-900 dark:text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500 transition-all"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-850 text-slate-900 dark:text-white text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
               maxLength={30}
               required
             />
@@ -95,7 +95,7 @@ export const DeviceModal: React.FC = () => {
 
           {/* Quick Presets */}
           <div className="space-y-1.5">
-            <span className="text-xs font-medium text-zinc-500 dark:text-zinc-400">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
               Quick Suggestions
             </span>
             <div className="flex flex-wrap gap-1.5">
@@ -107,7 +107,7 @@ export const DeviceModal: React.FC = () => {
                   className={`px-2.5 py-1 text-xs rounded-lg transition-all cursor-pointer active:scale-95 ${
                     name === preset
                       ? 'bg-emerald-500 text-white font-medium shadow-xs'
-                      : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
                   {preset}
@@ -118,7 +118,7 @@ export const DeviceModal: React.FC = () => {
 
           {/* Icon Type Selection */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
               Device Type
             </label>
             <div className="grid grid-cols-5 gap-2">
@@ -129,8 +129,8 @@ export const DeviceModal: React.FC = () => {
                   onClick={() => setIcon(type)}
                   className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition-all cursor-pointer active:scale-95 ${
                     icon === type
-                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 shadow-xs'
-                      : 'border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400 hover:bg-zinc-50 dark:hover:bg-zinc-800'
+                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 shadow-xs'
+                      : 'border-slate-200 dark:border-slate-700/70 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   <Icon className="w-5 h-5 mb-1" />
@@ -142,7 +142,7 @@ export const DeviceModal: React.FC = () => {
 
           {/* Badge Color Selection */}
           <div className="space-y-1.5">
-            <label className="text-xs font-semibold text-zinc-700 dark:text-zinc-300">
+            <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
               Attribution Color
             </label>
             <div className="flex items-center gap-2">
@@ -162,19 +162,19 @@ export const DeviceModal: React.FC = () => {
           </div>
 
           {/* Live Preview Card */}
-          <div className="p-3.5 rounded-2xl bg-zinc-50 dark:bg-zinc-800/40 border border-zinc-200/80 dark:border-zinc-800 space-y-1.5">
-            <div className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/70 space-y-1.5">
+            <div className="flex items-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
               <span>How your items will look to household members:</span>
             </div>
-            <div className="flex items-center justify-between bg-white dark:bg-zinc-900 px-3 py-2 rounded-xl border border-zinc-200/80 dark:border-zinc-800">
+            <div className="flex items-center justify-between bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-slate-200/80 dark:border-slate-700/70">
               <div className="flex items-center gap-2">
-                <div className="w-4 h-4 rounded-full border border-zinc-300 dark:border-zinc-700"></div>
-                <span className="text-sm font-medium text-zinc-800 dark:text-zinc-200">
+                <div className="w-4 h-4 rounded-full border border-slate-300 dark:border-slate-700"></div>
+                <span className="text-sm font-medium text-slate-800 dark:text-slate-200">
                   Organic Gala Apples (4x)
                 </span>
               </div>
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-zinc-100 dark:bg-zinc-800 text-[11px] text-zinc-600 dark:text-zinc-400">
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-[11px] text-slate-600 dark:text-slate-400">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: color }}></span>
                 <span>Added by {name || 'This Device'}</span>
               </div>
@@ -186,7 +186,7 @@ export const DeviceModal: React.FC = () => {
             <button
               type="button"
               onClick={closeRenameModal}
-              className="px-4 py-2 text-sm font-medium rounded-xl text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-95 transition-all cursor-pointer"
+              className="px-4 py-2 text-sm font-medium rounded-xl text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer"
             >
               Cancel
             </button>

@@ -26,19 +26,19 @@ export const DeleteListModal: React.FC<DeleteListModalProps> = ({ list, isOpen, 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-5 animate-in zoom-in-95 duration-150">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 dark:bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/80 rounded-3xl max-w-md w-full p-6 shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] space-y-5 animate-in zoom-in-95 duration-150">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-xs ${isNotEmpty ? 'bg-rose-500' : 'bg-zinc-600'}`}>
+            <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-xs ${isNotEmpty ? 'bg-rose-500' : 'bg-slate-600'}`}>
               {isNotEmpty ? <AlertTriangle className="w-5 h-5 stroke-[2.5]" /> : <Trash2 className="w-5 h-5" />}
             </div>
             <div>
-              <h2 className="text-base font-bold text-zinc-900 dark:text-white">
+              <h2 className="text-base font-bold text-slate-900 dark:text-white">
                 Delete List
               </h2>
-              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+              <p className="text-xs text-slate-500 dark:text-slate-400">
                 {list.name}
               </p>
             </div>
@@ -46,7 +46,7 @@ export const DeleteListModal: React.FC<DeleteListModalProps> = ({ list, isOpen, 
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-xl text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-95 transition-all cursor-pointer"
+            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
           >
             <X className="w-5 h-5" />
           </button>
@@ -54,7 +54,7 @@ export const DeleteListModal: React.FC<DeleteListModalProps> = ({ list, isOpen, 
 
         {/* Cannot delete the only remaining list */}
         {isLastList ? (
-          <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 text-xs text-amber-800 dark:text-amber-300 space-y-1">
+          <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/60 text-xs text-amber-800 dark:text-amber-300 space-y-1">
             <p className="font-semibold">Cannot delete your only list.</p>
             <p className="text-[11px] text-amber-700/80 dark:text-amber-400/80">
               CartSync requires at least one active grocery list. Create a new list first before deleting this one.
@@ -63,7 +63,7 @@ export const DeleteListModal: React.FC<DeleteListModalProps> = ({ list, isOpen, 
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-1.5 rounded-xl bg-amber-600 text-white font-medium text-xs"
+                className="px-4 py-1.5 rounded-xl bg-amber-600 text-white font-medium text-xs active:scale-95 transition-all cursor-pointer"
               >
                 Understood
               </button>
@@ -72,7 +72,7 @@ export const DeleteListModal: React.FC<DeleteListModalProps> = ({ list, isOpen, 
         ) : isNotEmpty ? (
           /* Non-empty List: Requires Slider Confirmation */
           <div className="space-y-4">
-            <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 space-y-1.5 text-xs text-rose-800 dark:text-rose-300">
+            <div className="p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 space-y-1.5 text-xs text-rose-800 dark:text-rose-300">
               <p className="font-bold text-sm text-rose-900 dark:text-rose-200">
                 "{list.name}" contains {itemCount} item{itemCount > 1 ? 's' : ''}!
               </p>
@@ -83,7 +83,7 @@ export const DeleteListModal: React.FC<DeleteListModalProps> = ({ list, isOpen, 
 
             {/* Slider to Confirm */}
             <div className="space-y-1.5 pt-1">
-              <label className="text-[11px] font-bold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                 Slide to confirm deletion:
               </label>
               <SlideToConfirm
@@ -97,7 +97,7 @@ export const DeleteListModal: React.FC<DeleteListModalProps> = ({ list, isOpen, 
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl active:scale-95 transition-all cursor-pointer"
               >
                 Cancel
               </button>
@@ -106,7 +106,7 @@ export const DeleteListModal: React.FC<DeleteListModalProps> = ({ list, isOpen, 
         ) : (
           /* Empty List: Quick Delete with Confirm Button */
           <div className="space-y-4">
-            <p className="text-xs text-zinc-600 dark:text-zinc-300 leading-relaxed">
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
               Are you sure you want to delete <strong>"{list.name}"</strong>? This list has no grocery items.
             </p>
 
@@ -114,7 +114,7 @@ export const DeleteListModal: React.FC<DeleteListModalProps> = ({ list, isOpen, 
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-semibold text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 rounded-xl transition-colors cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl active:scale-95 transition-all cursor-pointer"
               >
                 Cancel
               </button>

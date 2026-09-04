@@ -25,20 +25,20 @@ export const Header: React.FC<HeaderProps> = () => {
   const IconComponent = DEVICE_ICONS[device.icon] || Smartphone;
 
   return (
-    <header className="sticky top-0 z-30 bg-white/85 dark:bg-zinc-950/85 backdrop-blur-md border-b border-zinc-200/60 dark:border-zinc-800/80 transition-colors">
+    <header className="sticky top-0 z-30 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border-b border-slate-200/70 dark:border-slate-800/80 transition-colors">
       <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between gap-2">
         {/* Left: Brand Logo & Live Indicator */}
         <div className="flex items-center gap-2.5">
           <CartSyncLogo size={32} />
           <div className="flex items-center gap-2">
-            <span className="font-bold text-base sm:text-lg tracking-tight text-zinc-900 dark:text-zinc-50">
+            <span className="font-bold text-base sm:text-lg tracking-tight text-slate-900 dark:text-slate-100">
               CartSync
             </span>
 
             {/* Minimalist Live Status Dot */}
             <button
               onClick={openSyncModal}
-              className="flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-100 hover:bg-zinc-200/80 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-zinc-600 dark:text-zinc-400 border border-zinc-200/50 dark:border-zinc-800 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700/70 transition-colors cursor-pointer"
               title="Sync Status (Click for details)"
             >
               {syncStatus === 'connected' ? (
@@ -53,8 +53,8 @@ export const Header: React.FC<HeaderProps> = () => {
                 </>
               ) : (
                 <>
-                  <WifiOff className="w-2.5 h-2.5 text-zinc-400" />
-                  <span className="text-[10px] text-zinc-500">Offline</span>
+                  <WifiOff className="w-2.5 h-2.5 text-slate-400" />
+                  <span className="text-[10px] text-slate-500">Offline</span>
                 </>
               )}
             </button>
@@ -69,7 +69,7 @@ export const Header: React.FC<HeaderProps> = () => {
           {/* Device Attribution Pill */}
           <button
             onClick={openRenameModal}
-            className="flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full bg-zinc-100 hover:bg-zinc-200/80 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-zinc-200/60 dark:border-zinc-800 transition-all text-xs font-medium group cursor-pointer active:scale-95"
+            className="flex items-center gap-1.5 pl-1.5 pr-2.5 py-1 rounded-full bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200/70 dark:border-slate-700/70 transition-all text-xs font-medium group cursor-pointer active:scale-95"
             title="Device Name (Tap to customize)"
           >
             <div
@@ -78,7 +78,7 @@ export const Header: React.FC<HeaderProps> = () => {
             >
               <IconComponent className="w-3 h-3" />
             </div>
-            <span className="text-zinc-700 dark:text-zinc-300 max-w-[100px] truncate text-[12px] font-medium group-hover:text-zinc-900 dark:group-hover:text-white">
+            <span className="text-slate-700 dark:text-slate-300 max-w-[100px] truncate text-[12px] font-medium group-hover:text-slate-900 dark:group-hover:text-white">
               {device.name}
             </span>
           </button>

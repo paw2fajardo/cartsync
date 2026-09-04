@@ -35,8 +35,8 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
     <div
       className={`group relative rounded-2xl border transition-all duration-150 ${
         item.completed
-          ? 'bg-zinc-50/40 dark:bg-zinc-900/20 border-zinc-200/50 dark:border-zinc-800/40 opacity-60'
-          : 'bg-white dark:bg-zinc-900 border-zinc-200/70 dark:border-zinc-800/80 hover:border-zinc-300 dark:hover:border-zinc-700 shadow-[0_1px_3px_rgba(0,0,0,0.02)]'
+          ? 'bg-slate-100/50 dark:bg-slate-900/40 border-slate-200/50 dark:border-slate-800/40 opacity-60 backdrop-blur-xs'
+          : 'bg-white/95 dark:bg-slate-800/75 backdrop-blur-md border-slate-200/80 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600/70 hover:shadow-[0_4px_16px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_6px_24px_rgba(0,0,0,0.35)] shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_rgba(0,0,0,0.25)]'
       }`}
     >
       <div className="p-3 sm:p-3.5 flex items-start gap-2 sm:gap-2.5">
@@ -52,7 +52,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
             className={`w-[22px] h-[22px] rounded-full flex items-center justify-center border transition-all duration-150 group-active/cb:scale-90 ${
               item.completed
                 ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
-                : 'border-zinc-300 dark:border-zinc-600 bg-zinc-50/60 dark:bg-zinc-800/60 group-hover/cb:border-emerald-500 text-transparent'
+                : 'border-slate-300 dark:border-slate-600 bg-slate-50/80 dark:bg-slate-800/80 group-hover/cb:border-emerald-500 text-transparent'
             }`}
           >
             <Check
@@ -72,7 +72,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="w-full text-sm font-medium px-3 py-1.5 rounded-xl border border-emerald-500 bg-zinc-50 dark:bg-zinc-800 text-zinc-900 dark:text-white focus:outline-hidden"
+                className="w-full text-sm font-medium px-3 py-1.5 rounded-xl border border-emerald-500 bg-slate-50 dark:bg-slate-850 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20"
                 autoFocus
               />
               <input
@@ -81,7 +81,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                 onChange={(e) => setEditNote(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Item note (optional)"
-                className="w-full text-xs px-3 py-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 focus:outline-hidden"
+                className="w-full text-xs px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-850 text-slate-700 dark:text-slate-300 focus:outline-hidden"
               />
               <div className="flex items-center gap-2 pt-1">
                 <button
@@ -94,7 +94,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                 <button
                   type="button"
                   onClick={() => setIsEditing(false)}
-                  className="px-3 py-1 bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 rounded-xl text-xs hover:bg-zinc-300 dark:hover:bg-zinc-600 active:scale-95 transition-all cursor-pointer"
+                  className="px-3 py-1 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-xs hover:bg-slate-300 dark:hover:bg-slate-600 active:scale-95 transition-all cursor-pointer"
                 >
                   Cancel
                 </button>
@@ -108,8 +108,8 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                     onClick={() => toggleItem(item.id)}
                     className={`text-[15px] font-semibold tracking-tight cursor-pointer select-none transition-all ${
                       item.completed
-                        ? 'line-through text-zinc-400 dark:text-zinc-500'
-                        : 'text-zinc-900 dark:text-zinc-100 hover:text-emerald-700 dark:hover:text-emerald-400'
+                        ? 'line-through text-slate-400 dark:text-slate-500'
+                        : 'text-slate-800 dark:text-slate-100 hover:text-emerald-700 dark:hover:text-emerald-400'
                     }`}
                   >
                     {item.name}
@@ -118,10 +118,10 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                   {/* Quantity Badge */}
                   {(item.quantity > 1 || item.unit) && (
                     <span
-                      className={`text-[11px] font-semibold px-2 py-0.5 rounded-md ${
+                      className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border ${
                         item.completed
-                          ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-400'
-                          : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300'
+                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200/50 dark:border-slate-700/50'
+                          : 'bg-slate-100 dark:bg-slate-700/70 text-slate-700 dark:text-slate-200 border-slate-200/60 dark:border-slate-600/60'
                       }`}
                     >
                       {item.quantity} {item.unit || ''}
@@ -141,14 +141,14 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
 
               {/* Note if available */}
               {item.note && (
-                <div className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400 pt-0.5">
+                <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 pt-0.5">
                   <StickyNote className="w-3 h-3 text-amber-500 shrink-0" />
                   <span className="italic">{item.note}</span>
                 </div>
               )}
 
               {/* Attribution & Actions Footer */}
-              <div className="flex items-center justify-between pt-1 text-[11px] text-zinc-500 dark:text-zinc-400">
+              <div className="flex items-center justify-between pt-1 text-[11px] text-slate-500 dark:text-slate-400">
                 {/* Device attribution */}
                 <div className="flex items-center gap-1.5">
                   <span
@@ -173,7 +173,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                             quantity: Math.max(1, item.quantity - 1),
                           })
                         }
-                        className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-90 transition-all cursor-pointer"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 active:scale-90 transition-all cursor-pointer"
                         title="Decrease"
                         aria-label="Decrease quantity"
                       >
@@ -186,7 +186,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                             quantity: item.quantity + 1,
                           })
                         }
-                        className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-90 transition-all cursor-pointer"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 active:scale-90 transition-all cursor-pointer"
                         title="Increase"
                         aria-label="Increase quantity"
                       >
@@ -195,7 +195,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                       <button
                         type="button"
                         onClick={() => setIsEditing(true)}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 active:scale-90 transition-all cursor-pointer"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/70 active:scale-90 transition-all cursor-pointer"
                         title="Edit"
                         aria-label="Edit item"
                       >
@@ -206,7 +206,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                   <button
                     type="button"
                     onClick={() => deleteItem(item.id)}
-                    className="w-7 h-7 flex items-center justify-center rounded-lg text-zinc-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-90 transition-all cursor-pointer"
+                    className="w-7 h-7 flex items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-90 transition-all cursor-pointer"
                     title="Delete"
                     aria-label="Delete item"
                   >

@@ -171,17 +171,82 @@ export function parseItemInput(raw: string): ParsedItemInput {
 }
 
 export const CATEGORY_COLORS: Record<ItemCategory, { bg: string; text: string; border: string; dot: string }> = {
-  Produce: { bg: 'bg-emerald-50 dark:bg-emerald-950/40', text: 'text-emerald-700 dark:text-emerald-300', border: 'border-emerald-200 dark:border-emerald-800', dot: 'bg-emerald-500' },
-  'Dairy & Eggs': { bg: 'bg-sky-50 dark:bg-sky-950/40', text: 'text-sky-700 dark:text-sky-300', border: 'border-sky-200 dark:border-sky-800', dot: 'bg-sky-500' },
-  Bakery: { bg: 'bg-amber-50 dark:bg-amber-950/40', text: 'text-amber-700 dark:text-amber-300', border: 'border-amber-200 dark:border-amber-800', dot: 'bg-amber-500' },
-  'Meat & Seafood': { bg: 'bg-rose-50 dark:bg-rose-950/40', text: 'text-rose-700 dark:text-rose-300', border: 'border-rose-200 dark:border-rose-800', dot: 'bg-rose-500' },
-  Pantry: { bg: 'bg-orange-50 dark:bg-orange-950/40', text: 'text-orange-700 dark:text-orange-300', border: 'border-orange-200 dark:border-orange-800', dot: 'bg-orange-500' },
-  Frozen: { bg: 'bg-cyan-50 dark:bg-cyan-950/40', text: 'text-cyan-700 dark:text-cyan-300', border: 'border-cyan-200 dark:border-cyan-800', dot: 'bg-cyan-500' },
-  'Snacks & Sweets': { bg: 'bg-purple-50 dark:bg-purple-950/40', text: 'text-purple-700 dark:text-purple-300', border: 'border-purple-200 dark:border-purple-800', dot: 'bg-purple-500' },
-  Beverages: { bg: 'bg-indigo-50 dark:bg-indigo-950/40', text: 'text-indigo-700 dark:text-indigo-300', border: 'border-indigo-200 dark:border-indigo-800', dot: 'bg-indigo-500' },
-  'Household & Cleaning': { bg: 'bg-teal-50 dark:bg-teal-950/40', text: 'text-teal-700 dark:text-teal-300', border: 'border-teal-200 dark:border-teal-800', dot: 'bg-teal-500' },
-  'Pharmacy & Health': { bg: 'bg-red-50 dark:bg-red-950/40', text: 'text-red-700 dark:text-red-300', border: 'border-red-200 dark:border-red-800', dot: 'bg-red-500' },
-  'Personal Care': { bg: 'bg-pink-50 dark:bg-pink-950/40', text: 'text-pink-700 dark:text-pink-300', border: 'border-pink-200 dark:border-pink-800', dot: 'bg-pink-500' },
-  'Baby & Pet': { bg: 'bg-lime-50 dark:bg-lime-950/40', text: 'text-lime-700 dark:text-lime-300', border: 'border-lime-200 dark:border-lime-800', dot: 'bg-lime-500' },
-  Other: { bg: 'bg-zinc-100 dark:bg-zinc-800', text: 'text-zinc-700 dark:text-zinc-300', border: 'border-zinc-200 dark:border-zinc-700', dot: 'bg-zinc-500' },
+  Produce: { 
+    bg: 'bg-emerald-50 dark:bg-emerald-950/50', 
+    text: 'text-emerald-700 dark:text-emerald-300', 
+    border: 'border-emerald-200 dark:border-emerald-800/60', 
+    dot: 'bg-emerald-500' 
+  },
+  'Dairy & Eggs': { 
+    bg: 'bg-sky-50 dark:bg-sky-950/50', 
+    text: 'text-sky-700 dark:text-sky-300', 
+    border: 'border-sky-200 dark:border-sky-800/60', 
+    dot: 'bg-sky-500' 
+  },
+  Bakery: { 
+    bg: 'bg-amber-50 dark:bg-amber-950/50', 
+    text: 'text-amber-700 dark:text-amber-300', 
+    border: 'border-amber-200 dark:border-amber-800/60', 
+    dot: 'bg-amber-500' 
+  },
+  'Meat & Seafood': { 
+    bg: 'bg-rose-50 dark:bg-rose-950/50', 
+    text: 'text-rose-700 dark:text-rose-300', 
+    border: 'border-rose-200 dark:border-rose-800/60', 
+    dot: 'bg-rose-500' 
+  },
+  Pantry: { 
+    bg: 'bg-orange-50 dark:bg-orange-950/50', 
+    text: 'text-orange-700 dark:text-orange-300', 
+    border: 'border-orange-200 dark:border-orange-800/60', 
+    dot: 'bg-orange-500' 
+  },
+  Frozen: { 
+    bg: 'bg-cyan-50 dark:bg-cyan-950/50', 
+    text: 'text-cyan-700 dark:text-cyan-300', 
+    border: 'border-cyan-200 dark:border-cyan-800/60', 
+    dot: 'bg-cyan-500' 
+  },
+  'Snacks & Sweets': { 
+    bg: 'bg-purple-50 dark:bg-purple-950/50', 
+    text: 'text-purple-700 dark:text-purple-300', 
+    border: 'border-purple-200 dark:border-purple-800/60', 
+    dot: 'bg-purple-500' 
+  },
+  Beverages: { 
+    bg: 'bg-indigo-50 dark:bg-indigo-950/50', 
+    text: 'text-indigo-700 dark:text-indigo-300', 
+    border: 'border-indigo-200 dark:border-indigo-800/60', 
+    dot: 'bg-indigo-500' 
+  },
+  'Household & Cleaning': { 
+    bg: 'bg-teal-50 dark:bg-teal-950/50', 
+    text: 'text-teal-700 dark:text-teal-300', 
+    border: 'border-teal-200 dark:border-teal-800/60', 
+    dot: 'bg-teal-500' 
+  },
+  'Pharmacy & Health': { 
+    bg: 'bg-red-50 dark:bg-red-950/50', 
+    text: 'text-red-700 dark:text-red-300', 
+    border: 'border-red-200 dark:border-red-800/60', 
+    dot: 'bg-red-500' 
+  },
+  'Personal Care': { 
+    bg: 'bg-pink-50 dark:bg-pink-950/50', 
+    text: 'text-pink-700 dark:text-pink-300', 
+    border: 'border-pink-200 dark:border-pink-800/60', 
+    dot: 'bg-pink-500' 
+  },
+  'Baby & Pet': { 
+    bg: 'bg-lime-50 dark:bg-lime-950/50', 
+    text: 'text-lime-700 dark:text-lime-300', 
+    border: 'border-lime-200 dark:border-lime-800/60', 
+    dot: 'bg-lime-500' 
+  },
+  Other: { 
+    bg: 'bg-slate-100 dark:bg-slate-800', 
+    text: 'text-slate-700 dark:text-slate-300', 
+    border: 'border-slate-200 dark:border-slate-700', 
+    dot: 'bg-slate-500' 
+  },
 };
