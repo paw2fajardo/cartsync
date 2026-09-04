@@ -29,11 +29,11 @@ const CATEGORY_KEYWORDS: Record<ItemCategory, string[]> = {
     'jam', 'honey', 'mayo', 'mayonnaise', 'ketchup', 'mustard', 'taco seasoning', 'spice', 'spices'
   ],
   Frozen: [
-    'ice cream', 'frozen pizza', 'frozen peas', 'frozen berries', 'frozen vegetables', 'waffles',
+    'frozen', 'ice cream', 'frozen pizza', 'frozen peas', 'frozen berries', 'frozen vegetables', 'waffles',
     'frozen fries', 'dumplings', 'popsicles', 'frozen corn', 'frozen shrimp'
   ],
   'Snacks & Sweets': [
-    'chips', 'potato chips', 'tortilla chips', 'popcorn', 'pretzels', 'nuts', 'almonds', 'peanuts',
+    'chips', 'potato chips', 'tortilla chips', 'popcorn', 'pretzel', 'pretzels', 'nuts', 'almonds', 'peanuts',
     'cashews', 'cookies', 'cookie', 'chocolate', 'candy', 'crackers', 'granola bar', 'protein bar',
     'gummies', 'snack'
   ],
@@ -48,8 +48,9 @@ const CATEGORY_KEYWORDS: Record<ItemCategory, string[]> = {
     'ziploc', 'ziploc bags', 'cleaning spray', 'wipes', 'disinfectant', 'bleach', 'dishwasher pods'
   ],
   'Pharmacy & Health': [
-    'tylenol', 'advil', 'ibuprofen', 'aspirin', 'vitamins', 'vitamin c', 'vitamin d', 'bandaids',
-    'band-aids', 'cough drops', 'allergy', 'medicine', 'toothpaste', 'floss', 'first aid', 'sunscreen'
+    'tylenol', 'advil', 'ibuprofen', 'aspirin', 'vitamins', 'vitamin c', 'vitamin d', 'vitamin d3',
+    'vitamin', 'bandaids', 'band-aids', 'cough drops', 'allergy', 'medicine', 'toothpaste', 'floss',
+    'first aid', 'sunscreen'
   ],
   'Personal Care': [
     'shampoo', 'conditioner', 'body wash', 'soap', 'deodorant', 'razor', 'shaving cream',
@@ -57,22 +58,45 @@ const CATEGORY_KEYWORDS: Record<ItemCategory, string[]> = {
   ],
   'Baby & Pet': [
     'diapers', 'baby wipes', 'baby food', 'formula', 'dog food', 'cat food', 'dog treats',
-    'cat litter', 'pet treats'
+    'cat treats', 'pet treats', 'cat litter'
   ],
   Other: []
 };
 
-export function categorizeItem(name: string): ItemCategory {
-  const lower = name.toLowerCase().trim();
+// Flatten and prioritize multi-word and longer phrases first
+const SORTED_KEYWORD_RULES: Array<{ keyword: string; category: ItemCategory; regex: RegExp }> = (() => {
+  const rules: Array<{ keyword: string; category: ItemCategory; regex: RegExp }> = [];
 
   for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
     if (category === 'Other') continue;
     for (const kw of keywords) {
-      // Check full word boundary match or substring
-      const regex = new RegExp(`\\b${kw}\\b`, 'i');
-      if (regex.test(lower) || lower.includes(kw)) {
-        return category as ItemCategory;
-      }
+      const escaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // Require word boundaries so 'ham' does not match 'shampoo' and 'oil' does not match 'toilet'
+      const regex = new RegExp(`\\b${escaped}s?\\b`, 'i');
+      rules.push({
+        keyword: kw,
+        category: category as ItemCategory,
+        regex,
+      });
+    }
+  }
+
+  // Sort: multi-word phrases first, then longer keywords first
+  return rules.sort((a, b) => {
+    const aWords = a.keyword.split(' ').length;
+    const bWords = b.keyword.split(' ').length;
+    if (aWords !== bWords) return bWords - aWords;
+    return b.keyword.length - a.keyword.length;
+  });
+})();
+
+export function categorizeItem(name: string): ItemCategory {
+  const trimmed = name.trim();
+  if (!trimmed) return 'Other';
+
+  for (const rule of SORTED_KEYWORD_RULES) {
+    if (rule.regex.test(trimmed)) {
+      return rule.category;
     }
   }
 
