@@ -172,8 +172,37 @@ wss.on('connection', (ws, req) => {
           break;
         }
 
+        case 'HOUSEHOLD_NAME_UPDATE': {
+          if (payload && payload.householdName) {
+            const updatedName = cartSyncDb.setHouseholdName(payload.householdName);
+            broadcast({
+              type: 'HOUSEHOLD_NAME_UPDATE',
+              deviceId: deviceId || 'server',
+              timestamp: Date.now(),
+              payload: { householdName: updatedName },
+            });
+          }
+          break;
+        }
+
+        case 'ADMIN_PIN_UPDATE': {
+          if (payload) {
+            cartSyncDb.setAdminPin(payload.pinHash || null);
+            broadcast({
+              type: 'ADMIN_PIN_UPDATE',
+              deviceId: deviceId || 'server',
+              timestamp: Date.now(),
+              payload: { adminPinConfigured: Boolean(payload.pinHash) },
+            });
+          }
+          break;
+        }
+
         case 'BATCH_UPDATE': {
           if (payload) {
+            if (payload.householdName) {
+              cartSyncDb.setHouseholdName(payload.householdName);
+            }
             if (Array.isArray(payload.lists)) {
               for (const l of payload.lists) {
                 cartSyncDb.upsertList(l);

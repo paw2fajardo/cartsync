@@ -78,6 +78,8 @@ export interface SyncMessage {
     | 'LIST_DELETE'
     | 'AUTO_LIST_RULE_UPSERT'
     | 'AUTO_LIST_RULE_DELETE'
+    | 'HOUSEHOLD_NAME_UPDATE'
+    | 'ADMIN_PIN_UPDATE'
     | 'BATCH_UPDATE'
     | 'DEVICE_PING'
     | 'DEVICE_LIST';
@@ -88,6 +90,8 @@ export interface SyncMessage {
 
 export interface HouseholdState {
   version: number;
+  householdName?: string;
+  adminPinConfigured?: boolean;
   lists: GroceryList[];
   items: GroceryItem[];
   devices: DeviceProfile[];

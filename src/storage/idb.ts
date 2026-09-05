@@ -51,9 +51,37 @@ function openDB(): Promise<IDBDatabase> {
 }
 
 // Fallback to localStorage if IndexedDB is blocked in some environments
-const LS_LISTS_KEY = 'cartsync_lists_v1';
-const LS_ITEMS_KEY = 'cartsync_items_v1';
-const LS_RULES_KEY = 'cartsync_auto_list_rules_v1';
+export const LS_LISTS_KEY = 'cartsync_lists_v1';
+export const LS_ITEMS_KEY = 'cartsync_items_v1';
+export const LS_RULES_KEY = 'cartsync_auto_list_rules_v1';
+export const LS_INITIALIZED_KEY = 'cartsync_storage_initialized_v1';
+
+export function getCachedLists(): GroceryList[] {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(LS_LISTS_KEY) : null;
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function getCachedItems(): GroceryItem[] {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(LS_ITEMS_KEY) : null;
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function getCachedRules(): AutoListRule[] {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(LS_RULES_KEY) : null;
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
 
 export async function getAllLists(): Promise<GroceryList[]> {
   try {

@@ -18,6 +18,8 @@ type SyncListener = (event: {
   deletedListId?: string;
   deletedRuleId?: string;
   devices?: DeviceProfile[];
+  householdName?: string;
+  adminPinConfigured?: boolean;
 }) => void;
 
 type StatusListener = (status: SyncStatus) => void;
@@ -239,6 +241,24 @@ class SyncClient {
         );
         break;
 
+      case 'HOUSEHOLD_NAME_UPDATE':
+        this.syncListeners.forEach((l) =>
+          l({
+            type: 'HOUSEHOLD_NAME_UPDATE',
+            householdName: msg.payload?.householdName,
+          })
+        );
+        break;
+
+      case 'ADMIN_PIN_UPDATE':
+        this.syncListeners.forEach((l) =>
+          l({
+            type: 'ADMIN_PIN_UPDATE',
+            adminPinConfigured: msg.payload?.adminPinConfigured,
+          })
+        );
+        break;
+
       case 'BATCH_UPDATE':
         if (msg.payload) {
           this.syncListeners.forEach((l) =>
@@ -250,6 +270,24 @@ class SyncClient {
         }
         break;
     }
+  }
+
+  public broadcastHouseholdName(name: string): void {
+    this.send({
+      type: 'HOUSEHOLD_NAME_UPDATE',
+      deviceId: this.currentDevice ? this.currentDevice.id : 'unknown',
+      timestamp: Date.now(),
+      payload: { householdName: name },
+    });
+  }
+
+  public broadcastAdminPin(pinHash: string | null): void {
+    this.send({
+      type: 'ADMIN_PIN_UPDATE',
+      deviceId: this.currentDevice ? this.currentDevice.id : 'unknown',
+      timestamp: Date.now(),
+      payload: { pinHash },
+    });
   }
 
   public send(msg: SyncMessage): void {

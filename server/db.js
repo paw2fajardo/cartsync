@@ -88,6 +88,15 @@ export class CartSyncDatabase {
       );
     `);
 
+    // 5. Household Settings & Admin Meta Table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS settings (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL,
+        updated_at INTEGER NOT NULL
+      );
+    `);
+
     // Seed default data if database is fresh
     this.seedDefaultsIfEmpty();
   }
@@ -357,9 +366,22 @@ export class CartSyncDatabase {
       }));
     } catch (_) {}
 
+    let householdName = 'Our Home';
+    let adminPinConfigured = false;
+    try {
+      const hRow = this.db.prepare("SELECT value FROM settings WHERE key = 'household_name'").get();
+      if (hRow && hRow.value) {
+        householdName = hRow.value;
+      }
+      const pinRow = this.db.prepare("SELECT value FROM settings WHERE key = 'admin_pin_hash'").get();
+      adminPinConfigured = Boolean(pinRow && pinRow.value);
+    } catch (_) {}
+
     return {
       version: 2,
       lastSyncedAt: Date.now(),
+      householdName,
+      adminPinConfigured,
       lists,
       items,
       devices,
@@ -489,7 +511,45 @@ export class CartSyncDatabase {
     stmt.run(ruleId);
   }
 
-  syncState({ lists, items, device, autoListRules }) {
+  setHouseholdName(name) {
+    const trimmed = (name || '').trim() || 'Our Home';
+    const stmt = this.db.prepare(`
+      INSERT INTO settings (key, value, updated_at)
+      VALUES ('household_name', ?, ?)
+      ON CONFLICT(key) DO UPDATE SET
+        value = excluded.value,
+        updated_at = excluded.updated_at
+    `);
+    stmt.run(trimmed, Date.now());
+    return trimmed;
+  }
+
+  setAdminPin(pinHash) {
+    if (!pinHash) {
+      this.db.prepare("DELETE FROM settings WHERE key = 'admin_pin_hash'").run();
+      return false;
+    }
+    const stmt = this.db.prepare(`
+      INSERT INTO settings (key, value, updated_at)
+      VALUES ('admin_pin_hash', ?, ?)
+      ON CONFLICT(key) DO UPDATE SET
+        value = excluded.value,
+        updated_at = excluded.updated_at
+    `);
+    stmt.run(pinHash, Date.now());
+    return true;
+  }
+
+  verifyAdminPin(pinHash) {
+    const row = this.db.prepare("SELECT value FROM settings WHERE key = 'admin_pin_hash'").get();
+    if (!row || !row.value) return true; // No admin pin configured, anyone can act as admin
+    return row.value === pinHash;
+  }
+
+  syncState({ lists, items, device, autoListRules, householdName }) {
+    if (householdName) {
+      this.setHouseholdName(householdName);
+    }
     if (lists && Array.isArray(lists)) {
       for (const l of lists) {
         this.upsertList(l);

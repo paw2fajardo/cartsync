@@ -1,14 +1,20 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { syncClient } from '../sync/syncClient';
 
 interface AuthContextType {
   isAuthenticated: boolean;
   isLocked: boolean;
   hasPinSet: boolean;
+  isAdmin: boolean;
+  adminPinConfigured: boolean;
   householdName: string;
   autoLockMinutes: number; // 0 = never, 1 = 1m, 15 = 15m, 60 = 1h
   unlock: (pin: string) => boolean;
   setPin: (newPin: string, currentPin?: string) => boolean;
   removePin: (currentPin: string) => boolean;
+  promoteToAdmin: (adminPin: string) => boolean;
+  setAdminMasterPin: (newPin: string, currentPin?: string) => boolean;
+  revokeAdmin: () => void;
   lock: () => void;
   setHouseholdName: (name: string) => void;
   setAutoLockMinutes: (minutes: number) => void;
@@ -19,24 +25,14 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const PIN_STORAGE_KEY = 'cartsync_household_pin';
 const SESSION_STORAGE_KEY = 'cartsync_auth_session';
 const HOUSEHOLD_NAME_KEY = 'cartsync_household_name';
+const IS_ADMIN_KEY = 'cartsync_is_admin_v1';
 const AUTOLOCK_KEY = 'cartsync_autolock_minutes';
 const LAST_ACTIVE_KEY = 'cartsync_last_active_timestamp';
 
 // Simple fast SHA-256 hash or fallback for PIN verification
-async function hashPin(pin: string): Promise<string> {
-  if (typeof crypto !== 'undefined' && crypto.subtle) {
-    try {
-      const msgUint8 = new TextEncoder().encode(`cartsync_${pin}_salt`);
-      const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-      const hashArray = Array.from(new Uint8Array(hashBuffer));
-      return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
-    } catch {
-      // Fallback
-    }
-  }
-  // Synchronous simple hash fallback for test environments without subtle crypto
+function hashPinSync(pin: string): string {
   let hash = 0;
-  const str = `cartsync_${pin}_salt`;
+  const str = `cartsync_${pin.trim()}_salt`;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
     hash = (hash << 5) - hash + char;
@@ -47,27 +43,65 @@ async function hashPin(pin: string): Promise<string> {
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [storedPinHash, setStoredPinHash] = useState<string | null>(() => {
-    return localStorage.getItem(PIN_STORAGE_KEY);
+    return typeof window !== 'undefined' ? localStorage.getItem(PIN_STORAGE_KEY) : null;
   });
 
   const [householdName, setHouseholdNameState] = useState<string>(() => {
-    return localStorage.getItem(HOUSEHOLD_NAME_KEY) || 'Our Home';
+    return (typeof window !== 'undefined' ? localStorage.getItem(HOUSEHOLD_NAME_KEY) : null) || 'Our Home';
+  });
+
+  const [adminPinConfigured, setAdminPinConfigured] = useState<boolean>(false);
+
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    // If no admin PIN is configured yet, or previously verified admin
+    return typeof window !== 'undefined' ? localStorage.getItem(IS_ADMIN_KEY) === 'true' : false;
   });
 
   const [autoLockMinutes, setAutoLockMinutesState] = useState<number>(() => {
-    const saved = localStorage.getItem(AUTOLOCK_KEY);
+    const saved = typeof window !== 'undefined' ? localStorage.getItem(AUTOLOCK_KEY) : null;
     return saved !== null ? parseInt(saved, 10) : 0; // Default: 0 (Manual lock / session based)
   });
 
   const [isLocked, setIsLocked] = useState<boolean>(() => {
-    const hasPin = Boolean(localStorage.getItem(PIN_STORAGE_KEY));
+    const hasPin = typeof window !== 'undefined' && Boolean(localStorage.getItem(PIN_STORAGE_KEY));
     if (!hasPin) return false;
-    const sessionActive = localStorage.getItem(SESSION_STORAGE_KEY) === 'true';
+    const sessionActive = typeof window !== 'undefined' && localStorage.getItem(SESSION_STORAGE_KEY) === 'true';
     return !sessionActive;
   });
 
   const hasPinSet = Boolean(storedPinHash);
   const isAuthenticated = !hasPinSet || !isLocked;
+
+  // Listen to WebSocket sync events for real-time Household Name updates
+  useEffect(() => {
+    const unsubscribe = syncClient.onSync((event) => {
+      if (event.type === 'SYNC_STATE' && event.state) {
+        if (event.state.householdName) {
+          setHouseholdNameState(event.state.householdName);
+          localStorage.setItem(HOUSEHOLD_NAME_KEY, event.state.householdName);
+        }
+        if (event.state.adminPinConfigured !== undefined) {
+          setAdminPinConfigured(event.state.adminPinConfigured);
+          if (!event.state.adminPinConfigured) {
+            // If no admin pin configured on server, grant default admin access
+            setIsAdmin(true);
+            localStorage.setItem(IS_ADMIN_KEY, 'true');
+          }
+        }
+      } else if (event.type === 'HOUSEHOLD_NAME_UPDATE' && event.householdName) {
+        setHouseholdNameState(event.householdName);
+        localStorage.setItem(HOUSEHOLD_NAME_KEY, event.householdName);
+      } else if (event.type === 'ADMIN_PIN_UPDATE') {
+        setAdminPinConfigured(Boolean(event.adminPinConfigured));
+        if (!event.adminPinConfigured) {
+          setIsAdmin(true);
+          localStorage.setItem(IS_ADMIN_KEY, 'true');
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   // Auto-lock timer tracker
   useEffect(() => {
@@ -104,37 +138,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     // Direct match or hash comparison
-    const rawMatch = storedPinHash === enteredPin;
-    let hashMatch = false;
-
-    // Synchronous check against known fast hash
-    let hash = 0;
-    const str = `cartsync_${enteredPin}_salt`;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash |= 0;
-    }
-    const syncHash = `h_${Math.abs(hash)}`;
-    if (storedPinHash === syncHash) {
-      hashMatch = true;
-    }
-
-    if (rawMatch || hashMatch) {
+    const syncHash = hashPinSync(enteredPin);
+    if (storedPinHash === enteredPin || storedPinHash === syncHash) {
       setIsLocked(false);
       localStorage.setItem(SESSION_STORAGE_KEY, 'true');
       localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
       return true;
     }
-
-    // Attempt subtle crypto async match in background
-    hashPin(enteredPin).then((h) => {
-      if (storedPinHash === h) {
-        setIsLocked(false);
-        localStorage.setItem(SESSION_STORAGE_KEY, 'true');
-        localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
-      }
-    });
 
     return false;
   };
@@ -188,6 +198,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const trimmed = name.trim() || 'Our Home';
     setHouseholdNameState(trimmed);
     localStorage.setItem(HOUSEHOLD_NAME_KEY, trimmed);
+    syncClient.broadcastHouseholdName(trimmed);
+  };
+
+  const promoteToAdmin = (adminPin: string): boolean => {
+    if (!adminPinConfigured) {
+      setIsAdmin(true);
+      localStorage.setItem(IS_ADMIN_KEY, 'true');
+      return true;
+    }
+
+    const enteredHash = hashPinSync(adminPin);
+    // Compare with stored or server hash
+    if (storedPinHash === enteredHash || unlock(adminPin)) {
+      setIsAdmin(true);
+      localStorage.setItem(IS_ADMIN_KEY, 'true');
+      return true;
+    }
+    return false;
+  };
+
+  const setAdminMasterPin = (newPin: string, currentPin?: string): boolean => {
+    if (adminPinConfigured && currentPin !== undefined) {
+      const isCurrentValid = unlock(currentPin) || (storedPinHash === hashPinSync(currentPin));
+      if (!isCurrentValid) return false;
+    }
+
+    const trimmed = newPin.trim();
+    if (!trimmed || trimmed.length < 4) return false;
+
+    const syncHash = hashPinSync(trimmed);
+    setStoredPinHash(syncHash);
+    localStorage.setItem(PIN_STORAGE_KEY, syncHash);
+    localStorage.setItem(IS_ADMIN_KEY, 'true');
+    setIsAdmin(true);
+    setAdminPinConfigured(true);
+
+    syncClient.broadcastAdminPin(syncHash);
+    return true;
+  };
+
+  const revokeAdmin = () => {
+    setIsAdmin(false);
+    localStorage.removeItem(IS_ADMIN_KEY);
   };
 
   const setAutoLockMinutes = (minutes: number) => {
@@ -201,11 +254,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAuthenticated,
         isLocked,
         hasPinSet,
+        isAdmin,
+        adminPinConfigured,
         householdName,
         autoLockMinutes,
         unlock,
         setPin,
         removePin,
+        promoteToAdmin,
+        setAdminMasterPin,
+        revokeAdmin,
         lock,
         setHouseholdName,
         setAutoLockMinutes,

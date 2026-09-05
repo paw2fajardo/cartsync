@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, Trash2, Plus, Minus, Edit3, StickyNote, X } from 'lucide-react';
+import { Check, Trash2, Plus, Minus, Edit3, StickyNote, X, ArrowRight, FolderSync } from 'lucide-react';
 import { GroceryItem, ItemCategory } from '../types';
 import { useGrocery } from '../context/GroceryContext';
 import { useDevice } from '../context/DeviceContext';
-import { CATEGORY_COLORS } from '../utils/smartCategorizer';
+import { CATEGORY_COLORS, categorizeItem } from '../utils/smartCategorizer';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+
+const AUTO_REORGANIZE_STORAGE_KEY = 'cartsync_auto_reorganize_category_v1';
 
 const ALL_CATEGORIES: ItemCategory[] = [
   'Produce',
@@ -34,6 +36,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
     updateItem,
     deleteItem,
     lists,
+    autoListRules,
     addAutoListRule,
     activeEditingItemId,
     setActiveEditingItemId,
@@ -48,8 +51,15 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
   const [editListId, setEditListId] = useState<string>(item.listId);
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false);
 
+  // Category suggestion prompt state
+  const [categorySuggestionPrompt, setCategorySuggestionPrompt] = useState<{
+    trimmedName: string;
+    suggestedCategory: ItemCategory;
+  } | null>(null);
+  const [alwaysAutoMove, setAlwaysAutoMove] = useState(false);
+
   // Lock canvas scroll whenever edit modal or quick category bottom sheet is open
-  useBodyScrollLock(isInlineEditing || isCategoryDropdownOpen);
+  useBodyScrollLock(isInlineEditing || isCategoryDropdownOpen || Boolean(categorySuggestionPrompt));
 
   const catStyle = CATEGORY_COLORS[item.category] || CATEGORY_COLORS.Other;
 
@@ -136,24 +146,69 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
     };
   }, [isCategoryDropdownOpen]);
 
-  const handleSaveInlineEdit = () => {
-    if (editName.trim()) {
-      const trimmedName = editName.trim();
-      updateItem(item.id, {
-        name: trimmedName,
-        quantity: Math.max(1, editQuantity),
-        unit: editUnit.trim() || undefined,
-        note: editNote.trim() || undefined,
-        category: editCategory,
-        listId: editListId,
-      });
+  const commitItemSave = (finalCategory: ItemCategory) => {
+    const trimmedName = editName.trim();
+    if (!trimmedName) return;
 
-      // If category or list was changed from Other or updated, automatically learn rule
-      if (editCategory !== 'Other' || editListId !== item.listId) {
-        addAutoListRule(trimmedName, editListId, editCategory);
+    updateItem(item.id, {
+      name: trimmedName,
+      quantity: Math.max(1, editQuantity),
+      unit: editUnit.trim() || undefined,
+      note: editNote.trim() || undefined,
+      category: finalCategory,
+      listId: editListId,
+    });
+
+    if (finalCategory !== 'Other' || editListId !== item.listId) {
+      addAutoListRule(trimmedName, editListId, finalCategory);
+    }
+
+    setCategorySuggestionPrompt(null);
+    setActiveEditingItemId(null);
+  };
+
+  const handleSaveInlineEdit = () => {
+    if (!editName.trim()) {
+      setActiveEditingItemId(null);
+      return;
+    }
+
+    const trimmedName = editName.trim();
+    const isNameChanged = trimmedName.toLowerCase() !== item.name.toLowerCase();
+    const isCategoryUntouchedByUser = editCategory === item.category;
+
+    // Check if the corrected name maps to a known category different from current
+    if (isNameChanged && isCategoryUntouchedByUser) {
+      const suggestedCategory = categorizeItem(trimmedName, autoListRules);
+      if (suggestedCategory !== 'Other' && suggestedCategory !== item.category) {
+        const isAutoMoveEnabled = typeof window !== 'undefined' && localStorage.getItem(AUTO_REORGANIZE_STORAGE_KEY) === 'true';
+        if (isAutoMoveEnabled) {
+          // Device has opted into always auto-moving
+          commitItemSave(suggestedCategory);
+          return;
+        }
+
+        // Show prompt to ask user
+        setCategorySuggestionPrompt({
+          trimmedName,
+          suggestedCategory,
+        });
+        return;
       }
     }
-    setActiveEditingItemId(null);
+
+    commitItemSave(editCategory);
+  };
+
+  const handleConfirmCategoryMove = (shouldMove: boolean) => {
+    if (!categorySuggestionPrompt) return;
+
+    if (alwaysAutoMove && typeof window !== 'undefined') {
+      localStorage.setItem(AUTO_REORGANIZE_STORAGE_KEY, 'true');
+    }
+
+    const finalCat = shouldMove ? categorySuggestionPrompt.suggestedCategory : editCategory;
+    commitItemSave(finalCat);
   };
 
   const handleQuickCategoryChange = (newCat: ItemCategory) => {
@@ -171,55 +226,6 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
     if (e.key === 'Escape') setActiveEditingItemId(null);
   };
 
-  // Touch swipe handling for mobile swipe-to-reveal delete
-  const [swipeOffset, setSwipeOffset] = useState(0);
-  const [isSwiping, setIsSwiping] = useState(false);
-  const touchStartRef = React.useRef<{ x: number; y: number; isHorizontal?: boolean } | null>(null);
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length !== 1) return;
-    touchStartRef.current = {
-      x: e.touches[0].clientX,
-      y: e.touches[0].clientY,
-    };
-    setIsSwiping(false);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!touchStartRef.current || e.touches.length !== 1) return;
-    const touch = e.touches[0];
-    const dx = touch.clientX - touchStartRef.current.x;
-    const dy = touch.clientY - touchStartRef.current.y;
-
-    // Detect if this is predominantly horizontal intent (avoid interfering with vertical scroll)
-    if (touchStartRef.current.isHorizontal === undefined) {
-      if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-        touchStartRef.current.isHorizontal = Math.abs(dx) > Math.abs(dy);
-      }
-    }
-
-    if (touchStartRef.current.isHorizontal) {
-      setIsSwiping(true);
-      // We only allow swiping left (negative dx) up to -80px
-      if (dx < 0) {
-        setSwipeOffset(Math.max(-80, dx));
-      } else {
-        // If swiping right when revealed, collapse it back
-        setSwipeOffset(Math.max(0, dx));
-      }
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (swipeOffset < -40) {
-      setSwipeOffset(-72); // Lock open at reveal button width
-    } else {
-      setSwipeOffset(0); // Snap shut
-    }
-    touchStartRef.current = null;
-    setIsSwiping(false);
-  };
-
   const openEditModal = () => {
     setEditName(item.name);
     setEditQuantity(item.quantity);
@@ -232,34 +238,8 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
 
   return (
     <div className="relative group">
-      {/* Background Swipe Action Tray (Revealed only during active swipe left) */}
-      {swipeOffset < 0 && (
-        <div className="absolute inset-y-0 right-0 w-24 bg-rose-500 rounded-2xl sm:rounded-3xl flex items-center justify-end pr-5 text-white z-0 animate-in fade-in duration-150">
-          <button
-            type="button"
-            onClick={() => {
-              setSwipeOffset(0);
-              deleteItem(item.id);
-            }}
-            className="flex flex-col items-center justify-center gap-1 font-semibold text-[11px] active:scale-90 transition-transform cursor-pointer"
-            title="Delete item"
-            aria-label="Confirm delete item"
-          >
-            <Trash2 className="w-5 h-5 stroke-[2.5]" />
-            <span>Delete</span>
-          </button>
-        </div>
-      )}
-
       {/* Foreground Card Surface */}
       <div
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        style={{
-          transform: `translateX(${swipeOffset}px)`,
-          transition: isSwiping ? 'none' : 'transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1)',
-        }}
         className={`relative z-10 rounded-2xl sm:rounded-3xl border transition-all duration-200 ${
           item.completed
             ? 'bg-slate-100/70 dark:bg-slate-900/60 border-slate-200/60 dark:border-slate-800/60 opacity-60'
@@ -270,13 +250,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
           {/* Compact Round Checkbox with ergonomic touch zone */}
           <button
             type="button"
-            onClick={() => {
-              if (swipeOffset !== 0) {
-                setSwipeOffset(0);
-                return;
-              }
-              toggleItem(item.id);
-            }}
+            onClick={() => toggleItem(item.id)}
             className="w-8 h-8 -my-1 -ml-1 flex items-center justify-center shrink-0 cursor-pointer group/cb"
             title={item.completed ? 'Mark as active' : 'Mark as completed'}
             aria-label={item.completed ? 'Mark as active' : 'Mark as completed'}
@@ -299,13 +273,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
           {/* Content Area: Tap to open Edit Bottom Sheet / Modal */}
           <div
             className="flex-1 min-w-0 cursor-pointer select-none"
-            onClick={() => {
-              if (swipeOffset !== 0) {
-                setSwipeOffset(0);
-                return;
-              }
-              openEditModal();
-            }}
+            onClick={openEditModal}
           >
             <div className="flex items-center justify-between gap-2 min-w-0">
               {/* Left Column: Name + Badges + Note + Sub-attribution */}
@@ -738,6 +706,88 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                   </div>
                 </div>
               </form>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {/* Category Auto-Move Suggestion Confirmation Dialog */}
+      {categorySuggestionPrompt &&
+        typeof document !== 'undefined' &&
+        createPortal(
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-slate-950/75 dark:bg-slate-950/85 backdrop-blur-sm animate-in fade-in duration-150">
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-700/80 rounded-3xl max-w-sm w-full p-5 sm:p-6 shadow-2xl space-y-4 animate-in zoom-in-95 duration-200 text-slate-900 dark:text-white">
+              {/* Header Icon & Title */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-500 shrink-0 shadow-xs">
+                  <FolderSync className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold tracking-tight">
+                    Move to {categorySuggestionPrompt.suggestedCategory}?
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                    Category match detected for corrected name
+                  </p>
+                </div>
+              </div>
+
+              {/* Description Card */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/60 dark:border-slate-700/60 space-y-2 text-xs">
+                <div className="flex items-center justify-between font-medium">
+                  <span className="text-slate-600 dark:text-slate-300">
+                    <strong>"{categorySuggestionPrompt.trimmedName}"</strong>
+                  </span>
+                  <div className="flex items-center gap-1 text-[11px]">
+                    <span className="px-2 py-0.5 rounded-md bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300">
+                      {item.category}
+                    </span>
+                    <ArrowRight className="w-3 h-3 text-slate-400" />
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-semibold">
+                      {categorySuggestionPrompt.suggestedCategory}
+                    </span>
+                  </div>
+                </div>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  Would you like to automatically organize this item into <strong>{categorySuggestionPrompt.suggestedCategory}</strong>?
+                </p>
+              </div>
+
+              {/* Per-Device Remember Preference Checkbox */}
+              <label className="flex items-start gap-2.5 p-2 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/40 cursor-pointer transition-all select-none">
+                <input
+                  type="checkbox"
+                  checked={alwaysAutoMove}
+                  onChange={(e) => setAlwaysAutoMove(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded-md text-emerald-600 focus:ring-emerald-500/20 border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 cursor-pointer"
+                />
+                <div className="text-[11px] leading-tight">
+                  <span className="font-semibold text-slate-800 dark:text-slate-200 block">
+                    Always auto-move on this device
+                  </span>
+                  <span className="text-slate-500 dark:text-slate-400">
+                    Automatically re-categorize future spelling corrections without asking.
+                  </span>
+                </div>
+              </label>
+
+              {/* Dialog Actions */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => handleConfirmCategoryMove(false)}
+                  className="px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 active:scale-95 transition-all cursor-pointer text-center"
+                >
+                  Keep as {item.category}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleConfirmCategoryMove(true)}
+                  className="px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer text-center"
+                >
+                  Move to {categorySuggestionPrompt.suggestedCategory}
+                </button>
+              </div>
             </div>
           </div>,
           document.body

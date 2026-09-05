@@ -1,20 +1,17 @@
 import React, { useState } from 'react';
-import { Lock, ShieldAlert, KeyRound, Delete, Home } from 'lucide-react';
+import { Lock, ShieldAlert, Delete, Home } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { CartSyncLogo } from './CartSyncLogo';
 
 export const LockScreen: React.FC = () => {
-  const { isLocked, hasPinSet, householdName, unlock, setPin } = useAuth();
+  const { isLocked, hasPinSet, householdName, unlock } = useAuth();
 
   const [pinInput, setPinInput] = useState('');
-  const [confirmPinInput, setConfirmPinInput] = useState('');
-  const isSetupMode = !hasPinSet;
-  const [setupStep, setSetupStep] = useState<'create' | 'confirm'>('create');
   const [errorMessage, setErrorMessage] = useState('');
   const [isShaking, setIsShaking] = useState(false);
 
-  // If already unlocked and not setting up, do not show
-  if (!isLocked && hasPinSet) return null;
+  // Only show LockScreen if a PIN is actually configured AND the app is locked
+  if (!hasPinSet || !isLocked) return null;
 
   const triggerShake = (msg: string) => {
     setErrorMessage(msg);
@@ -24,51 +21,16 @@ export const LockScreen: React.FC = () => {
 
   const handleKeyPress = (digit: string) => {
     setErrorMessage('');
-    if (isSetupMode) {
-      if (setupStep === 'create') {
-        if (pinInput.length < 8) {
-          const next = pinInput + digit;
-          setPinInput(next);
-          if (next.length === 4) {
-            // Automatically advance to confirm step
-            setTimeout(() => {
-              setSetupStep('confirm');
-              setConfirmPinInput('');
-            }, 150);
-          }
-        }
-      } else {
-        if (confirmPinInput.length < 8) {
-          const next = confirmPinInput + digit;
-          setConfirmPinInput(next);
-          if (next.length === pinInput.length) {
-            // Check match
-            if (next === pinInput) {
-              setPin(next);
-            } else {
-              triggerShake('PINs do not match. Try again.');
-              setTimeout(() => {
-                setSetupStep('create');
-                setPinInput('');
-                setConfirmPinInput('');
-              }, 600);
-            }
-          }
-        }
-      }
-    } else {
-      if (pinInput.length < 8) {
-        const next = pinInput + digit;
-        setPinInput(next);
-        if (next.length >= 4) {
-          const success = unlock(next);
-          if (success) {
-            setPinInput('');
-          } else if (next.length === 4) {
-            // If it failed on 4 digits, check if user might type longer, but trigger feedback
-            triggerShake('Incorrect PIN');
-            setTimeout(() => setPinInput(''), 400);
-          }
+    if (pinInput.length < 8) {
+      const next = pinInput + digit;
+      setPinInput(next);
+      if (next.length >= 4) {
+        const success = unlock(next);
+        if (success) {
+          setPinInput('');
+        } else if (next.length === 4) {
+          triggerShake('Incorrect PIN');
+          setTimeout(() => setPinInput(''), 400);
         }
       }
     }
@@ -76,22 +38,8 @@ export const LockScreen: React.FC = () => {
 
   const handleDelete = () => {
     setErrorMessage('');
-    if (isSetupMode) {
-      if (setupStep === 'confirm') {
-        setConfirmPinInput((prev) => prev.slice(0, -1));
-      } else {
-        setPinInput((prev) => prev.slice(0, -1));
-      }
-    } else {
-      setPinInput((prev) => prev.slice(0, -1));
-    }
+    setPinInput((prev) => prev.slice(0, -1));
   };
-
-  const currentDisplayLength = isSetupMode
-    ? setupStep === 'confirm'
-      ? confirmPinInput.length
-      : pinInput.length
-    : pinInput.length;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-between p-6 bg-slate-900/95 text-white backdrop-blur-2xl animate-in fade-in duration-200">
@@ -113,34 +61,22 @@ export const LockScreen: React.FC = () => {
       {/* Main Lock Display & Dots */}
       <div className={`w-full max-w-xs flex flex-col items-center text-center space-y-4 my-auto transition-transform ${isShaking ? 'animate-shake' : ''}`}>
         <div className="w-16 h-16 rounded-3xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-xl shadow-emerald-500/10 mb-1">
-          {isSetupMode ? (
-            <KeyRound className="w-8 h-8 stroke-[2.2]" />
-          ) : (
-            <Lock className="w-8 h-8 stroke-[2.2]" />
-          )}
+          <Lock className="w-8 h-8 stroke-[2.2]" />
         </div>
 
         <div className="space-y-1">
           <h1 className="text-xl font-bold tracking-tight text-white">
-            {isSetupMode
-              ? setupStep === 'confirm'
-                ? 'Confirm Household PIN'
-                : 'Create Household PIN'
-              : 'Enter Household PIN'}
+            Enter Household PIN
           </h1>
           <p className="text-xs text-slate-400 max-w-[240px] mx-auto">
-            {isSetupMode
-              ? setupStep === 'confirm'
-                ? 'Re-enter your 4-digit PIN to confirm'
-                : 'Set a 4-digit PIN to secure your grocery lists'
-              : 'Keep your shared lists private & synchronized'}
+            Keep your shared lists private & synchronized
           </p>
         </div>
 
         {/* PIN Indicators (4 dots) */}
         <div className="flex items-center justify-center gap-3.5 py-3">
           {[0, 1, 2, 3].map((index) => {
-            const isFilled = index < currentDisplayLength;
+            const isFilled = index < pinInput.length;
             return (
               <div
                 key={index}
@@ -196,33 +132,8 @@ export const LockScreen: React.FC = () => {
             0
           </button>
 
-          {/* Setup / Switch Mode Button */}
-          {isSetupMode && setupStep === 'confirm' ? (
-            <button
-              type="button"
-              onClick={() => {
-                setSetupStep('create');
-                setPinInput('');
-                setConfirmPinInput('');
-              }}
-              className="h-14 rounded-2xl bg-slate-800/40 hover:bg-slate-800/80 active:bg-slate-700 active:scale-95 transition-all text-xs font-semibold text-slate-300 flex items-center justify-center cursor-pointer"
-            >
-              Back
-            </button>
-          ) : !hasPinSet ? (
-            <button
-              type="button"
-              onClick={() => {
-                // Quick start without PIN
-                unlock('');
-              }}
-              className="h-14 rounded-2xl bg-slate-800/40 hover:bg-slate-800/80 active:bg-slate-700 active:scale-95 transition-all text-xs font-semibold text-slate-400 hover:text-slate-200 flex items-center justify-center cursor-pointer"
-            >
-              Skip
-            </button>
-          ) : (
-            <div className="h-14" />
-          )}
+          {/* Empty spacer / Cancel slot */}
+          <div className="h-14" />
         </div>
       </div>
     </div>

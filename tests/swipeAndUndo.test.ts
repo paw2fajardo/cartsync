@@ -5,32 +5,35 @@ import path from 'path';
 describe('Card Interaction Redesign: Swipe to Reveal & Undo Safety Layer', () => {
   const rootDir = path.resolve(__dirname, '..');
 
-  it('GroceryItemCard has touch event handlers and horizontal intent detection', () => {
-    const cardPath = path.join(rootDir, 'src/components/GroceryItemCard.tsx');
-    const content = fs.readFileSync(cardPath, 'utf-8');
+  it('useSwipeListNavigation provides horizontal swipe detection and list switching in both directions', () => {
+    const hookPath = path.join(rootDir, 'src/hooks/useSwipeListNavigation.ts');
+    const hookContent = fs.readFileSync(hookPath, 'utf-8');
+    const listPath = path.join(rootDir, 'src/components/ItemList.tsx');
+    const listContent = fs.readFileSync(listPath, 'utf-8');
 
-    expect(content).toContain('onTouchStart');
-    expect(content).toContain('onTouchMove');
-    expect(content).toContain('onTouchEnd');
-    expect(content).toContain('handleTouchStart');
-    expect(content).toContain('handleTouchMove');
-    expect(content).toContain('handleTouchEnd');
-    expect(content).toContain('Math.abs(dx) > Math.abs(dy)'); // horizontal scroll protection
+    expect(hookContent).toContain('addEventListener(\'touchstart\'');
+    expect(hookContent).toContain('addEventListener(\'touchmove\'');
+    expect(hookContent).toContain('addEventListener(\'touchend\'');
+    expect(hookContent).toContain('addEventListener(\'touchcancel\'');
+    expect(hookContent).toContain('Math.abs(dx) > Math.abs(dy)'); // horizontal swipe intent detection
+    expect(hookContent).toContain('(currentIndex + 1) % currentLists.length'); // next list
+    expect(hookContent).toContain('(currentIndex - 1 + currentLists.length) % currentLists.length'); // prev list
+    expect(listContent).toContain('useSwipeListNavigation');
   });
 
-  it('GroceryItemCard has swipe reveal delete action in the background layer', () => {
+  it('GroceryItemCard provides item deletion via edit modal and delete button', () => {
     const cardPath = path.join(rootDir, 'src/components/GroceryItemCard.tsx');
     const content = fs.readFileSync(cardPath, 'utf-8');
 
-    expect(content).toContain('bg-rose-500');
-    expect(content).toContain('Confirm delete item');
+    expect(content).toContain('deleteItem(item.id)');
+    expect(content).toContain('openEditModal');
   });
 
   it('GroceryItemCard allows tapping item body to open full edit sheet', () => {
     const cardPath = path.join(rootDir, 'src/components/GroceryItemCard.tsx');
     const content = fs.readFileSync(cardPath, 'utf-8');
 
-    expect(content).toContain('openEditModal()');
+    expect(content).toContain('openEditModal');
     expect(content).toContain('setActiveEditingItemId(item.id)');
   });
 

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Search, ShoppingBasket, X, ArrowDownAZ, Layers } from 'lucide-react';
+import { Search, ShoppingBasket, X, Layers, Smartphone } from 'lucide-react';
 import { useGrocery } from '../context/GroceryContext';
+import { useDevice } from '../context/DeviceContext';
 import { GroceryItemCard } from './GroceryItemCard';
 import { CATEGORY_COLORS } from '../utils/smartCategorizer';
 import { ItemCategory } from '../types';
+import { useSwipeListNavigation } from '../hooks/useSwipeListNavigation';
 
 export const ItemList: React.FC = () => {
   const {
@@ -11,31 +13,62 @@ export const ItemList: React.FC = () => {
     searchQuery,
     setSearchQuery,
     activeList,
+    lists,
+    activeListId,
+    setActiveListId,
     items,
   } = useGrocery();
+  const { device, activeHouseholdDevices } = useDevice();
   const [showSearch, setShowSearch] = useState(false);
-  const [sortBy, setSortBy] = useState<'category' | 'alpha'>('alpha');
+  const [sortBy, setSortBy] = useState<'category' | 'device'>('category');
+  const [swipeTransition, setSwipeTransition] = useState<'left' | 'right' | null>(null);
 
-  // Standard grocery aisle order
-  const aisleOrder: ItemCategory[] = [
-    'Produce',
-    'Dairy & Eggs',
-    'Bakery',
-    'Meat & Seafood',
-    'Pantry',
-    'Frozen',
-    'Snacks & Sweets',
-    'Beverages',
-    'Household & Cleaning',
-    'Pharmacy & Health',
-    'Personal Care',
-    'Baby Care',
-    'Pet Care',
-    'Other',
-  ];
+  // Helper to resolve device display name & color for an item
+  const getDeviceMeta = (item: typeof activeItems[0]) => {
+    const targetDev = item.completed && item.completedBy ? item.completedBy : item.addedBy;
+    const matchedProfile = targetDev?.deviceId
+      ? (activeHouseholdDevices.find((d) => d.id === targetDev.deviceId) ||
+         (device.id === targetDev.deviceId ? device : null))
+      : null;
 
-  // Memoize grouped items and sort categories/items immutably
-  const { groupedItems, sortedCategories } = React.useMemo(() => {
+    const name = matchedProfile?.name || targetDev?.deviceName || 'Household';
+    const color = matchedProfile?.color || targetDev?.color || '#10b981';
+    return { name, color };
+  };
+
+  // Memoize grouped items and sort groups/items immutably
+  const { groupedItems, sortedGroups, groupMeta } = React.useMemo(() => {
+    if (sortBy === 'device') {
+      // Group by Device Name
+      const grouped: Record<string, typeof activeItems> = {};
+      const metaMap: Record<string, { color: string }> = {};
+
+      for (const item of activeItems) {
+        const { name, color } = getDeviceMeta(item);
+        if (!grouped[name]) {
+          grouped[name] = [];
+          metaMap[name] = { color };
+        }
+        grouped[name].push(item);
+      }
+
+      // Sort device names alphabetically (A-Z)
+      const sortedKeys = Object.keys(grouped).sort((a, b) =>
+        a.localeCompare(b, undefined, { sensitivity: 'base' })
+      );
+
+      // Sort items within each device group alphabetically by item name
+      const sortedGrouped: Record<string, typeof activeItems> = {};
+      for (const devName of sortedKeys) {
+        sortedGrouped[devName] = [...grouped[devName]].sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+        );
+      }
+
+      return { groupedItems: sortedGrouped, sortedGroups: sortedKeys, groupMeta: metaMap };
+    }
+
+    // Default: Group & Sort by Category (A-Z)
     const grouped = activeItems.reduce<Record<string, typeof activeItems>>((acc, item) => {
       const cat = item.category || 'Other';
       if (!acc[cat]) acc[cat] = [];
@@ -43,30 +76,33 @@ export const ItemList: React.FC = () => {
       return acc;
     }, {});
 
-    const sortedCats = Object.keys(grouped).sort((a, b) => {
-      if (sortBy === 'alpha') {
-        return a.localeCompare(b, undefined, { sensitivity: 'base' });
-      }
-      const idxA = aisleOrder.indexOf(a as ItemCategory);
-      const idxB = aisleOrder.indexOf(b as ItemCategory);
-      return (idxA >= 0 ? idxA : 999) - (idxB >= 0 ? idxB : 999);
-    });
+    // Sort categories alphabetically A to Z
+    const sortedKeys = Object.keys(grouped).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: 'base' })
+    );
 
     const sortedGrouped: Record<string, typeof activeItems> = {};
-    for (const cat of sortedCats) {
+    for (const cat of sortedKeys) {
       sortedGrouped[cat] = [...grouped[cat]].sort((a, b) =>
         a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
       );
     }
 
-    return { groupedItems: sortedGrouped, sortedCategories: sortedCats };
-  }, [activeItems, sortBy]);
+    return { groupedItems: sortedGrouped, sortedGroups: sortedKeys, groupMeta: {} };
+  }, [activeItems, sortBy, activeHouseholdDevices, device]);
+
+  useSwipeListNavigation({
+    activeListId,
+    lists,
+    setActiveListId,
+    setSwipeTransition,
+  });
 
   const totalInList = items.filter((i) => i.listId === activeList?.id).length;
 
   return (
     <div className="space-y-3 pb-24">
-      {/* Sticky Top Pane: List Name / Active Count & Toolbar (Freezes below header on scroll) */}
+      {/* Sticky Top Pane: List Name / Active Count & Toolbar */}
       <div className="sticky top-14 z-20 -mx-4 px-4 py-2 bg-slate-50/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200/60 dark:border-slate-800/60 shadow-xs space-y-2">
         {/* Header Toolbar: Quick Sort Toggle & Active Counter */}
         <div className="flex items-center justify-between px-1">
@@ -79,35 +115,35 @@ export const ItemList: React.FC = () => {
             </span>
           </div>
 
-          {/* Quick Sort (Category vs A-Z) Toggle */}
+          {/* Quick Sort Toggle (Category (A-Z) vs Device Name) */}
           <div className="flex items-center gap-1.5">
             <div className="flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300/60 dark:border-slate-700/80 text-[11px] font-medium">
               <button
                 type="button"
                 onClick={() => setSortBy('category')}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
                   sortBy === 'category'
-                    ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white font-bold shadow-2xs'
+                    ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 font-bold shadow-2xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
-                title="Group items by grocery category"
+                title="Sort by Category (A–Z)"
               >
                 <Layers className="w-3 h-3" />
-                <span>Category</span>
+                <span>Category (A–Z)</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => setSortBy('alpha')}
-                className={`flex items-center gap-1 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
-                  sortBy === 'alpha'
+                onClick={() => setSortBy('device')}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                  sortBy === 'device'
                     ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 font-bold shadow-2xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
-                title="Sort items alphabetically A to Z"
+                title="Sort by Device Name"
               >
-                <ArrowDownAZ className="w-3.5 h-3.5" />
-                <span>A–Z</span>
+                <Smartphone className="w-3.5 h-3.5" />
+                <span>Device Name</span>
               </button>
             </div>
           </div>
@@ -165,24 +201,44 @@ export const ItemList: React.FC = () => {
           </p>
         </div>
       ) : (
-        /* Sorted Category Groups */
-        <div className="space-y-4">
-          {sortedCategories.map((category) => {
-            const catItems = groupedItems[category] || [];
-            const catStyle = CATEGORY_COLORS[category as ItemCategory] || CATEGORY_COLORS.Other;
+        /* Animated Sorted Groups (Category or Device) */
+        <div
+          className={`space-y-4 transition-all duration-200 ${
+            swipeTransition === 'left'
+              ? 'animate-in slide-in-from-right-6 fade-in duration-200'
+              : swipeTransition === 'right'
+              ? 'animate-in slide-in-from-left-6 fade-in duration-200'
+              : ''
+          }`}
+        >
+          {sortedGroups.map((groupKey) => {
+            const groupItemList = groupedItems[groupKey] || [];
+            const isCategoryMode = sortBy === 'category';
+            const catStyle = isCategoryMode
+              ? (CATEGORY_COLORS[groupKey as ItemCategory] || CATEGORY_COLORS.Other)
+              : null;
+            const deviceDotColor = !isCategoryMode ? (groupMeta[groupKey]?.color || '#10b981') : null;
+
             return (
-              <div key={category} className="space-y-1.5">
+              <div key={groupKey} className="space-y-1.5">
                 <div className="flex items-center gap-1.5 px-1 pt-1">
-                  <span className={`w-1.5 h-1.5 rounded-full ${catStyle.dot}`} />
+                  {isCategoryMode ? (
+                    <span className={`w-1.5 h-1.5 rounded-full ${catStyle?.dot}`} />
+                  ) : (
+                    <span
+                      className="w-2 h-2 rounded-full shadow-2xs"
+                      style={{ backgroundColor: deviceDotColor || '#10b981' }}
+                    />
+                  )}
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    {category}
+                    {groupKey}
                   </span>
                   <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
-                    ({catItems.length})
+                    ({groupItemList.length})
                   </span>
                 </div>
                 <div className="space-y-1.5">
-                  {catItems.map((item) => (
+                  {groupItemList.map((item) => (
                     <GroceryItemCard key={item.id} item={item} />
                   ))}
                 </div>

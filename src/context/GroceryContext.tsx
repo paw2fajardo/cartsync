@@ -6,6 +6,9 @@ import {
   getAllLists,
   getAllItems,
   getAllAutoListRules,
+  getCachedLists,
+  getCachedItems,
+  getCachedRules,
   saveItem as idbSaveItem,
   saveList as idbSaveList,
   saveAutoListRule as idbSaveAutoListRule,
@@ -13,6 +16,7 @@ import {
   deleteItemFromStorage,
   deleteListFromStorage,
   bulkSaveData,
+  LS_INITIALIZED_KEY,
 } from '../storage/idb';
 import { INITIAL_LISTS, INITIAL_ITEMS, INITIAL_AUTO_LIST_RULES } from '../storage/seedData';
 import { syncClient } from '../sync/syncClient';
@@ -76,12 +80,47 @@ interface GroceryContextType {
 
 const GroceryContext = createContext<GroceryContextType | undefined>(undefined);
 
+const ACTIVE_LIST_STORAGE_KEY = 'cartsync_active_list_id_v1';
+
 export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { device } = useDevice();
-  const [lists, setLists] = useState<GroceryList[]>([]);
-  const [items, setItems] = useState<GroceryItem[]>([]);
-  const [autoListRules, setAutoListRules] = useState<AutoListRule[]>([]);
-  const [activeListId, setActiveListId] = useState<string>('list_supermarket');
+  const [lists, setLists] = useState<GroceryList[]>(() => {
+    const cached = getCachedLists();
+    if (cached.length > 0) return cached;
+    const isInitialized = typeof window !== 'undefined' && localStorage.getItem(LS_INITIALIZED_KEY) === 'true';
+    return isInitialized ? [] : INITIAL_LISTS;
+  });
+
+  const [items, setItems] = useState<GroceryItem[]>(() => {
+    const cached = getCachedItems();
+    if (cached.length > 0) return cached;
+    const isInitialized = typeof window !== 'undefined' && localStorage.getItem(LS_INITIALIZED_KEY) === 'true';
+    return isInitialized ? [] : INITIAL_ITEMS;
+  });
+
+  const [autoListRules, setAutoListRules] = useState<AutoListRule[]>(() => {
+    const cached = getCachedRules();
+    if (cached.length > 0) return cached;
+    const isInitialized = typeof window !== 'undefined' && localStorage.getItem(LS_INITIALIZED_KEY) === 'true';
+    return isInitialized ? [] : INITIAL_AUTO_LIST_RULES;
+  });
+
+  const [activeListId, setActiveListIdState] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(ACTIVE_LIST_STORAGE_KEY);
+      if (saved) return saved;
+    }
+    const cached = getCachedLists();
+    return cached.length > 0 ? cached[0].id : 'list_supermarket';
+  });
+
+  const setActiveListId = useCallback((id: string) => {
+    setActiveListIdState(id);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(ACTIVE_LIST_STORAGE_KEY, id);
+    }
+  }, []);
+
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('connecting');
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -109,29 +148,33 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, []);
 
-  // Initialize data from local-first storage
+  // Initialize and reconcile data from IndexedDB
   useEffect(() => {
     async function initStorage() {
+      const isInitialized = typeof window !== 'undefined' && localStorage.getItem(LS_INITIALIZED_KEY) === 'true';
       let storedLists = await getAllLists();
       let storedItems = await getAllItems();
       let storedRules = await getAllAutoListRules();
 
-      if (storedLists.length === 0) {
+      if (!isInitialized && storedLists.length === 0) {
         storedLists = INITIAL_LISTS;
         storedItems = INITIAL_ITEMS;
-      }
-
-      if (storedRules.length === 0) {
         storedRules = INITIAL_AUTO_LIST_RULES;
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(LS_INITIALIZED_KEY, 'true');
+        }
+        await bulkSaveData(storedLists, storedItems, storedRules);
+      } else if (storedLists.length > 0) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(LS_INITIALIZED_KEY, 'true');
+        }
       }
 
-      await bulkSaveData(storedLists, storedItems, storedRules);
-
-      setLists(storedLists);
-      setItems(storedItems);
-      setAutoListRules(storedRules);
-      if (storedLists.length > 0 && !storedLists.some((l) => l.id === activeListId)) {
-        setActiveListId(storedLists[0].id);
+      if (storedLists.length > 0) {
+        setLists(storedLists);
+        setItems(storedItems);
+        setAutoListRules(storedRules);
+        setActiveListIdState((prev) => (storedLists.some((l) => l.id === prev) ? prev : storedLists[0].id));
       }
     }
 
