@@ -58,11 +58,11 @@ describe('Admin Window & Biometric Security Infrastructure', () => {
     expect(content).toContain('purgeDevice');
   });
 
-  it('Header and Sidebar include quick access to Admin Control Center', () => {
+  it('Header provides streamlined navigation and Sidebar includes quick access to Admin Control Center', () => {
     const headerPath = path.join(rootDir, 'src/components/Header.tsx');
     const headerContent = fs.readFileSync(headerPath, 'utf-8');
-    expect(headerContent).toContain('openAdminModal');
-    expect(headerContent).toContain('Admin Control Center');
+    expect(headerContent).toContain('onToggleSidebar');
+    expect(headerContent).toContain('Open Menu & Household Lists');
 
     const sidebarPath = path.join(rootDir, 'src/components/ListSidebar.tsx');
     const sidebarContent = fs.readFileSync(sidebarPath, 'utf-8');

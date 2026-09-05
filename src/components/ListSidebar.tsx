@@ -34,10 +34,12 @@ const DEVICE_ICONS: Record<DeviceIcon, React.FC<{ className?: string }>> = {
 
 export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => {
   const { lists, activeListId, setActiveListId, openNewListModal, openAutoListRulesModal, openCategoryModal, items } = useGrocery();
-  const { activeHouseholdDevices, openRenameModal } = useDevice();
-  const { openAdminModal } = useAuth();
+  const { device, activeHouseholdDevices, openRenameModal } = useDevice();
+  const { householdName, openAdminModal } = useAuth();
   const [deletingList, setDeletingList] = useState<GroceryList | null>(null);
   const [editingList, setEditingList] = useState<GroceryList | null>(null);
+
+  const DeviceActiveIcon = DEVICE_ICONS[device.icon] || Smartphone;
 
   // Prevent background scrolling while sidebar drawer is open
   useBodyScrollLock(isOpen);
@@ -53,24 +55,56 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
           className="fixed inset-0 bg-slate-950/50 dark:bg-slate-950/70 backdrop-blur-sm transition-opacity animate-in fade-in"
         />
 
-        {/* Drawer */}
-        <div className="relative w-80 max-w-[85vw] bg-white dark:bg-slate-900 h-full shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] flex flex-col z-50 animate-in slide-in-from-left duration-200">
-          {/* Drawer Header */}
-          <div className="p-5 border-b border-slate-200/80 dark:border-slate-800/80 flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                Household Lists
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Manage all grocery & shopping lists
-              </p>
+        {/* Drawer: Full window width on mobile, responsive max-w on desktop */}
+        <div className="relative w-full sm:w-96 sm:max-w-[85vw] bg-white dark:bg-slate-900 h-full shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] flex flex-col z-50 animate-in slide-in-from-left duration-200">
+          {/* Drawer Header with Active Device Profile Banner */}
+          <div className="p-4 sm:p-5 border-b border-slate-200/80 dark:border-slate-800/80 space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                  Menu & Lists
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {householdName}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={onClose}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
             </div>
+
+            {/* Current Device Profile Pill */}
             <button
               type="button"
-              onClick={onClose}
-              className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+              onClick={() => {
+                openRenameModal();
+                onClose();
+              }}
+              className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-slate-100/90 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-750 border border-slate-200/80 dark:border-slate-700/80 transition-all text-xs font-medium cursor-pointer group shadow-2xs"
             >
-              <X className="w-5 h-5" />
+              <div className="flex items-center gap-2 min-w-0">
+                <div
+                  className="w-7 h-7 rounded-xl flex items-center justify-center text-white text-xs shadow-xs shrink-0"
+                  style={{ backgroundColor: device.color }}
+                >
+                  <DeviceActiveIcon className="w-4 h-4" />
+                </div>
+                <div className="text-left min-w-0">
+                  <div className="font-bold text-slate-900 dark:text-white truncate">
+                    {device.name}
+                  </div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                    This Device • Tap to customize
+                  </div>
+                </div>
+              </div>
+              <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                Profile
+              </span>
             </button>
           </div>
 
@@ -80,7 +114,7 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
               Active Lists ({lists.length})
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               {lists.map((list) => {
                 const Icon = ICON_MAP[list.icon] || ShoppingCart;
                 const isActive = list.id === activeListId;
@@ -93,104 +127,107 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
                 return (
                   <div
                     key={list.id}
-                    className={`group relative rounded-2xl p-3 border transition-all ${
+                    className={`rounded-2xl p-3 border transition-all ${
                       isActive
-                        ? 'bg-emerald-50/80 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-800/60'
+                        ? 'bg-emerald-50/90 dark:bg-emerald-950/60 border-emerald-300/90 dark:border-emerald-700/80 shadow-xs'
                         : 'bg-slate-50/80 dark:bg-slate-800/60 border-slate-200/80 dark:border-slate-700/60 hover:bg-slate-100/80 dark:hover:bg-slate-800'
                     }`}
                   >
-                    <div
-                      onClick={() => {
-                        setActiveListId(list.id);
-                        onClose();
-                      }}
-                      className="cursor-pointer space-y-1.5 pr-20"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5">
-                          <div
-                            className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                              isActive
-                                ? 'bg-emerald-500 text-white shadow-xs'
-                                : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                            }`}
-                          >
-                            <Icon className="w-4 h-4" />
-                          </div>
-                          <div>
-                            <div className="text-sm font-bold text-slate-900 dark:text-white">
-                              {list.name}
-                            </div>
-                            {list.description && (
-                              <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate max-w-[130px]">
-                                {list.description}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center gap-1.5">
-                          <span
-                            className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                              isActive
-                                ? 'bg-emerald-500 text-white'
-                                : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
-                            }`}
-                          >
-                            {uncompletedCount} left
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Progress Bar */}
-                      {totalCount > 0 && (
-                        <div className="space-y-1 pt-1">
-                          <div className="w-full bg-slate-200 dark:bg-slate-700 h-1 rounded-full overflow-hidden">
-                            <div
-                              className="bg-emerald-500 h-full rounded-full transition-all duration-300"
-                              style={{ width: `${progressPct}%` }}
-                            />
-                          </div>
-                          <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400">
-                            <span>{completedCount} of {totalCount} done</span>
-                            <span>{progressPct}%</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Action Cluster: Edit (Always Visible) & Delete (If >1 list) */}
-                    <div className="absolute right-2.5 top-2.5 flex items-center gap-1">
-                      {/* Edit List Button */}
+                    {/* Top Row: Icon, Name/Description, Badge, and Action Buttons */}
+                    <div className="flex items-center justify-between gap-2">
+                      {/* Clickable list selector region */}
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingList(list);
+                        onClick={() => {
+                          setActiveListId(list.id);
+                          onClose();
                         }}
-                        className="p-2 rounded-xl text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 transition-all cursor-pointer"
-                        title={`Edit list "${list.name}"`}
-                        aria-label={`Edit list ${list.name}`}
+                        className="flex items-center gap-2.5 flex-1 min-w-0 text-left cursor-pointer group"
                       >
-                        <Pencil className="w-4 h-4" />
+                        <div
+                          className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
+                            isActive
+                              ? 'bg-emerald-500 text-white shadow-xs'
+                              : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                          }`}
+                        >
+                          <Icon className="w-4 h-4" />
+                        </div>
+
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                              {list.name}
+                            </span>
+                            {isActive && (
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                            )}
+                          </div>
+                          {list.description ? (
+                            <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                              {list.description}
+                            </div>
+                          ) : (
+                            <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                              {uncompletedCount} active {uncompletedCount === 1 ? 'item' : 'items'}
+                            </div>
+                          )}
+                        </div>
                       </button>
 
-                      {/* Delete List Button */}
-                      {lists.length > 1 && (
+                      {/* Right Area: Count pill + Edit & Delete Actions */}
+                      <div className="flex items-center gap-1 shrink-0">
+                        <span
+                          className={`text-[11px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${
+                            isActive
+                              ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-500/30'
+                              : 'bg-slate-200/90 dark:bg-slate-700 text-slate-700 dark:text-slate-300'
+                          }`}
+                        >
+                          {uncompletedCount} left
+                        </span>
+
+                        {/* Edit List Button */}
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeletingList(list);
-                          }}
-                          className="p-2 rounded-xl text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-95 transition-all cursor-pointer"
-                          title={`Delete list "${list.name}"`}
-                          aria-label={`Delete list ${list.name}`}
+                          onClick={() => setEditingList(list)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 transition-all cursor-pointer"
+                          title={`Edit list "${list.name}"`}
+                          aria-label={`Edit list ${list.name}`}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Pencil className="w-3.5 h-3.5" />
                         </button>
-                      )}
+
+                        {/* Delete List Button */}
+                        {lists.length > 1 && (
+                          <button
+                            type="button"
+                            onClick={() => setDeletingList(list)}
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-95 transition-all cursor-pointer"
+                            title={`Delete list "${list.name}"`}
+                            aria-label={`Delete list ${list.name}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     </div>
+
+                    {/* Progress Bar (if items exist in list) */}
+                    {totalCount > 0 && (
+                      <div className="space-y-1 pt-2.5 mt-1 border-t border-slate-200/60 dark:border-slate-700/50">
+                        <div className="w-full bg-slate-200 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                          <div
+                            className="bg-emerald-500 h-full rounded-full transition-all duration-300"
+                            style={{ width: `${progressPct}%` }}
+                          />
+                        </div>
+                        <div className="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 px-0.5">
+                          <span>{completedCount} of {totalCount} completed</span>
+                          <span className="font-semibold">{progressPct}%</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 );
               })}
