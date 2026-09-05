@@ -22,12 +22,17 @@ export function getHouseholdSecret() {
   return process.env.HOUSEHOLD_SECRET || process.env.SYNC_AUTH_TOKEN || '';
 }
 
-// HTTP Authentication Middleware for /api/* routes
+// HTTP Authentication Middleware for /api/* routes (excluding /api/health)
 export function authMiddleware(req, res, next) {
   res.set('Cache-Control', 'no-store');
   const secret = getHouseholdSecret();
   if (!secret) {
     return next(); // Open mode for local development
+  }
+
+  // Exempt healthcheck for Docker and container orchestration probes
+  if (req.path === '/health' || req.originalUrl === '/api/health') {
+    return next();
   }
 
   const authHeader = req.get('authorization') || '';
@@ -44,10 +49,7 @@ export function authMiddleware(req, res, next) {
   next();
 }
 
-// Intercept and authenticate all /api routes
-app.use('/api', authMiddleware);
-
-// REST Endpoints
+// Public Health Check Endpoint for Docker, Kubernetes, and reverse proxy probes
 app.get('/api/health', (req, res) => {
   const state = cartSyncDb.getState();
   res.json({
@@ -60,6 +62,9 @@ app.get('/api/health', (req, res) => {
     timestamp: Date.now(),
   });
 });
+
+// Intercept and authenticate all other /api routes
+app.use('/api', authMiddleware);
 
 app.get('/api/state', (req, res) => {
   res.json(cartSyncDb.getState());

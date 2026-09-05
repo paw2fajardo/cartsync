@@ -39,13 +39,11 @@ describe.sequential('Pre-Shared Key (PSK) Authentication Suite', () => {
       stdio: ['pipe', 'pipe', 'pipe'],
     });
 
-    // Wait for server to boot (healthcheck returns 401 when unauthenticated, or 200 with auth)
+    // Wait for server to boot (healthcheck endpoint is accessible)
     let ready = false;
     for (let i = 0; i < 50; i++) {
       try {
-        const res = await fetch(`${SERVER_URL}/api/health`, {
-          headers: { Authorization: `Bearer ${SECRET_KEY}` },
-        });
+        const res = await fetch(`${SERVER_URL}/api/health`);
         if (res.ok) {
           ready = true;
           break;
@@ -78,14 +76,22 @@ describe.sequential('Pre-Shared Key (PSK) Authentication Suite', () => {
       expect(json.message).toContain('household authentication token');
     });
 
-    it('should reject GET /api/health with invalid Bearer token with 401 Unauthorized', async () => {
-      const res = await fetch(`${SERVER_URL}/api/health`, {
+    it('should reject GET /api/state with invalid Bearer token with 401 Unauthorized', async () => {
+      const res = await fetch(`${SERVER_URL}/api/state`, {
         headers: { Authorization: 'Bearer invalid-token-123' },
       });
       expect(res.status).toBe(401);
 
       const json = await res.json();
       expect(json.error).toBe('Unauthorized');
+    });
+
+    it('should allow GET /api/health without authentication for container runtime healthchecks', async () => {
+      const res = await fetch(`${SERVER_URL}/api/health`);
+      expect(res.status).toBe(200);
+
+      const json = await res.json();
+      expect(json.status).toBe('ok');
     });
 
     it('should reject POST /api/sync without token with 401 Unauthorized', async () => {
