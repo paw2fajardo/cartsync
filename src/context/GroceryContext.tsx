@@ -1,18 +1,22 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { GroceryItem, GroceryList, ItemCategory, SyncStatus } from '../types';
+import { GroceryItem, GroceryList, ItemCategory, SyncStatus, AutoListRule } from '../types';
 import { useDevice } from './DeviceContext';
 import {
   getAllLists,
   getAllItems,
+  getAllAutoListRules,
   saveItem as idbSaveItem,
   saveList as idbSaveList,
+  saveAutoListRule as idbSaveAutoListRule,
+  deleteAutoListRuleFromStorage,
   deleteItemFromStorage,
   deleteListFromStorage,
   bulkSaveData,
 } from '../storage/idb';
-import { INITIAL_LISTS, INITIAL_ITEMS } from '../storage/seedData';
+import { INITIAL_LISTS, INITIAL_ITEMS, INITIAL_AUTO_LIST_RULES } from '../storage/seedData';
 import { syncClient } from '../sync/syncClient';
+import { findMatchingAutoListRule } from '../utils/smartCategorizer';
 
 interface GroceryContextType {
   lists: GroceryList[];
@@ -22,7 +26,15 @@ interface GroceryContextType {
   items: GroceryItem[];
   activeItems: GroceryItem[];
   completedItems: GroceryItem[];
-  addItem: (name: string, quantity?: number, unit?: string, category?: ItemCategory, note?: string) => Promise<GroceryItem>;
+  autoListRules: AutoListRule[];
+  addItem: (
+    name: string,
+    quantity?: number,
+    unit?: string,
+    category?: ItemCategory,
+    note?: string,
+    targetListId?: string
+  ) => Promise<GroceryItem>;
   toggleItem: (id: string) => Promise<void>;
   updateItem: (id: string, updates: Partial<GroceryItem>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
@@ -31,6 +43,9 @@ interface GroceryContextType {
   createList: (name: string, icon?: string, color?: string, description?: string) => Promise<GroceryList>;
   updateList: (id: string, updates: Partial<GroceryList>) => Promise<void>;
   deleteList: (id: string) => Promise<void>;
+  addAutoListRule: (keyword: string, targetListId: string, category?: ItemCategory) => Promise<AutoListRule>;
+  updateAutoListRule: (id: string, updates: Partial<AutoListRule>) => Promise<void>;
+  deleteAutoListRule: (id: string) => Promise<void>;
   syncStatus: SyncStatus;
   lastSyncedAt: number | null;
   triggerManualSync: () => Promise<void>;
@@ -44,6 +59,19 @@ interface GroceryContextType {
   isSyncModalOpen: boolean;
   openSyncModal: () => void;
   closeSyncModal: () => void;
+  isAutoListRulesModalOpen: boolean;
+  openAutoListRulesModal: () => void;
+  closeAutoListRulesModal: () => void;
+  isCategoryModalOpen: boolean;
+  openCategoryModal: () => void;
+  closeCategoryModal: () => void;
+  activeEditingItemId: string | null;
+  setActiveEditingItemId: (id: string | null) => void;
+  isQuickAddOptionsOpen: boolean;
+  setIsQuickAddOptionsOpen: (open: boolean) => void;
+  lastDeletedItem: GroceryItem | null;
+  undoLastDelete: () => Promise<void>;
+  dismissUndoToast: () => void;
 }
 
 const GroceryContext = createContext<GroceryContextType | undefined>(undefined);
@@ -52,6 +80,7 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const { device } = useDevice();
   const [lists, setLists] = useState<GroceryList[]>([]);
   const [items, setItems] = useState<GroceryItem[]>([]);
+  const [autoListRules, setAutoListRules] = useState<AutoListRule[]>([]);
   const [activeListId, setActiveListId] = useState<string>('list_supermarket');
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('connecting');
   const [lastSyncedAt, setLastSyncedAt] = useState<number | null>(null);
@@ -59,21 +88,48 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [selectedCategory, setSelectedCategory] = useState<ItemCategory | 'All'>('All');
   const [isNewListModalOpen, setIsNewListModalOpen] = useState(false);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
+  const [isAutoListRulesModalOpen, setIsAutoListRulesModalOpen] = useState(false);
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [activeEditingItemId, setActiveEditingItemIdState] = useState<string | null>(null);
+  const [isQuickAddOptionsOpen, setIsQuickAddOptionsOpenState] = useState(false);
+
+  const setActiveEditingItemId = useCallback((id: string | null) => {
+    setActiveEditingItemIdState(id);
+    if (id) {
+      // Mutual exclusion: Close Quick Add options tray if item edit opens
+      setIsQuickAddOptionsOpenState(false);
+    }
+  }, []);
+
+  const setIsQuickAddOptionsOpen = useCallback((open: boolean) => {
+    setIsQuickAddOptionsOpenState(open);
+    if (open) {
+      // Mutual exclusion: Close any open inline card edit if Quick Add options tray opens
+      setActiveEditingItemIdState(null);
+    }
+  }, []);
 
   // Initialize data from local-first storage
   useEffect(() => {
     async function initStorage() {
       let storedLists = await getAllLists();
       let storedItems = await getAllItems();
+      let storedRules = await getAllAutoListRules();
 
       if (storedLists.length === 0) {
         storedLists = INITIAL_LISTS;
         storedItems = INITIAL_ITEMS;
-        await bulkSaveData(storedLists, storedItems);
       }
+
+      if (storedRules.length === 0) {
+        storedRules = INITIAL_AUTO_LIST_RULES;
+      }
+
+      await bulkSaveData(storedLists, storedItems, storedRules);
 
       setLists(storedLists);
       setItems(storedItems);
+      setAutoListRules(storedRules);
       if (storedLists.length > 0 && !storedLists.some((l) => l.id === activeListId)) {
         setActiveListId(storedLists[0].id);
       }
@@ -93,8 +149,11 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const remoteState = event.state;
         setLists(remoteState.lists || []);
         setItems(remoteState.items || []);
+        if (remoteState.autoListRules) {
+          setAutoListRules(remoteState.autoListRules);
+        }
         setLastSyncedAt(remoteState.lastSyncedAt || Date.now());
-        bulkSaveData(remoteState.lists || [], remoteState.items || []);
+        bulkSaveData(remoteState.lists || [], remoteState.items || [], remoteState.autoListRules);
       } else if (event.type === 'ITEM_UPSERT' && event.item) {
         const item = event.item;
         setItems((prev) => {
@@ -124,7 +183,23 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const listId = event.deletedListId;
         setLists((prev) => prev.filter((l) => l.id !== listId));
         setItems((prev) => prev.filter((i) => i.listId !== listId));
+        setAutoListRules((prev) => prev.filter((r) => r.targetListId !== listId));
         deleteListFromStorage(listId);
+        setLastSyncedAt(Date.now());
+      } else if (event.type === 'AUTO_LIST_RULE_UPSERT' && event.autoListRule) {
+        const rule = event.autoListRule;
+        setAutoListRules((prev) => {
+          const idx = prev.findIndex((r) => r.id === rule.id);
+          const next = idx >= 0 ? [...prev] : [...prev, rule];
+          if (idx >= 0) next[idx] = rule;
+          return next;
+        });
+        idbSaveAutoListRule(rule);
+        setLastSyncedAt(Date.now());
+      } else if (event.type === 'AUTO_LIST_RULE_DELETE' && event.deletedRuleId) {
+        const ruleId = event.deletedRuleId;
+        setAutoListRules((prev) => prev.filter((r) => r.id !== ruleId));
+        deleteAutoListRuleFromStorage(ruleId);
         setLastSyncedAt(Date.now());
       }
     });
@@ -138,15 +213,16 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const triggerManualSync = useCallback(async () => {
     setSyncStatus('connecting');
     syncClient.connect();
-    const result = await syncClient.httpSync(lists, items);
+    const result = await syncClient.httpSync(lists, items, autoListRules);
     if (result) {
       setLists(result.lists);
       setItems(result.items);
+      if (result.autoListRules) setAutoListRules(result.autoListRules);
       setLastSyncedAt(result.lastSyncedAt || Date.now());
       setSyncStatus('connected');
-      await bulkSaveData(result.lists, result.items);
+      await bulkSaveData(result.lists, result.items, result.autoListRules);
     }
-  }, [lists, items]);
+  }, [lists, items, autoListRules]);
 
   const activeList = lists.find((l) => l.id === activeListId) || lists[0];
 
@@ -174,11 +250,23 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     quantity: number = 1,
     unit?: string,
     category: ItemCategory = 'Other',
-    note?: string
+    note?: string,
+    targetListId?: string
   ): Promise<GroceryItem> => {
+    // Determine destination list: explicit targetListId > auto-list rule > current activeListId
+    let destinationListId = targetListId;
+    if (!destinationListId) {
+      const matchedRule = findMatchingAutoListRule(name, autoListRules);
+      if (matchedRule && lists.some((l) => l.id === matchedRule.targetListId)) {
+        destinationListId = matchedRule.targetListId;
+      } else {
+        destinationListId = activeListId;
+      }
+    }
+
     const newItem: GroceryItem = {
       id: `item_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-      listId: activeListId,
+      listId: destinationListId,
       name: name.trim(),
       quantity: quantity || 1,
       unit: unit || undefined,
@@ -199,6 +287,11 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     // Optimistic local update
     setItems((prev) => [newItem, ...prev]);
     await idbSaveItem(newItem);
+
+    // If item was auto-routed to a different list, automatically switch active view so user sees it
+    if (destinationListId !== activeListId) {
+      setActiveListId(destinationListId);
+    }
 
     // Broadcast to household sync
     syncClient.broadcastItemUpsert(newItem);
@@ -262,10 +355,47 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     syncClient.broadcastItemUpsert(updated);
   };
 
+  const [lastDeletedItem, setLastDeletedItem] = useState<GroceryItem | null>(null);
+  const undoTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const dismissUndoToast = useCallback(() => {
+    if (undoTimeoutRef.current) {
+      clearTimeout(undoTimeoutRef.current);
+      undoTimeoutRef.current = null;
+    }
+    setLastDeletedItem(null);
+  }, []);
+
   const deleteItem = async (id: string) => {
+    const itemToDelete = items.find((i) => i.id === id);
+    if (itemToDelete) {
+      // Set for undo toast and schedule auto-dismiss in 5s
+      setLastDeletedItem(itemToDelete);
+      if (undoTimeoutRef.current) {
+        clearTimeout(undoTimeoutRef.current);
+      }
+      undoTimeoutRef.current = setTimeout(() => {
+        setLastDeletedItem(null);
+        undoTimeoutRef.current = null;
+      }, 5000);
+    }
+
     setItems((prev) => prev.filter((i) => i.id !== id));
     await deleteItemFromStorage(id);
     syncClient.broadcastItemDelete(id);
+  };
+
+  const undoLastDelete = async () => {
+    if (!lastDeletedItem) return;
+    const restored = { ...lastDeletedItem, updatedAt: Date.now() };
+    dismissUndoToast();
+
+    setItems((prev) => {
+      const exists = prev.some((i) => i.id === restored.id);
+      return exists ? prev : [restored, ...prev];
+    });
+    await idbSaveItem(restored);
+    syncClient.broadcastItemUpsert(restored);
   };
 
   const clearCompleted = async (listId: string = activeListId) => {
@@ -340,6 +470,7 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const remainingLists = lists.filter((l) => l.id !== id);
     setLists(remainingLists);
     setItems((prev) => prev.filter((i) => i.listId !== id));
+    setAutoListRules((prev) => prev.filter((r) => r.targetListId !== id));
 
     if (activeListId === id) {
       setActiveListId(remainingLists[0].id);
@@ -347,6 +478,56 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     await deleteListFromStorage(id);
     syncClient.broadcastListDelete(id);
+  };
+
+  // Auto-List Rules Operations
+  const addAutoListRule = async (
+    keyword: string,
+    targetListId: string,
+    category?: ItemCategory
+  ): Promise<AutoListRule> => {
+    const cleanKw = keyword.trim().toLowerCase();
+    const existing = autoListRules.find((r) => r.keyword === cleanKw);
+    if (existing) {
+      const updated = { ...existing, targetListId, category };
+      await updateAutoListRule(existing.id, updated);
+      return updated;
+    }
+
+    const newRule: AutoListRule = {
+      id: `rule_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      keyword: cleanKw,
+      targetListId,
+      category,
+      createdAt: Date.now(),
+    };
+
+    setAutoListRules((prev) => [...prev, newRule]);
+    await idbSaveAutoListRule(newRule);
+    syncClient.broadcastAutoListRuleUpsert(newRule);
+
+    return newRule;
+  };
+
+  const updateAutoListRule = async (id: string, updates: Partial<AutoListRule>) => {
+    const target = autoListRules.find((r) => r.id === id);
+    if (!target) return;
+
+    const updated: AutoListRule = {
+      ...target,
+      ...updates,
+      keyword: updates.keyword ? updates.keyword.trim().toLowerCase() : target.keyword,
+    };
+
+    setAutoListRules((prev) => prev.map((r) => (r.id === id ? updated : r)));
+    await idbSaveAutoListRule(updated);
+    syncClient.broadcastAutoListRuleUpsert(updated);
+  };
+
+  const deleteAutoListRule = async (id: string) => {
+    setAutoListRules((prev) => prev.filter((r) => r.id !== id));
+    await deleteAutoListRuleFromStorage(id);
+    syncClient.broadcastAutoListRuleDelete(id);
   };
 
   return (
@@ -359,6 +540,7 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         items,
         activeItems,
         completedItems,
+        autoListRules,
         addItem,
         toggleItem,
         updateItem,
@@ -368,6 +550,9 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         createList,
         updateList,
         deleteList,
+        addAutoListRule,
+        updateAutoListRule,
+        deleteAutoListRule,
         syncStatus,
         lastSyncedAt,
         triggerManualSync,
@@ -381,6 +566,19 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isSyncModalOpen,
         openSyncModal: () => setIsSyncModalOpen(true),
         closeSyncModal: () => setIsSyncModalOpen(false),
+        isAutoListRulesModalOpen,
+        openAutoListRulesModal: () => setIsAutoListRulesModalOpen(true),
+        closeAutoListRulesModal: () => setIsAutoListRulesModalOpen(false),
+        isCategoryModalOpen,
+        openCategoryModal: () => setIsCategoryModalOpen(true),
+        closeCategoryModal: () => setIsCategoryModalOpen(false),
+        activeEditingItemId,
+        setActiveEditingItemId,
+        isQuickAddOptionsOpen,
+        setIsQuickAddOptionsOpen,
+        lastDeletedItem,
+        undoLastDelete,
+        dismissUndoToast,
       }}
     >
       {children}

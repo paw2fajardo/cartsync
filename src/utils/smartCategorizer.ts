@@ -1,4 +1,4 @@
-import { ItemCategory } from '../types';
+import { ItemCategory, AutoListRule } from '../types';
 
 const CATEGORY_KEYWORDS: Record<ItemCategory, string[]> = {
   Produce: [
@@ -15,7 +15,8 @@ const CATEGORY_KEYWORDS: Record<ItemCategory, string[]> = {
   ],
   Bakery: [
     'bread', 'bagel', 'bagels', 'croissant', 'croissants', 'sourdough', 'tortilla', 'tortillas',
-    'pita', 'bun', 'buns', 'roll', 'rolls', 'muffin', 'muffins', 'baguette', 'toast', 'brioche', 'naan'
+    'pita', 'bun', 'buns', 'roll', 'rolls', 'muffin', 'muffins', 'baguette', 'toast', 'brioche', 'naan',
+    'gardenia'
   ],
   'Meat & Seafood': [
     'chicken', 'chicken breast', 'chicken thighs', 'beef', 'ground beef', 'steak', 'pork', 'pork chops',
@@ -54,11 +55,13 @@ const CATEGORY_KEYWORDS: Record<ItemCategory, string[]> = {
   ],
   'Personal Care': [
     'shampoo', 'conditioner', 'body wash', 'soap', 'deodorant', 'razor', 'shaving cream',
-    'lotion', 'face wash', 'moisturizer', 'hand soap', 'cotton pads', 'q-tips'
+    'lotion', 'facial wash', 'face wash', 'facial cleanser', 'cleanser', 'moisturizer', 'hand soap', 'cotton pads', 'q-tips', 'body lotion', 'sunscreen'
   ],
-  'Baby & Pet': [
-    'diapers', 'baby wipes', 'baby food', 'formula', 'dog food', 'cat food', 'dog treats',
-    'cat treats', 'pet treats', 'cat litter'
+  'Baby Care': [
+    'diapers', 'baby wipes', 'baby food', 'formula', 'baby lotion', 'baby shampoo', 'pacifier', 'baby powder'
+  ],
+  'Pet Care': [
+    'dog food', 'cat food', 'dog treats', 'cat treats', 'pet treats', 'cat litter', 'dog chew', 'bird seed', 'pet shampoo'
   ],
   Other: []
 };
@@ -90,9 +93,22 @@ const SORTED_KEYWORD_RULES: Array<{ keyword: string; category: ItemCategory; reg
   });
 })();
 
-export function categorizeItem(name: string): ItemCategory {
+export function categorizeItem(name: string, customRules?: AutoListRule[]): ItemCategory {
   const trimmed = name.trim();
   if (!trimmed) return 'Other';
+
+  // 1. Check custom auto-list rules if they have a category override
+  if (customRules && customRules.length > 0) {
+    const sorted = [...customRules].sort((a, b) => b.keyword.length - a.keyword.length);
+    for (const rule of sorted) {
+      if (!rule.keyword) continue;
+      const escaped = rule.keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const regex = new RegExp(`\\b${escaped}s?\\b`, 'i');
+      if (regex.test(trimmed) && rule.category) {
+        return rule.category;
+      }
+    }
+  }
 
   for (const rule of SORTED_KEYWORD_RULES) {
     if (rule.regex.test(trimmed)) {
@@ -103,32 +119,44 @@ export function categorizeItem(name: string): ItemCategory {
   return 'Other';
 }
 
+export function findMatchingAutoListRule(name: string, rules: AutoListRule[]): AutoListRule | null {
+  const trimmed = name.trim();
+  if (!trimmed || !rules || rules.length === 0) return null;
+
+  const sorted = [...rules].sort((a, b) => b.keyword.length - a.keyword.length);
+  for (const rule of sorted) {
+    if (!rule.keyword) continue;
+    const escaped = rule.keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`\\b${escaped}s?\\b`, 'i');
+    if (regex.test(trimmed)) {
+      return rule;
+    }
+  }
+  return null;
+}
+
 export interface ParsedItemInput {
   name: string;
   quantity: number;
   unit?: string;
   category: ItemCategory;
+  matchedRule: AutoListRule | null;
 }
 
-export function parseItemInput(raw: string): ParsedItemInput {
+export function parseItemInput(raw: string, autoListRules?: AutoListRule[]): ParsedItemInput {
   let text = raw.trim();
+
   let quantity = 1;
   let unit: string | undefined = undefined;
-
-  // Patterns like:
-  // "3 apples"
-  // "2.5 kg bananas"
-  // "1 carton milk"
-  // "avocados x4"
-  // "bread 2"
-  // "dozen eggs"
 
   if (/^dozen\b/i.test(text)) {
     quantity = 12;
     text = text.replace(/^dozen\s*/i, '');
   } else {
     // Check leading number with optional unit: "2.5 kg bananas", "3 apples", "1 gallon milk"
-    const leadingMatch = text.match(/^(\d+(?:\.\d+)?)\s*(x|kg|g|lbs|lb|oz|l|liter|liters|ml|gallon|gallons|gal|quart|quarts|qt|pint|pints|pt|cup|cups|pack|packs|can|cans|box|boxes|bag|bags|bottle|bottles|carton|cartons|jar|jars|tub|tubs|roll|rolls|loaf|loaves|bunch|bunches|bunch of|pcs|pc)?\s+(.*)$/i);
+    const leadingMatch = text.match(
+      /^(\d+(?:\.\d+)?)\s*(x|kg|g|lbs|lb|oz|l|liter|liters|ml|gallon|gallons|gal|quart|quarts|qt|pint|pints|pt|cup|cups|pack|packs|can|cans|box|boxes|bag|bags|bottle|bottles|carton|cartons|jar|jars|tub|tubs|roll|rolls|loaf|loaves|bunch|bunches|bunch of|pcs|pc)?\s+(.*)$/i
+    );
     if (leadingMatch) {
       quantity = parseFloat(leadingMatch[1]);
       if (leadingMatch[2] && leadingMatch[2].toLowerCase() !== 'x') {
@@ -137,7 +165,9 @@ export function parseItemInput(raw: string): ParsedItemInput {
       text = leadingMatch[3];
     } else {
       // Check trailing: "bananas x3" or "ground beef 2 lbs"
-      const trailingMatch = text.match(/^(.*?)\s+(?:x\s*|qty:\s*)?(\d+(?:\.\d+)?)\s*(kg|g|lbs|lb|oz|l|liter|liters|ml|gallon|gallons|gal|quart|quarts|qt|pint|pints|pt|cup|cups|pack|packs|can|cans|box|boxes|bag|bags|bottle|bottles|carton|cartons|jar|jars|tub|tubs|roll|rolls|loaf|loaves|pcs|pc)?$/i);
+      const trailingMatch = text.match(
+        /^(.*?)\s+(?:x\s*|qty:\s*)?(\d+(?:\.\d+)?)\s*(kg|g|lbs|lb|oz|l|liter|liters|ml|gallon|gallons|gal|quart|quarts|qt|pint|pints|pt|cup|cups|pack|packs|can|cans|box|boxes|bag|bags|bottle|bottles|carton|cartons|jar|jars|tub|tubs|roll|rolls|loaf|loaves|pcs|pc)?$/i
+      );
       if (trailingMatch && trailingMatch[1].trim().length > 0) {
         text = trailingMatch[1].trim();
         quantity = parseFloat(trailingMatch[2]);
@@ -160,93 +190,101 @@ export function parseItemInput(raw: string): ParsedItemInput {
     }
   }
 
-  const category = categorizeItem(formattedName);
+  const matchedRule = autoListRules ? findMatchingAutoListRule(formattedName, autoListRules) : null;
+  const category = categorizeItem(formattedName, autoListRules);
 
   return {
     name: formattedName,
     quantity: isNaN(quantity) || quantity <= 0 ? 1 : quantity,
     unit,
     category,
+    matchedRule,
   };
 }
 
 export const CATEGORY_COLORS: Record<ItemCategory, { bg: string; text: string; border: string; dot: string }> = {
   Produce: { 
-    bg: 'bg-emerald-50 dark:bg-emerald-950/50', 
+    bg: 'bg-emerald-50 dark:bg-emerald-950/70', 
     text: 'text-emerald-700 dark:text-emerald-300', 
-    border: 'border-emerald-200 dark:border-emerald-800/60', 
+    border: 'border-emerald-200 dark:border-emerald-700/80', 
     dot: 'bg-emerald-500' 
   },
   'Dairy & Eggs': { 
-    bg: 'bg-sky-50 dark:bg-sky-950/50', 
-    text: 'text-sky-700 dark:text-sky-300', 
-    border: 'border-sky-200 dark:border-sky-800/60', 
-    dot: 'bg-sky-500' 
+    bg: 'bg-blue-50 dark:bg-blue-950/70', 
+    text: 'text-blue-700 dark:text-blue-300', 
+    border: 'border-blue-200 dark:border-blue-700/80', 
+    dot: 'bg-blue-500' 
   },
   Bakery: { 
-    bg: 'bg-amber-50 dark:bg-amber-950/50', 
+    bg: 'bg-amber-50 dark:bg-amber-950/70', 
     text: 'text-amber-700 dark:text-amber-300', 
-    border: 'border-amber-200 dark:border-amber-800/60', 
+    border: 'border-amber-200 dark:border-amber-700/80', 
     dot: 'bg-amber-500' 
   },
   'Meat & Seafood': { 
-    bg: 'bg-rose-50 dark:bg-rose-950/50', 
+    bg: 'bg-rose-50 dark:bg-rose-950/70', 
     text: 'text-rose-700 dark:text-rose-300', 
-    border: 'border-rose-200 dark:border-rose-800/60', 
+    border: 'border-rose-200 dark:border-rose-700/80', 
     dot: 'bg-rose-500' 
   },
   Pantry: { 
-    bg: 'bg-orange-50 dark:bg-orange-950/50', 
+    bg: 'bg-orange-50 dark:bg-orange-950/70', 
     text: 'text-orange-700 dark:text-orange-300', 
-    border: 'border-orange-200 dark:border-orange-800/60', 
+    border: 'border-orange-200 dark:border-orange-700/80', 
     dot: 'bg-orange-500' 
   },
   Frozen: { 
-    bg: 'bg-cyan-50 dark:bg-cyan-950/50', 
+    bg: 'bg-cyan-50 dark:bg-cyan-950/70', 
     text: 'text-cyan-700 dark:text-cyan-300', 
-    border: 'border-cyan-200 dark:border-cyan-800/60', 
+    border: 'border-cyan-200 dark:border-cyan-700/80', 
     dot: 'bg-cyan-500' 
   },
   'Snacks & Sweets': { 
-    bg: 'bg-purple-50 dark:bg-purple-950/50', 
+    bg: 'bg-purple-50 dark:bg-purple-950/70', 
     text: 'text-purple-700 dark:text-purple-300', 
-    border: 'border-purple-200 dark:border-purple-800/60', 
+    border: 'border-purple-200 dark:border-purple-700/80', 
     dot: 'bg-purple-500' 
   },
   Beverages: { 
-    bg: 'bg-indigo-50 dark:bg-indigo-950/50', 
+    bg: 'bg-indigo-50 dark:bg-indigo-950/70', 
     text: 'text-indigo-700 dark:text-indigo-300', 
-    border: 'border-indigo-200 dark:border-indigo-800/60', 
+    border: 'border-indigo-200 dark:border-indigo-700/80', 
     dot: 'bg-indigo-500' 
   },
   'Household & Cleaning': { 
-    bg: 'bg-teal-50 dark:bg-teal-950/50', 
+    bg: 'bg-teal-50 dark:bg-teal-950/70', 
     text: 'text-teal-700 dark:text-teal-300', 
-    border: 'border-teal-200 dark:border-teal-800/60', 
+    border: 'border-teal-200 dark:border-teal-700/80', 
     dot: 'bg-teal-500' 
   },
   'Pharmacy & Health': { 
-    bg: 'bg-red-50 dark:bg-red-950/50', 
+    bg: 'bg-red-50 dark:bg-red-950/70', 
     text: 'text-red-700 dark:text-red-300', 
-    border: 'border-red-200 dark:border-red-800/60', 
+    border: 'border-red-200 dark:border-red-700/80', 
     dot: 'bg-red-500' 
   },
   'Personal Care': { 
-    bg: 'bg-pink-50 dark:bg-pink-950/50', 
+    bg: 'bg-pink-50 dark:bg-pink-950/70', 
     text: 'text-pink-700 dark:text-pink-300', 
-    border: 'border-pink-200 dark:border-pink-800/60', 
+    border: 'border-pink-200 dark:border-pink-700/80', 
     dot: 'bg-pink-500' 
   },
-  'Baby & Pet': { 
-    bg: 'bg-lime-50 dark:bg-lime-950/50', 
+  'Baby Care': { 
+    bg: 'bg-lime-50 dark:bg-lime-950/70', 
     text: 'text-lime-700 dark:text-lime-300', 
-    border: 'border-lime-200 dark:border-lime-800/60', 
+    border: 'border-lime-200 dark:border-lime-700/80', 
     dot: 'bg-lime-500' 
+  },
+  'Pet Care': { 
+    bg: 'bg-amber-50 dark:bg-amber-950/70', 
+    text: 'text-amber-700 dark:text-amber-300', 
+    border: 'border-amber-200 dark:border-amber-700/80', 
+    dot: 'bg-amber-500' 
   },
   Other: { 
     bg: 'bg-slate-100 dark:bg-slate-800', 
     text: 'text-slate-700 dark:text-slate-300', 
-    border: 'border-slate-200 dark:border-slate-700', 
-    dot: 'bg-slate-500' 
+    border: 'border-slate-300/80 dark:border-slate-700', 
+    dot: 'bg-slate-400 dark:bg-slate-400' 
   },
 };

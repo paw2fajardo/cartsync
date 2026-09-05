@@ -12,6 +12,15 @@
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
   }
 
+  body {
+    width: 100%;
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   html.dark {
     color-scheme: dark;
   }
@@ -20,10 +29,6 @@
   html.dark select,
   html.dark textarea {
     color-scheme: dark;
-  }
-  
-  body {
-    overscroll-behavior-y: none;
   }
 }
 

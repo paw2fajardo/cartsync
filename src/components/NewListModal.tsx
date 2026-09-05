@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, ShoppingCart, Store, Box, Pill, Sparkles, Apple, Carrot, Coffee } from 'lucide-react';
 import { useGrocery } from '../context/GroceryContext';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 const LIST_ICONS = [
   { name: 'shopping-cart', icon: ShoppingCart, label: 'Cart' },
@@ -24,6 +25,9 @@ const LIST_COLORS = [
 
 export const NewListModal: React.FC = () => {
   const { isNewListModalOpen, closeNewListModal, createList } = useGrocery();
+
+  // Prevent background scrolling while modal is open
+  useBodyScrollLock(isNewListModalOpen);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('shopping-cart');

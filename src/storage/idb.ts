@@ -1,7 +1,7 @@
-import { GroceryItem, GroceryList } from '../types';
+import { GroceryItem, GroceryList, AutoListRule } from '../types';
 
 const DB_NAME = 'cartsync_db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -29,6 +29,10 @@ function openDB(): Promise<IDBDatabase> {
         itemStore.createIndex('completed', 'completed', { unique: false });
       }
 
+      if (!db.objectStoreNames.contains('autoListRules')) {
+        db.createObjectStore('autoListRules', { keyPath: 'id' });
+      }
+
       if (!db.objectStoreNames.contains('meta')) {
         db.createObjectStore('meta', { keyPath: 'key' });
       }
@@ -49,6 +53,7 @@ function openDB(): Promise<IDBDatabase> {
 // Fallback to localStorage if IndexedDB is blocked in some environments
 const LS_LISTS_KEY = 'cartsync_lists_v1';
 const LS_ITEMS_KEY = 'cartsync_items_v1';
+const LS_RULES_KEY = 'cartsync_auto_list_rules_v1';
 
 export async function getAllLists(): Promise<GroceryList[]> {
   try {
@@ -200,16 +205,94 @@ export async function deleteItemFromStorage(itemId: string): Promise<void> {
   } catch (_) {}
 }
 
-export async function bulkSaveData(lists: GroceryList[], items: GroceryItem[]): Promise<void> {
+export async function getAllAutoListRules(): Promise<AutoListRule[]> {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('autoListRules', 'readonly');
+      const store = tx.objectStore('autoListRules');
+      const request = store.getAll();
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.warn('IDB fallback to localStorage for autoListRules:', err);
+    const raw = localStorage.getItem(LS_RULES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  }
+}
+
+export async function saveAutoListRule(rule: AutoListRule): Promise<void> {
   try {
     const db = await openDB();
     await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(['lists', 'items'], 'readwrite');
+      const tx = db.transaction('autoListRules', 'readwrite');
+      const store = tx.objectStore('autoListRules');
+      const request = store.put(rule);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.warn('IDB fallback to localStorage for saveAutoListRule:', err);
+  }
+
+  try {
+    const rules = await getAllAutoListRules();
+    const idx = rules.findIndex((r) => r.id === rule.id);
+    if (idx >= 0) {
+      rules[idx] = rule;
+    } else {
+      rules.push(rule);
+    }
+    localStorage.setItem(LS_RULES_KEY, JSON.stringify(rules));
+  } catch (_) {}
+}
+
+export async function deleteAutoListRuleFromStorage(ruleId: string): Promise<void> {
+  try {
+    const db = await openDB();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction('autoListRules', 'readwrite');
+      const store = tx.objectStore('autoListRules');
+      const request = store.delete(ruleId);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.warn('IDB fallback to localStorage for deleteAutoListRule:', err);
+  }
+
+  try {
+    const raw = localStorage.getItem(LS_RULES_KEY);
+    if (raw) {
+      const rules: AutoListRule[] = JSON.parse(raw);
+      localStorage.setItem(LS_RULES_KEY, JSON.stringify(rules.filter((r) => r.id !== ruleId)));
+    }
+  } catch (_) {}
+}
+
+export async function bulkSaveData(
+  lists: GroceryList[],
+  items: GroceryItem[],
+  autoListRules?: AutoListRule[]
+): Promise<void> {
+  try {
+    const db = await openDB();
+    const storeNames: string[] = ['lists', 'items'];
+    if (autoListRules) storeNames.push('autoListRules');
+
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(storeNames, 'readwrite');
       const listStore = tx.objectStore('lists');
       const itemStore = tx.objectStore('items');
 
       lists.forEach((list) => listStore.put(list));
       items.forEach((item) => itemStore.put(item));
+
+      if (autoListRules) {
+        const ruleStore = tx.objectStore('autoListRules');
+        autoListRules.forEach((rule) => ruleStore.put(rule));
+      }
 
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
@@ -221,5 +304,8 @@ export async function bulkSaveData(lists: GroceryList[], items: GroceryItem[]): 
   try {
     localStorage.setItem(LS_LISTS_KEY, JSON.stringify(lists));
     localStorage.setItem(LS_ITEMS_KEY, JSON.stringify(items));
+    if (autoListRules) {
+      localStorage.setItem(LS_RULES_KEY, JSON.stringify(autoListRules));
+    }
   } catch (_) {}
 }

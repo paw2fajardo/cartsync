@@ -2,7 +2,14 @@ import express from 'express';
 import http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { cartSyncDb } from './db.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distPath = path.resolve(__dirname, '../dist');
 
 const PORT = process.env.PORT || 3001;
 
@@ -53,6 +60,15 @@ app.post('/api/reset', (req, res) => {
 
   res.json({ status: 'reset_successful', state: freshState });
 });
+
+// Serve static frontend assets in production if dist/ exists
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
 
 // Create HTTP and WebSocket Server
 const server = http.createServer(app);
@@ -140,6 +156,22 @@ wss.on('connection', (ws, req) => {
           break;
         }
 
+        case 'AUTO_LIST_RULE_UPSERT': {
+          if (payload && payload.id) {
+            cartSyncDb.upsertAutoListRule(payload);
+            broadcast(message, ws);
+          }
+          break;
+        }
+
+        case 'AUTO_LIST_RULE_DELETE': {
+          if (payload && payload.ruleId) {
+            cartSyncDb.deleteAutoListRule(payload.ruleId);
+            broadcast(message, ws);
+          }
+          break;
+        }
+
         case 'BATCH_UPDATE': {
           if (payload) {
             if (Array.isArray(payload.lists)) {
@@ -150,6 +182,11 @@ wss.on('connection', (ws, req) => {
             if (Array.isArray(payload.items)) {
               for (const i of payload.items) {
                 cartSyncDb.upsertItem(i);
+              }
+            }
+            if (Array.isArray(payload.autoListRules)) {
+              for (const r of payload.autoListRules) {
+                cartSyncDb.upsertAutoListRule(r);
               }
             }
             broadcast(message, ws);

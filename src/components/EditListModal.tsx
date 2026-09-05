@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, ShoppingCart, Store, Box, Pill, Sparkles, Apple, Carrot, Coffee, Check, AlertCircle } from 'lucide-react';
 import { useGrocery } from '../context/GroceryContext';
 import { GroceryList } from '../types';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 export const LIST_ICONS = [
   { name: 'shopping-cart', icon: ShoppingCart, label: 'Cart' },
@@ -31,6 +32,9 @@ interface EditListModalProps {
 
 export const EditListModal: React.FC<EditListModalProps> = ({ list, isOpen, onClose }) => {
   const { updateList, items } = useGrocery();
+
+  // Prevent background scrolling while modal is open
+  useBodyScrollLock(isOpen);
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');

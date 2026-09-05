@@ -1,4 +1,4 @@
-import { GroceryItem, GroceryList } from '../types';
+import { GroceryItem, GroceryList, AutoListRule } from '../types';
 
 export const INITIAL_LISTS: GroceryList[] = [
   {
@@ -40,6 +40,44 @@ export const INITIAL_LISTS: GroceryList[] = [
     isDefault: false,
     createdAt: Date.now() - 86400000 * 2,
     updatedAt: Date.now() - 86400000 * 2,
+  },
+];
+
+export const INITIAL_AUTO_LIST_RULES: AutoListRule[] = [
+  {
+    id: 'rule_gardenia',
+    keyword: 'gardenia',
+    targetListId: 'list_supermarket',
+    category: 'Bakery',
+    createdAt: Date.now() - 86400000,
+  },
+  {
+    id: 'rule_kirkland',
+    keyword: 'kirkland',
+    targetListId: 'list_costco',
+    category: 'Household & Cleaning',
+    createdAt: Date.now() - 86400000,
+  },
+  {
+    id: 'rule_tylenol',
+    keyword: 'tylenol',
+    targetListId: 'list_pharmacy',
+    category: 'Pharmacy & Health',
+    createdAt: Date.now() - 86400000,
+  },
+  {
+    id: 'rule_advil',
+    keyword: 'advil',
+    targetListId: 'list_pharmacy',
+    category: 'Pharmacy & Health',
+    createdAt: Date.now() - 86400000,
+  },
+  {
+    id: 'rule_vitamin',
+    keyword: 'vitamin',
+    targetListId: 'list_pharmacy',
+    category: 'Pharmacy & Health',
+    createdAt: Date.now() - 86400000,
   },
 ];
 

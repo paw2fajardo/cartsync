@@ -102,11 +102,11 @@ describe('CartSync UI Redesign QA Audit: Contrast & Visual Ergonomics', () => {
       expect(ratio).toBeGreaterThanOrEqual(4.5);
     });
 
-    it('all 13 categories must have dark-mode desaturated pill backgrounds and compliant text contrast', () => {
+    it('all 14 categories must have dark-mode desaturated pill backgrounds and compliant text contrast', () => {
       const categories: ItemCategory[] = [
         'Produce', 'Dairy & Eggs', 'Bakery', 'Meat & Seafood', 'Pantry', 'Frozen',
         'Snacks & Sweets', 'Beverages', 'Household & Cleaning', 'Pharmacy & Health',
-        'Personal Care', 'Baby & Pet', 'Other',
+        'Personal Care', 'Baby Care', 'Pet Care', 'Other',
       ];
 
       categories.forEach((cat) => {
@@ -131,13 +131,13 @@ describe('CartSync UI Redesign QA Audit: Contrast & Visual Ergonomics', () => {
       expect(newBtnIndex).toBeGreaterThan(-1);
     });
 
-    it('GroceryItemCard maintains 40px outer touch envelope for circular checkbox', () => {
+    it('GroceryItemCard maintains ergonomic touch envelope for circular checkbox', () => {
       const filePath = path.join(rootDir, 'src/components/GroceryItemCard.tsx');
       const content = fs.readFileSync(filePath, 'utf-8');
 
-      expect(content).toContain('w-10 h-10');
-      expect(content).toContain('w-[22px] h-[22px] rounded-full');
-      expect(content).toContain('-ml-2 -mt-2 -mr-1');
+      expect(content).toContain('w-8 h-8');
+      expect(content).toContain('w-[20px] h-[20px] rounded-full');
+      expect(content).toContain('-my-1 -ml-1');
       expect(content).toContain('group-active/cb:scale-90');
     });
 

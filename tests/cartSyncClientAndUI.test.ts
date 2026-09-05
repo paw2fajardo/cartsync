@@ -48,7 +48,8 @@ describe('CartSync Client & Mobile UI Experience Verification', () => {
       'Household & Cleaning',
       'Pharmacy & Health',
       'Personal Care',
-      'Baby & Pet',
+      'Baby Care',
+      'Pet Care',
       'Other',
     ];
 

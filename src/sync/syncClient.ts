@@ -1,12 +1,22 @@
-import { DeviceProfile, GroceryItem, GroceryList, HouseholdState, SyncMessage, SyncStatus } from '../types';
+import {
+  DeviceProfile,
+  GroceryItem,
+  GroceryList,
+  HouseholdState,
+  SyncMessage,
+  SyncStatus,
+  AutoListRule,
+} from '../types';
 
 type SyncListener = (event: {
   type: string;
   state?: HouseholdState;
   item?: GroceryItem;
   list?: GroceryList;
+  autoListRule?: AutoListRule;
   deletedItemId?: string;
   deletedListId?: string;
+  deletedRuleId?: string;
   devices?: DeviceProfile[];
 }) => void;
 
@@ -90,11 +100,12 @@ class SyncClient {
     this.setStatus('connecting');
 
     try {
-      // Determine ws url
+      // Determine ws url (support wss:// dynamically when behind SSL reverse proxies)
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.hostname || 'localhost';
       const wsUrl = window.location.port === '5173'
         ? `ws://${host}:3001`
-        : `ws://${window.location.host}/ws`;
+        : `${protocol}//${window.location.host}/ws`;
 
       const socket = new WebSocket(wsUrl);
       this.ws = socket;
@@ -201,6 +212,24 @@ class SyncClient {
         );
         break;
 
+      case 'AUTO_LIST_RULE_UPSERT':
+        this.syncListeners.forEach((l) =>
+          l({
+            type: 'AUTO_LIST_RULE_UPSERT',
+            autoListRule: msg.payload as AutoListRule,
+          })
+        );
+        break;
+
+      case 'AUTO_LIST_RULE_DELETE':
+        this.syncListeners.forEach((l) =>
+          l({
+            type: 'AUTO_LIST_RULE_DELETE',
+            deletedRuleId: msg.payload?.ruleId,
+          })
+        );
+        break;
+
       case 'DEVICE_LIST':
         this.syncListeners.forEach((l) =>
           l({
@@ -265,8 +294,30 @@ class SyncClient {
     });
   }
 
+  public broadcastAutoListRuleUpsert(rule: AutoListRule): void {
+    this.send({
+      type: 'AUTO_LIST_RULE_UPSERT',
+      deviceId: this.currentDevice ? this.currentDevice.id : 'unknown',
+      timestamp: Date.now(),
+      payload: rule,
+    });
+  }
+
+  public broadcastAutoListRuleDelete(ruleId: string): void {
+    this.send({
+      type: 'AUTO_LIST_RULE_DELETE',
+      deviceId: this.currentDevice ? this.currentDevice.id : 'unknown',
+      timestamp: Date.now(),
+      payload: { ruleId },
+    });
+  }
+
   // HTTP Fallback Sync
-  public async httpSync(lists: GroceryList[], items: GroceryItem[]): Promise<HouseholdState | null> {
+  public async httpSync(
+    lists: GroceryList[],
+    items: GroceryItem[],
+    autoListRules?: AutoListRule[]
+  ): Promise<HouseholdState | null> {
     try {
       const response = await fetch('/api/sync', {
         method: 'POST',
@@ -274,6 +325,7 @@ class SyncClient {
         body: JSON.stringify({
           lists,
           items,
+          autoListRules,
           device: this.currentDevice,
         }),
       });

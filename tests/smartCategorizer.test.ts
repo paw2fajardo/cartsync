@@ -82,11 +82,13 @@ describe('Smart Categorizer & Natural Language Parser Verification', () => {
       { item: 'Hydrating Face Wash', expectedCategory: 'Personal Care' },
       { item: 'Body Wash', expectedCategory: 'Personal Care' },
 
-      // Baby & Pet
-      { item: 'Size 4 Diapers', expectedCategory: 'Baby & Pet' },
-      { item: 'Sensitive Baby Wipes', expectedCategory: 'Baby & Pet' },
-      { item: 'Dry Dog Food', expectedCategory: 'Baby & Pet' },
-      { item: 'Crunchy Cat Treats', expectedCategory: 'Baby & Pet' },
+      // Baby Care
+      { item: 'Size 4 Diapers', expectedCategory: 'Baby Care' },
+      { item: 'Sensitive Baby Wipes', expectedCategory: 'Baby Care' },
+
+      // Pet Care
+      { item: 'Dry Dog Food', expectedCategory: 'Pet Care' },
+      { item: 'Crunchy Cat Treats', expectedCategory: 'Pet Care' },
 
       // Other
       { item: 'Random Widget 12345', expectedCategory: 'Other' },
@@ -193,7 +195,8 @@ describe('Smart Categorizer & Natural Language Parser Verification', () => {
       'Household & Cleaning',
       'Pharmacy & Health',
       'Personal Care',
-      'Baby & Pet',
+      'Baby Care',
+      'Pet Care',
       'Other',
     ];
 

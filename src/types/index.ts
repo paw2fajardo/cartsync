@@ -21,7 +21,8 @@ export type ItemCategory =
   | 'Household & Cleaning'
   | 'Pharmacy & Health'
   | 'Personal Care'
-  | 'Baby & Pet'
+  | 'Baby Care'
+  | 'Pet Care'
   | 'Other';
 
 export interface DeviceRef {
@@ -57,6 +58,14 @@ export interface GroceryList {
   updatedAt: number;
 }
 
+export interface AutoListRule {
+  id: string;
+  keyword: string;         // e.g. "gardenia", "kirkland", "advil"
+  targetListId: string;    // e.g. "list_supermarket", "list_costco"
+  category?: ItemCategory; // optional category override, e.g. "Bakery"
+  createdAt: number;
+}
+
 export type SyncStatus = 'connected' | 'connecting' | 'disconnected' | 'offline';
 
 export interface SyncMessage {
@@ -67,6 +76,8 @@ export interface SyncMessage {
     | 'ITEM_DELETE'
     | 'LIST_UPSERT'
     | 'LIST_DELETE'
+    | 'AUTO_LIST_RULE_UPSERT'
+    | 'AUTO_LIST_RULE_DELETE'
     | 'BATCH_UPDATE'
     | 'DEVICE_PING'
     | 'DEVICE_LIST';
@@ -80,5 +91,6 @@ export interface HouseholdState {
   lists: GroceryList[];
   items: GroceryItem[];
   devices: DeviceProfile[];
+  autoListRules?: AutoListRule[];
   lastSyncedAt: number;
 }

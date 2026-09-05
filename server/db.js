@@ -12,6 +12,10 @@ const DB_PATH = process.env.CART_SYNC_DB_PATH || path.join(__dirname, 'cartsync.
 export class CartSyncDatabase {
   constructor(dbPath = DB_PATH) {
     this.dbPath = dbPath;
+    const dbDir = path.dirname(this.dbPath);
+    if (dbDir && !fs.existsSync(dbDir)) {
+      fs.mkdirSync(dbDir, { recursive: true });
+    }
     this.db = new DatabaseSync(this.dbPath);
     this.init();
   }
@@ -69,6 +73,18 @@ export class CartSyncDatabase {
         icon TEXT DEFAULT 'smartphone',
         is_custom_name INTEGER DEFAULT 0,
         last_seen_at INTEGER NOT NULL
+      );
+    `);
+
+    // 4. Auto-List Rules Table (e.g., Gardenia -> Supermarket / Bakery)
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS auto_list_rules (
+        id TEXT PRIMARY KEY,
+        keyword TEXT NOT NULL UNIQUE,
+        target_list_id TEXT NOT NULL,
+        category TEXT,
+        created_at INTEGER NOT NULL,
+        FOREIGN KEY (target_list_id) REFERENCES lists(id) ON DELETE CASCADE
       );
     `);
 
@@ -236,6 +252,54 @@ export class CartSyncDatabase {
       for (const dev of defaultDevices) {
         insertDevice.run(dev);
       }
+
+      // Default Auto-List Rules (e.g. Gardenia -> Supermarket/Bakery)
+      const defaultRules = [
+        {
+          id: 'rule_gardenia',
+          keyword: 'gardenia',
+          target_list_id: 'list_supermarket',
+          category: 'Bakery',
+          created_at: now - 86400000,
+        },
+        {
+          id: 'rule_kirkland',
+          keyword: 'kirkland',
+          target_list_id: 'list_costco',
+          category: 'Household & Cleaning',
+          created_at: now - 86400000,
+        },
+        {
+          id: 'rule_tylenol',
+          keyword: 'tylenol',
+          target_list_id: 'list_pharmacy',
+          category: 'Pharmacy & Health',
+          created_at: now - 86400000,
+        },
+        {
+          id: 'rule_advil',
+          keyword: 'advil',
+          target_list_id: 'list_pharmacy',
+          category: 'Pharmacy & Health',
+          created_at: now - 86400000,
+        },
+        {
+          id: 'rule_vitamin',
+          keyword: 'vitamin',
+          target_list_id: 'list_pharmacy',
+          category: 'Pharmacy & Health',
+          created_at: now - 86400000,
+        },
+      ];
+
+      const insertRule = this.db.prepare(`
+        INSERT INTO auto_list_rules (id, keyword, target_list_id, category, created_at)
+        VALUES (@id, @keyword, @target_list_id, @category, @created_at)
+      `);
+
+      for (const r of defaultRules) {
+        insertRule.run(r);
+      }
     }
   }
 
@@ -277,8 +341,21 @@ export class CartSyncDatabase {
       color: r.color || '#10b981',
       icon: r.icon || 'smartphone',
       isCustomName: Boolean(r.is_custom_name),
+      lastActive: Number(r.last_seen_at),
       lastSeenAt: Number(r.last_seen_at),
     }));
+
+    let autoListRules = [];
+    try {
+      const ruleRows = this.db.prepare('SELECT * FROM auto_list_rules ORDER BY created_at ASC').all();
+      autoListRules = ruleRows.map((r) => ({
+        id: r.id,
+        keyword: r.keyword,
+        targetListId: r.target_list_id,
+        category: r.category || undefined,
+        createdAt: Number(r.created_at),
+      }));
+    } catch (_) {}
 
     return {
       version: 2,
@@ -286,6 +363,7 @@ export class CartSyncDatabase {
       lists,
       items,
       devices,
+      autoListRules,
     };
   }
 
@@ -357,7 +435,8 @@ export class CartSyncDatabase {
   }
 
   deleteList(listId) {
-    // Delete items first to enforce cascade cleanly
+    // Delete items and rules first to enforce cascade cleanly
+    this.db.prepare('DELETE FROM auto_list_rules WHERE target_list_id = ?').run(listId);
     this.db.prepare('DELETE FROM items WHERE list_id = ?').run(listId);
     this.db.prepare('DELETE FROM lists WHERE id = ?').run(listId);
   }
@@ -385,7 +464,32 @@ export class CartSyncDatabase {
     });
   }
 
-  syncState({ lists, items, device }) {
+  upsertAutoListRule(rule) {
+    const stmt = this.db.prepare(`
+      INSERT INTO auto_list_rules (id, keyword, target_list_id, category, created_at)
+      VALUES (@id, @keyword, @target_list_id, @category, @created_at)
+      ON CONFLICT(id) DO UPDATE SET
+        keyword = excluded.keyword,
+        target_list_id = excluded.target_list_id,
+        category = excluded.category
+    `);
+
+    const now = Date.now();
+    stmt.run({
+      id: rule.id,
+      keyword: rule.keyword.trim().toLowerCase(),
+      target_list_id: rule.targetListId,
+      category: rule.category || null,
+      created_at: rule.createdAt || now,
+    });
+  }
+
+  deleteAutoListRule(ruleId) {
+    const stmt = this.db.prepare('DELETE FROM auto_list_rules WHERE id = ?');
+    stmt.run(ruleId);
+  }
+
+  syncState({ lists, items, device, autoListRules }) {
     if (lists && Array.isArray(lists)) {
       for (const l of lists) {
         this.upsertList(l);
@@ -394,6 +498,11 @@ export class CartSyncDatabase {
     if (items && Array.isArray(items)) {
       for (const i of items) {
         this.upsertItem(i);
+      }
+    }
+    if (autoListRules && Array.isArray(autoListRules)) {
+      for (const r of autoListRules) {
+        this.upsertAutoListRule(r);
       }
     }
     if (device && device.id) {
@@ -406,6 +515,7 @@ export class CartSyncDatabase {
     this.db.exec('DELETE FROM items;');
     this.db.exec('DELETE FROM lists;');
     this.db.exec('DELETE FROM devices;');
+    this.db.exec('DELETE FROM auto_list_rules;');
     this.seedDefaultsIfEmpty();
     return this.getState();
   }

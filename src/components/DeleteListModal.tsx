@@ -3,6 +3,7 @@ import { X, AlertTriangle, Trash2 } from 'lucide-react';
 import { GroceryList } from '../types';
 import { useGrocery } from '../context/GroceryContext';
 import { SlideToConfirm } from './SlideToConfirm';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface DeleteListModalProps {
   list: GroceryList | null;
@@ -12,6 +13,9 @@ interface DeleteListModalProps {
 
 export const DeleteListModal: React.FC<DeleteListModalProps> = ({ list, isOpen, onClose }) => {
   const { items, deleteList, lists } = useGrocery();
+
+  // Prevent background scrolling while modal is open
+  useBodyScrollLock(isOpen);
 
   if (!isOpen || !list) return null;
 

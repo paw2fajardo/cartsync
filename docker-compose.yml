@@ -1,0 +1,25 @@
+services:
+  cartsync:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cartsync-app
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - CART_SYNC_DB_PATH=/app/data/cartsync.db
+    volumes:
+      - cartsync-data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  cartsync-data:
+    name: cartsync-sqlite-data

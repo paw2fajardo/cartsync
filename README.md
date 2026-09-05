@@ -69,11 +69,37 @@ npm run dev
 
 ---
 
+## 🐳 Docker & Containerization
+
+CartSync is fully containerized using a lightweight multi-stage Alpine build that serves both the static PWA frontend and the Node 22 SQLite/WebSocket sync server on a single unified port (`3001`).
+
+### Quickstart with Docker Compose (Recommended)
+```bash
+docker compose up --build -d
+```
+Access the application at `http://localhost:3001`. Data is automatically persisted to the `cartsync-sqlite-data` Docker volume.
+
+### Standalone Docker Run
+```bash
+# Build container image
+docker build -t cartsync:latest .
+
+# Run container with persistent volume
+docker run -d \
+  -p 3001:3001 \
+  -v cartsync-data:/app/data \
+  --name cartsync-app \
+  cartsync:latest
+```
+
+---
+
 ## Test Coverage
-- **105+ Automated Tests** across 6 test suites covering:
+- **170+ Automated Tests** across 12 test suites covering:
+  - Docker multi-stage build, compose, and containerization configuration
   - SQLite backend database and REST/WebSocket synchronization
   - Local-first IndexedDB and localStorage dual-write persistence
   - Smart natural language item categorization and unit extraction
   - Device detector and profile attribution flows
-  - List CRUD and cascade operations
+  - List CRUD, cascade operations, and delete slider confirmation
   - Production PWA build artifacts and service worker verification

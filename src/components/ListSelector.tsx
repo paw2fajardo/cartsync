@@ -24,6 +24,20 @@ export const ListSelector: React.FC = () => {
   const activeList = lists.find((l) => l.id === activeListId) || lists[0];
   const canDeleteActive = lists.length > 1;
 
+  const listButtonRefs = React.useRef<Map<string, HTMLButtonElement>>(new Map());
+
+  // Auto-scroll active list pill to the center when selected or switched
+  React.useEffect(() => {
+    const btn = listButtonRefs.current.get(activeListId);
+    if (btn) {
+      btn.scrollIntoView({
+        behavior: 'smooth',
+        inline: 'center',
+        block: 'nearest',
+      });
+    }
+  }, [activeListId]);
+
   return (
     <>
       <div className="flex items-center gap-2 w-full">
@@ -49,9 +63,13 @@ export const ListSelector: React.FC = () => {
             return (
               <button
                 key={list.id}
+                ref={(el) => {
+                  if (el) listButtonRefs.current.set(list.id, el);
+                  else listButtonRefs.current.delete(list.id);
+                }}
                 type="button"
                 onClick={() => setActiveListId(list.id)}
-                className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all duration-150 shrink-0 cursor-pointer active:scale-[0.97] ${
+                className={`flex items-center gap-2 px-3.5 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition-all duration-150 shrink-0 cursor-pointer active:scale-[0.97] scroll-mx-6 ${
                   isActive
                     ? 'bg-emerald-600 dark:bg-emerald-500 text-white shadow-sm shadow-emerald-600/20'
                     : 'bg-white/90 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/60 hover:border-slate-300 dark:hover:border-slate-600 hover:text-slate-900 dark:hover:text-white backdrop-blur-xs'

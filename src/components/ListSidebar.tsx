@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { X, Plus, Trash2, Pencil, ShoppingCart, Store, Box, Pill, Sparkles, Apple, Carrot, Coffee, Smartphone, Tablet, Laptop, Monitor, Home, Users } from 'lucide-react';
+import { X, Plus, Trash2, Pencil, ShoppingCart, Store, Box, Pill, Sparkles, Apple, Carrot, Coffee, Smartphone, Tablet, Laptop, Monitor, Home, Users, Layers } from 'lucide-react';
 import { useGrocery } from '../context/GroceryContext';
 import { useDevice } from '../context/DeviceContext';
 import { DeviceIcon, GroceryList } from '../types';
 import { DeleteListModal } from './DeleteListModal';
 import { EditListModal } from './EditListModal';
+import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 
 interface ListSidebarProps {
   isOpen: boolean;
@@ -31,10 +32,13 @@ const DEVICE_ICONS: Record<DeviceIcon, React.FC<{ className?: string }>> = {
 };
 
 export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => {
-  const { lists, activeListId, setActiveListId, openNewListModal, items } = useGrocery();
+  const { lists, activeListId, setActiveListId, openNewListModal, openAutoListRulesModal, openCategoryModal, items } = useGrocery();
   const { activeHouseholdDevices, openRenameModal } = useDevice();
   const [deletingList, setDeletingList] = useState<GroceryList | null>(null);
   const [editingList, setEditingList] = useState<GroceryList | null>(null);
+
+  // Prevent background scrolling while sidebar drawer is open
+  useBodyScrollLock(isOpen);
 
   if (!isOpen) return null;
 
@@ -200,6 +204,30 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
             >
               <Plus className="w-4 h-4" />
               <span>Create Custom List</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                openCategoryModal();
+                onClose();
+              }}
+              className="w-full py-2.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100/80 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 active:scale-95 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-2"
+            >
+              <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Category Manager</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                openAutoListRulesModal();
+                onClose();
+              }}
+              className="w-full py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 border border-amber-200/80 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 active:scale-95 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-2"
+            >
+              <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <span>Auto-Route Keyword Rules</span>
             </button>
           </div>
 

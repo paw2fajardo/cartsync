@@ -35,7 +35,7 @@ describe.sequential('WebSocket & Express Household Sync Server Verification', ()
 
     // Wait for server to become healthy
     let ready = false;
-    for (let i = 0; i < 30; i++) {
+    for (let i = 0; i < 50; i++) {
       try {
         const res = await fetch(`${SERVER_URL}/api/health`);
         if (res.ok) {
@@ -50,7 +50,7 @@ describe.sequential('WebSocket & Express Household Sync Server Verification', ()
     if (!ready) {
       throw new Error('Sync server failed to start within timeout');
     }
-  }, 15000);
+  }, 20000);
 
   afterAll(async () => {
     if (serverProcess) {

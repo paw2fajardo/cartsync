@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { DeviceProvider } from './context/DeviceContext';
 import { GroceryProvider } from './context/GroceryContext';
+import { AuthProvider } from './context/AuthContext';
+import { LockScreen } from './components/LockScreen';
 import { Header } from './components/Header';
 import { ListSelector } from './components/ListSelector';
 import { QuickAddBar } from './components/QuickAddBar';
@@ -11,9 +13,15 @@ import { DeviceModal } from './components/DeviceModal';
 import { SyncStatusModal } from './components/SyncStatusModal';
 import { NewListModal } from './components/NewListModal';
 import { ListSidebar } from './components/ListSidebar';
+import { AutoListRulesModal } from './components/AutoListRulesModal';
+import { CategoryManagerModal } from './components/CategoryManagerModal';
+import { UndoToast } from './components/UndoToast';
+import { ScrollToTopButton } from './components/ScrollToTopButton';
+import { useGrocery } from './context/GroceryContext';
 import { Download, Sparkles, X } from 'lucide-react';
 
 const GroceryApp: React.FC = () => {
+  const { isCategoryModalOpen, closeCategoryModal } = useGrocery();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [dismissInstall, setDismissInstall] = useState(false);
@@ -38,6 +46,9 @@ const GroceryApp: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 selection:bg-emerald-500 selection:text-white transition-colors duration-200">
+      {/* Global Household Lock Screen */}
+      <LockScreen />
+
       <Header onToggleSidebar={() => setIsSidebarOpen(true)} />
 
       <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-3 pb-32 space-y-4">
@@ -82,10 +93,18 @@ const GroceryApp: React.FC = () => {
       {/* Sticky Bottom Thumb-Friendly Quick Add Bar */}
       <QuickAddBar />
 
+      {/* Floating Back to Top Button (Bottom-Left) */}
+      <ScrollToTopButton />
+
+      {/* Floating Undo Notification Toast */}
+      <UndoToast />
+
       {/* Modals */}
       <DeviceModal />
       <SyncStatusModal />
       <NewListModal />
+      <AutoListRulesModal />
+      <CategoryManagerModal isOpen={isCategoryModalOpen} onClose={closeCategoryModal} />
       <ListSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
     </div>
   );
@@ -94,11 +113,13 @@ const GroceryApp: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <ThemeProvider>
-      <DeviceProvider>
-        <GroceryProvider>
-          <GroceryApp />
-        </GroceryProvider>
-      </DeviceProvider>
+      <AuthProvider>
+        <DeviceProvider>
+          <GroceryProvider>
+            <GroceryApp />
+          </GroceryProvider>
+        </DeviceProvider>
+      </AuthProvider>
     </ThemeProvider>
   );
 };
