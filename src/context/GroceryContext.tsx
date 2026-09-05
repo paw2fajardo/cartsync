@@ -21,6 +21,7 @@ import {
 import { INITIAL_LISTS, INITIAL_ITEMS, INITIAL_AUTO_LIST_RULES } from '../storage/seedData';
 import { syncClient } from '../sync/syncClient';
 import { findMatchingAutoListRule } from '../utils/smartCategorizer';
+import { resolveItemConflict, resolveItemListConflict } from '../utils/conflictResolver';
 
 interface GroceryContextType {
   lists: GroceryList[];
@@ -191,21 +192,27 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       if (event.type === 'SYNC_STATE' && event.state) {
         const remoteState = event.state;
         setLists(remoteState.lists || []);
-        setItems(remoteState.items || []);
         if (remoteState.autoListRules) {
           setAutoListRules(remoteState.autoListRules);
         }
         setLastSyncedAt(remoteState.lastSyncedAt || Date.now());
-        bulkSaveData(remoteState.lists || [], remoteState.items || [], remoteState.autoListRules);
-      } else if (event.type === 'ITEM_UPSERT' && event.item) {
-        const item = event.item;
+
         setItems((prev) => {
-          const idx = prev.findIndex((i) => i.id === item.id);
-          const next = idx >= 0 ? [...prev] : [item, ...prev];
-          if (idx >= 0) next[idx] = item;
+          const resolved = resolveItemListConflict(prev, remoteState.items || []);
+          bulkSaveData(remoteState.lists || [], resolved, remoteState.autoListRules);
+          return resolved;
+        });
+      } else if (event.type === 'ITEM_UPSERT' && event.item) {
+        const incomingItem = event.item;
+        setItems((prev) => {
+          const existing = prev.find((i) => i.id === incomingItem.id);
+          const resolvedItem = existing ? resolveItemConflict(existing, incomingItem) : incomingItem;
+          const idx = prev.findIndex((i) => i.id === resolvedItem.id);
+          const next = idx >= 0 ? [...prev] : [resolvedItem, ...prev];
+          if (idx >= 0) next[idx] = resolvedItem;
+          idbSaveItem(resolvedItem);
           return next;
         });
-        idbSaveItem(item);
         setLastSyncedAt(Date.now());
       } else if (event.type === 'ITEM_DELETE' && event.deletedItemId) {
         const id = event.deletedItemId;
@@ -259,11 +266,12 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const result = await syncClient.httpSync(lists, items, autoListRules);
     if (result) {
       setLists(result.lists);
-      setItems(result.items);
+      const resolved = resolveItemListConflict(items, result.items || []);
+      setItems(resolved);
       if (result.autoListRules) setAutoListRules(result.autoListRules);
       setLastSyncedAt(result.lastSyncedAt || Date.now());
       setSyncStatus('connected');
-      await bulkSaveData(result.lists, result.items, result.autoListRules);
+      await bulkSaveData(result.lists, resolved, result.autoListRules);
     }
   }, [lists, items, autoListRules]);
 
@@ -307,8 +315,9 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     }
 
+    const now = Date.now();
     const newItem: GroceryItem = {
-      id: `item_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      id: `item_${now}_${Math.random().toString(36).substring(2, 7)}`,
       listId: destinationListId,
       name: name.trim(),
       quantity: quantity || 1,
@@ -323,8 +332,9 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         deviceName: device.name,
         color: device.color,
       },
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
+      createdAt: now,
+      contentUpdatedAt: now,
+      updatedAt: now,
     };
 
     // Optimistic local update
@@ -347,10 +357,11 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (!target) return;
 
     const willBeCompleted = !target.completed;
+    const now = Date.now();
     const updated: GroceryItem = {
       ...target,
       completed: willBeCompleted,
-      completedAt: willBeCompleted ? Date.now() : null,
+      completedAt: willBeCompleted ? now : null,
       completedBy: willBeCompleted
         ? {
             deviceId: device.id,
@@ -358,7 +369,7 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
             color: device.color,
           }
         : null,
-      updatedAt: Date.now(),
+      updatedAt: now,
     };
 
     // Confetti celebration when checking off the last remaining item on a list!
@@ -387,10 +398,20 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const target = items.find((i) => i.id === id);
     if (!target) return;
 
+    const now = Date.now();
+    const isContentEdit =
+      updates.name !== undefined ||
+      updates.quantity !== undefined ||
+      updates.unit !== undefined ||
+      updates.category !== undefined ||
+      updates.note !== undefined ||
+      updates.listId !== undefined;
+
     const updated: GroceryItem = {
       ...target,
       ...updates,
-      updatedAt: Date.now(),
+      contentUpdatedAt: isContentEdit ? now : (target.contentUpdatedAt ?? target.updatedAt),
+      updatedAt: now,
     };
 
     setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));

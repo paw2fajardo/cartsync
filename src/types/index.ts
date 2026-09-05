@@ -45,6 +45,7 @@ export interface GroceryItem {
   addedBy: DeviceRef;
   createdAt: number;
   updatedAt: number;
+  contentUpdatedAt?: number;
 }
 
 export interface GroceryList {

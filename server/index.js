@@ -140,8 +140,11 @@ wss.on('connection', (ws, req) => {
 
         case 'ITEM_UPSERT': {
           if (payload && payload.id) {
-            cartSyncDb.upsertItem(payload);
-            broadcast(message, ws);
+            const canonicalItem = cartSyncDb.upsertItem(payload);
+            broadcast({
+              ...message,
+              payload: canonicalItem,
+            }, ws);
           }
           break;
         }

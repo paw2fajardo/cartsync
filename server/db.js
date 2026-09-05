@@ -60,9 +60,17 @@ export class CartSyncDatabase {
         added_by TEXT,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
+        content_updated_at INTEGER,
         FOREIGN KEY (list_id) REFERENCES lists(id) ON DELETE CASCADE
       );
     `);
+
+    // Migration: Add content_updated_at column if missing (for existing databases)
+    try {
+      this.db.exec('ALTER TABLE items ADD COLUMN content_updated_at INTEGER;');
+    } catch (_) {
+      // Column already exists
+    }
 
     // 3. Connected Devices Table
     this.db.exec(`
@@ -341,6 +349,7 @@ export class CartSyncDatabase {
       addedBy: r.added_by ? JSON.parse(r.added_by) : undefined,
       createdAt: Number(r.created_at),
       updatedAt: Number(r.updated_at),
+      contentUpdatedAt: r.content_updated_at ? Number(r.content_updated_at) : undefined,
     }));
 
     const deviceRows = this.db.prepare('SELECT * FROM devices ORDER BY last_seen_at DESC').all();
@@ -389,10 +398,94 @@ export class CartSyncDatabase {
     };
   }
 
-  upsertItem(item) {
+  getItem(id) {
+    const row = this.db.prepare('SELECT * FROM items WHERE id = ?').get(id);
+    if (!row) return null;
+    return {
+      id: row.id,
+      listId: row.list_id,
+      name: row.name,
+      quantity: Number(row.quantity),
+      unit: row.unit || undefined,
+      category: row.category || 'Other',
+      note: row.note || undefined,
+      completed: Boolean(row.completed),
+      completedAt: row.completed_at ? Number(row.completed_at) : null,
+      completedBy: row.completed_by ? JSON.parse(row.completed_by) : null,
+      addedBy: row.added_by ? JSON.parse(row.added_by) : undefined,
+      createdAt: Number(row.created_at),
+      updatedAt: Number(row.updated_at),
+      contentUpdatedAt: row.content_updated_at ? Number(row.content_updated_at) : undefined,
+    };
+  }
+
+  upsertItem(incomingItem) {
+    const now = Date.now();
+    const existing = this.getItem(incomingItem.id);
+
+    let finalItem = incomingItem;
+    if (existing) {
+      // Content resolution: LWW based on content updatedAt
+      // When an item has contentUpdatedAt, use it directly.
+      // For items without contentUpdatedAt (legacy or completion-only toggles):
+      //   - completed items: use createdAt (content wasn't changed by the completion toggle)
+      //   - uncompleted items: use updatedAt (last content edit)
+      const existingContentTime = existing.contentUpdatedAt ?? (
+        existing.completed ? (existing.createdAt || existing.updatedAt || 0) : (existing.updatedAt || 0)
+      );
+      const incomingContentTime = incomingItem.contentUpdatedAt ?? (
+        incomingItem.completed ? (incomingItem.createdAt || incomingItem.updatedAt || 0) : (incomingItem.updatedAt || 0)
+      );
+      const useIncomingContent = incomingContentTime >= existingContentTime;
+      const contentBase = useIncomingContent ? incomingItem : existing;
+      const resolvedContentTime = Math.max(existingContentTime, incomingContentTime);
+
+      // Completion resolution: LWW based on completion action timestamp
+      // Uses same logic as client-side resolveItemConflict
+      let useIncomingCompletion = false;
+
+      if (incomingItem.completed && !existing.completed) {
+        const incomingCompTime = incomingItem.completedAt ?? incomingItem.updatedAt ?? 0;
+        const existingUncheckTime = existing.updatedAt ?? 0;
+        useIncomingCompletion = incomingCompTime >= existingUncheckTime;
+      } else if (!incomingItem.completed && existing.completed) {
+        const existingCompTime = existing.completedAt ?? existing.updatedAt ?? 0;
+        const incomingUncheckTime = incomingItem.updatedAt ?? 0;
+        // Distinguish content-only edits from explicit unchecks
+        const incContentTime = incomingItem.contentUpdatedAt ?? 0;
+        const isContentOnlyEdit = incContentTime > 0 && incContentTime === (incomingItem.updatedAt ?? 0);
+        useIncomingCompletion = !isContentOnlyEdit && incomingUncheckTime > existingCompTime;
+      } else if (incomingItem.completed && existing.completed) {
+        const existingCompTime = existing.completedAt ?? existing.updatedAt ?? 0;
+        const incomingCompTime = incomingItem.completedAt ?? incomingItem.updatedAt ?? 0;
+        useIncomingCompletion = incomingCompTime >= existingCompTime;
+      } else {
+        // Both uncompleted
+        useIncomingCompletion = (incomingItem.updatedAt ?? 0) >= (existing.updatedAt ?? 0);
+      }
+      const completionBase = useIncomingCompletion ? incomingItem : existing;
+
+      finalItem = {
+        id: incomingItem.id,
+        listId: contentBase.listId,
+        name: contentBase.name,
+        quantity: contentBase.quantity !== undefined ? contentBase.quantity : 1,
+        unit: contentBase.unit || undefined,
+        category: contentBase.category || 'Other',
+        note: contentBase.note || undefined,
+        addedBy: contentBase.addedBy,
+        createdAt: Math.min(existing.createdAt || now, incomingItem.createdAt || now),
+        completed: Boolean(completionBase.completed),
+        completedAt: completionBase.completed ? (completionBase.completedAt || now) : null,
+        completedBy: completionBase.completed ? completionBase.completedBy : null,
+        contentUpdatedAt: resolvedContentTime,
+        updatedAt: Math.max(existing.updatedAt || 0, incomingItem.updatedAt || 0, resolvedContentTime),
+      };
+    }
+
     const stmt = this.db.prepare(`
-      INSERT INTO items (id, list_id, name, quantity, unit, category, note, completed, completed_at, completed_by, added_by, created_at, updated_at)
-      VALUES (@id, @list_id, @name, @quantity, @unit, @category, @note, @completed, @completed_at, @completed_by, @added_by, @created_at, @updated_at)
+      INSERT INTO items (id, list_id, name, quantity, unit, category, note, completed, completed_at, completed_by, added_by, created_at, updated_at, content_updated_at)
+      VALUES (@id, @list_id, @name, @quantity, @unit, @category, @note, @completed, @completed_at, @completed_by, @added_by, @created_at, @updated_at, @content_updated_at)
       ON CONFLICT(id) DO UPDATE SET
         list_id = excluded.list_id,
         name = excluded.name,
@@ -404,25 +497,28 @@ export class CartSyncDatabase {
         completed_at = excluded.completed_at,
         completed_by = excluded.completed_by,
         added_by = excluded.added_by,
-        updated_at = excluded.updated_at
+        updated_at = excluded.updated_at,
+        content_updated_at = excluded.content_updated_at
     `);
 
-    const now = Date.now();
     stmt.run({
-      id: item.id,
-      list_id: item.listId,
-      name: item.name,
-      quantity: item.quantity !== undefined ? item.quantity : 1,
-      unit: item.unit || null,
-      category: item.category || 'Other',
-      note: item.note || null,
-      completed: item.completed ? 1 : 0,
-      completed_at: item.completedAt || null,
-      completed_by: item.completedBy ? JSON.stringify(item.completedBy) : null,
-      added_by: item.addedBy ? JSON.stringify(item.addedBy) : null,
-      created_at: item.createdAt || now,
-      updated_at: item.updatedAt || now,
+      id: finalItem.id,
+      list_id: finalItem.listId,
+      name: finalItem.name,
+      quantity: finalItem.quantity !== undefined ? finalItem.quantity : 1,
+      unit: finalItem.unit || null,
+      category: finalItem.category || 'Other',
+      note: finalItem.note || null,
+      completed: finalItem.completed ? 1 : 0,
+      completed_at: finalItem.completedAt || null,
+      completed_by: finalItem.completedBy ? JSON.stringify(finalItem.completedBy) : null,
+      added_by: finalItem.addedBy ? JSON.stringify(finalItem.addedBy) : null,
+      created_at: finalItem.createdAt || now,
+      updated_at: finalItem.updatedAt || now,
+      content_updated_at: finalItem.contentUpdatedAt || null,
     });
+
+    return finalItem;
   }
 
   deleteItem(itemId) {

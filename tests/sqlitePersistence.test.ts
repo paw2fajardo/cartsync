@@ -220,4 +220,159 @@ describe('CartSync SQLite Persistence Layer Verification', () => {
     expect(resetState.items.some((i) => i.id === 'extra_1')).toBe(false);
     expect(resetState.items.some((i) => i.id === 'item_1')).toBe(true);
   });
+
+  describe('Completion-Preserving LWW Merge in SQLite', () => {
+    const baseTime = 1700000000000;
+
+    it('should preserve content edit when a concurrent completion arrives via upsert', () => {
+      // User A creates item then edits content
+      const initialItem = {
+        id: 'cp_lww_test_1',
+        listId: 'list_supermarket',
+        name: 'Organic Eggs',
+        quantity: 1,
+        unit: 'dozen',
+        category: 'Dairy & Eggs',
+        completed: false,
+        completedAt: null,
+        completedBy: null,
+        addedBy: { deviceId: 'dev_a', deviceName: 'User A' },
+        createdAt: baseTime,
+        updatedAt: baseTime,
+      };
+
+      db.upsertItem(initialItem);
+
+      // User A edits quantity and note at t+1000
+      const contentEdit = {
+        ...initialItem,
+        quantity: 3,
+        note: 'Free range only',
+        contentUpdatedAt: baseTime + 1000,
+        updatedAt: baseTime + 1000,
+      };
+      db.upsertItem(contentEdit);
+
+      // User B completes the item at t+2000
+      const completionToggle = {
+        ...initialItem,
+        completed: true,
+        completedAt: baseTime + 2000,
+        completedBy: { deviceId: 'dev_b', deviceName: 'User B' },
+        updatedAt: baseTime + 2000,
+      };
+      db.upsertItem(completionToggle);
+
+      // Verify merged state
+      const item = db.getItem('cp_lww_test_1');
+      expect(item).toBeDefined();
+      expect(item.quantity).toBe(3);
+      expect(item.note).toBe('Free range only');
+      expect(item.completed).toBe(true);
+      expect(item.completedAt).toBe(baseTime + 2000);
+      expect(item.completedBy?.deviceId).toBe('dev_b');
+    });
+
+    it('should preserve completion when a content-only edit has a newer updatedAt', () => {
+      // Item is completed first
+      const completedItem = {
+        id: 'cp_lww_test_2',
+        listId: 'list_supermarket',
+        name: 'Whole Milk',
+        quantity: 1,
+        unit: 'gallon',
+        category: 'Dairy & Eggs',
+        completed: true,
+        completedAt: baseTime + 1000,
+        completedBy: { deviceId: 'dev_b', deviceName: 'User B' },
+        addedBy: { deviceId: 'dev_a', deviceName: 'User A' },
+        createdAt: baseTime,
+        updatedAt: baseTime + 1000,
+      };
+
+      db.upsertItem(completedItem);
+
+      // User A (who never saw completion) edits content at t+3000
+      const contentOnlyEdit = {
+        ...completedItem,
+        completed: false,
+        completedAt: null,
+        completedBy: null,
+        note: '2% fat',
+        contentUpdatedAt: baseTime + 3000,
+        updatedAt: baseTime + 3000,
+      };
+
+      db.upsertItem(contentOnlyEdit);
+
+      const item = db.getItem('cp_lww_test_2');
+      expect(item).toBeDefined();
+      expect(item.note).toBe('2% fat');
+      expect(item.completed).toBe(true);
+      expect(item.completedAt).toBe(baseTime + 1000);
+      expect(item.completedBy?.deviceId).toBe('dev_b');
+    });
+
+    it('should allow explicit uncheck to override completion', () => {
+      const completedItem = {
+        id: 'cp_lww_test_3',
+        listId: 'list_supermarket',
+        name: 'Butter',
+        quantity: 1,
+        category: 'Dairy & Eggs',
+        completed: true,
+        completedAt: baseTime + 1000,
+        completedBy: { deviceId: 'dev_b', deviceName: 'User B' },
+        addedBy: { deviceId: 'dev_a', deviceName: 'User A' },
+        createdAt: baseTime,
+        updatedAt: baseTime + 1000,
+      };
+
+      db.upsertItem(completedItem);
+
+      // Explicit uncheck at t+2000 (no contentUpdatedAt set — it's a toggle, not a content edit)
+      const uncheckAction = {
+        ...completedItem,
+        completed: false,
+        completedAt: null,
+        completedBy: null,
+        updatedAt: baseTime + 2000,
+      };
+
+      db.upsertItem(uncheckAction);
+
+      const item = db.getItem('cp_lww_test_3');
+      expect(item).toBeDefined();
+      expect(item.completed).toBe(false);
+      expect(item.completedAt).toBeNull();
+    });
+
+    it('should store and retrieve contentUpdatedAt for round-trip consistency', () => {
+      const item = {
+        id: 'cp_lww_test_4',
+        listId: 'list_supermarket',
+        name: 'Bananas',
+        quantity: 6,
+        category: 'Produce',
+        completed: false,
+        completedAt: null,
+        completedBy: null,
+        addedBy: { deviceId: 'dev_a', deviceName: 'User A' },
+        createdAt: baseTime,
+        contentUpdatedAt: baseTime + 500,
+        updatedAt: baseTime + 500,
+      };
+
+      db.upsertItem(item);
+
+      const retrieved = db.getItem('cp_lww_test_4');
+      expect(retrieved).toBeDefined();
+      expect(retrieved.contentUpdatedAt).toBe(baseTime + 500);
+
+      // Also verify it's in getState
+      const state = db.getState();
+      const fromState = state.items.find((i) => i.id === 'cp_lww_test_4');
+      expect(fromState?.contentUpdatedAt).toBe(baseTime + 500);
+    });
+  });
 });

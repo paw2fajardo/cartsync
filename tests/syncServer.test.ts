@@ -319,5 +319,119 @@ describe.sequential('WebSocket & Express Household Sync Server Verification', ()
       wsSender.close();
       wsReceiver.close();
     });
+
+    it('should perform Completion-Preserving LWW merge on concurrent content edit and completion via WebSocket', async () => {
+      const baseTime = Date.now();
+
+      const wsSender = new WebSocket(WS_URL);
+      const wsReceiver = new WebSocket(WS_URL);
+
+      await Promise.all([
+        new Promise((r) => wsSender.on('open', r)),
+        new Promise((r) => wsReceiver.on('open', r)),
+      ]);
+
+      // Drain initial SYNC_STATE messages
+      await new Promise((r) => setTimeout(r, 200));
+
+      const itemId = `cp_lww_ws_${baseTime}`;
+
+      // Step 1: Seed initial item
+      const initialItem = {
+        id: itemId,
+        listId: 'list_supermarket',
+        name: 'Greek Yogurt',
+        quantity: 2,
+        unit: 'cups',
+        category: 'Dairy & Eggs',
+        completed: false,
+        completedAt: null,
+        completedBy: null,
+        addedBy: { deviceId: 'dev_a', deviceName: 'User A' },
+        createdAt: baseTime,
+        updatedAt: baseTime,
+      };
+
+      wsSender.send(
+        JSON.stringify({
+          type: 'ITEM_UPSERT',
+          deviceId: 'dev_a',
+          timestamp: baseTime,
+          payload: initialItem,
+        })
+      );
+
+      await new Promise((r) => setTimeout(r, 100));
+
+      // Step 2: User A edits content (quantity + note)
+      const contentEdit = {
+        ...initialItem,
+        quantity: 6,
+        note: 'Plain, non-fat',
+        contentUpdatedAt: baseTime + 1000,
+        updatedAt: baseTime + 1000,
+      };
+
+      wsSender.send(
+        JSON.stringify({
+          type: 'ITEM_UPSERT',
+          deviceId: 'dev_a',
+          timestamp: baseTime + 1000,
+          payload: contentEdit,
+        })
+      );
+
+      await new Promise((r) => setTimeout(r, 100));
+
+      // Step 3: User B completes the item (from their stale version)
+      const completionMsg = {
+        ...initialItem,
+        completed: true,
+        completedAt: baseTime + 2000,
+        completedBy: { deviceId: 'dev_b', deviceName: 'User B' },
+        updatedAt: baseTime + 2000,
+      };
+
+      // Listen for the broadcast of the merged item
+      const mergedPromise = new Promise<any>((resolve, reject) => {
+        const timeout = setTimeout(() => reject(new Error('Timeout waiting for CP-LWW merged broadcast')), 4000);
+        wsReceiver.on('message', (raw) => {
+          const msg = JSON.parse(raw.toString());
+          if (msg.type === 'ITEM_UPSERT' && msg.payload?.id === itemId) {
+            clearTimeout(timeout);
+            resolve(msg.payload);
+          }
+        });
+      });
+
+      wsSender.send(
+        JSON.stringify({
+          type: 'ITEM_UPSERT',
+          deviceId: 'dev_b',
+          timestamp: baseTime + 2000,
+          payload: completionMsg,
+        })
+      );
+
+      const mergedItem = await mergedPromise;
+
+      // Verify CP-LWW merge: content from User A + completion from User B
+      expect(mergedItem.quantity).toBe(6);
+      expect(mergedItem.note).toBe('Plain, non-fat');
+      expect(mergedItem.completed).toBe(true);
+      expect(mergedItem.completedAt).toBe(baseTime + 2000);
+      expect(mergedItem.completedBy?.deviceId).toBe('dev_b');
+
+      // Also verify server state is consistent
+      const stateRes = await fetch(`${SERVER_URL}/api/state?t=${Date.now()}`);
+      const state = await stateRes.json();
+      const serverItem = state.items.find((i: any) => i.id === itemId);
+      expect(serverItem).toBeDefined();
+      expect(serverItem.quantity).toBe(6);
+      expect(serverItem.completed).toBe(true);
+
+      wsSender.close();
+      wsReceiver.close();
+    });
   });
 });
