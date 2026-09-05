@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, ShieldAlert, Delete, Home, Fingerprint, Sparkles } from 'lucide-react';
+import { Lock, ShieldAlert, Delete, Home, Fingerprint, Sparkles, KeyRound, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { CartSyncLogo } from './CartSyncLogo';
 
@@ -8,6 +8,8 @@ export const LockScreen: React.FC = () => {
     isLocked,
     hasPinSet,
     householdName,
+    householdKey,
+    setHouseholdKey,
     unlock,
     unlockWithBiometrics,
     isBiometricsSupported,
@@ -18,6 +20,8 @@ export const LockScreen: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState('');
   const [isShaking, setIsShaking] = useState(false);
   const [isBiometricPrompting, setIsBiometricPrompting] = useState(false);
+  const [isKeyModalOpen, setIsKeyModalOpen] = useState(false);
+  const [keyInput, setKeyInput] = useState(householdKey);
 
   // Trigger biometric prompt on load if enrolled and active
   useEffect(() => {
@@ -88,9 +92,23 @@ export const LockScreen: React.FC = () => {
           <CartSyncLogo size={28} />
           <span className="font-bold text-sm tracking-tight text-white/90">CartSync</span>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/80 text-[11px] font-medium text-emerald-400">
-          <Home className="w-3 h-3" />
-          <span>{householdName}</span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              setKeyInput(householdKey);
+              setIsKeyModalOpen(true);
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/80 text-[11px] font-medium text-slate-300 hover:text-white transition-all cursor-pointer"
+            title="Household Server Key (PSK)"
+          >
+            <KeyRound className="w-3 h-3 text-emerald-400" />
+            <span>{householdKey ? 'Key Set' : 'Server Key'}</span>
+          </button>
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800/80 border border-slate-700/80 text-[11px] font-medium text-emerald-400">
+            <Home className="w-3 h-3" />
+            <span>{householdName}</span>
+          </div>
         </div>
       </div>
 
@@ -205,6 +223,76 @@ export const LockScreen: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Quick Household Server Key Setup Modal */}
+      {isKeyModalOpen && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-4 bg-black/75 backdrop-blur-md animate-in fade-in duration-150">
+          <div className="bg-slate-800 border border-slate-700 rounded-3xl max-w-xs w-full p-5 shadow-2xl space-y-3.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <KeyRound className="w-4 h-4 text-emerald-400" />
+                <h3 className="text-sm font-bold text-white">Household Secret Key</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsKeyModalOpen(false)}
+                className="text-slate-400 hover:text-white p-1 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Pre-shared Bearer token matching <code className="text-emerald-300 font-mono">HOUSEHOLD_SECRET</code> on your server.
+            </p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setHouseholdKey(keyInput.trim());
+                setIsKeyModalOpen(false);
+              }}
+              className="space-y-3"
+            >
+              <input
+                type="password"
+                value={keyInput}
+                onChange={(e) => setKeyInput(e.target.value)}
+                placeholder="Enter secret key..."
+                className="w-full px-3 py-2 text-xs font-mono rounded-xl bg-slate-900 border border-slate-700 text-white placeholder:font-sans focus:outline-hidden focus:border-emerald-500"
+              />
+              <div className="flex items-center justify-between pt-1">
+                {householdKey ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setKeyInput('');
+                      setHouseholdKey('');
+                      setIsKeyModalOpen(false);
+                    }}
+                    className="text-xs text-rose-400 hover:text-rose-300 font-medium cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                ) : <div />}
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsKeyModalOpen(false)}
+                    className="px-3 py-1.5 text-xs text-slate-400 hover:text-white cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-xs"
+                  >
+                    Save Key
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

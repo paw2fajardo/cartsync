@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Wifi, WifiOff, RefreshCw, Smartphone, Tablet, Laptop, Monitor, Home, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { useGrocery } from '../context/GroceryContext';
 import { useDevice } from '../context/DeviceContext';
+import { useAuth } from '../context/AuthContext';
 import { DeviceIcon } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useModalBackNavigation } from '../hooks/useModalBackNavigation';
@@ -17,7 +18,14 @@ const DEVICE_ICONS: Record<DeviceIcon, React.FC<{ className?: string }>> = {
 export const SyncStatusModal: React.FC = () => {
   const { isSyncModalOpen, closeSyncModal, syncStatus, lastSyncedAt, triggerManualSync } = useGrocery();
   const { activeHouseholdDevices } = useDevice();
+  const { householdKey, setHouseholdKey } = useAuth();
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isEditingKey, setIsEditingKey] = useState(false);
+  const [keyVal, setKeyVal] = useState(householdKey);
+
+  React.useEffect(() => {
+    setKeyVal(householdKey);
+  }, [householdKey, isSyncModalOpen]);
 
   // Intercept back button to close sync status modal
   useModalBackNavigation(isSyncModalOpen, closeSyncModal, 'sync-modal');
@@ -34,6 +42,12 @@ export const SyncStatusModal: React.FC = () => {
     } finally {
       setTimeout(() => setIsSyncing(false), 500);
     }
+  };
+
+  const handleSaveKey = (e: React.FormEvent) => {
+    e.preventDefault();
+    setHouseholdKey(keyVal.trim());
+    setIsEditingKey(false);
   };
 
   return (
@@ -90,6 +104,42 @@ export const SyncStatusModal: React.FC = () => {
               {syncStatus === 'connected' ? 'WebSocket Active' : 'Polling & Fallback'}
             </span>
           </div>
+
+          <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 pt-1 border-t border-slate-200 dark:border-slate-700/60">
+            <span>Household Key:</span>
+            <div className="flex items-center gap-2">
+              <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${householdKey ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20' : 'bg-slate-200 dark:bg-slate-800 text-slate-500'}`}>
+                {householdKey ? 'Configured (PSK)' : 'Open Mode'}
+              </span>
+              <button
+                type="button"
+                onClick={() => setIsEditingKey(!isEditingKey)}
+                className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+              >
+                {isEditingKey ? 'Cancel' : 'Edit'}
+              </button>
+            </div>
+          </div>
+
+          {isEditingKey && (
+            <form onSubmit={handleSaveKey} className="pt-2 pb-1 space-y-2 border-t border-slate-200 dark:border-slate-700/60 animate-in fade-in">
+              <div className="flex gap-2">
+                <input
+                  type="password"
+                  value={keyVal}
+                  onChange={(e) => setKeyVal(e.target.value)}
+                  placeholder="Enter household secret"
+                  className="flex-1 px-3 py-1.5 text-xs font-mono rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:font-sans"
+                />
+                <button
+                  type="submit"
+                  className="px-3 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
+                >
+                  Save
+                </button>
+              </div>
+            </form>
+          )}
 
           <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 pt-1 border-t border-slate-200 dark:border-slate-700/60">
             <span>Last Synced:</span>

@@ -33,6 +33,33 @@ class SyncClient {
   private reconnectAttempts = 0;
   private currentDevice: DeviceProfile | null = null;
   private isExplicitlyOffline = false;
+  private authToken: string = typeof window !== 'undefined' ? localStorage.getItem('cartsync_auth_token') || '' : '';
+
+  public getAuthToken(): string {
+    return this.authToken;
+  }
+
+  public setAuthToken(token: string): void {
+    const cleanToken = (token || '').trim();
+    if (this.authToken !== cleanToken) {
+      this.authToken = cleanToken;
+      if (typeof window !== 'undefined') {
+        if (cleanToken) {
+          localStorage.setItem('cartsync_auth_token', cleanToken);
+        } else {
+          localStorage.removeItem('cartsync_auth_token');
+        }
+      }
+      // Reconnect WebSocket with new token credentials
+      if (this.ws) {
+        this.ws.close();
+        this.ws = null;
+      }
+      if (typeof navigator !== 'undefined' && navigator.onLine && !this.isExplicitlyOffline) {
+        this.connect();
+      }
+    }
+  }
 
   public init(device: DeviceProfile): void {
     this.currentDevice = device;
@@ -105,11 +132,21 @@ class SyncClient {
       // Determine ws url (support wss:// dynamically when behind SSL reverse proxies)
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.hostname || 'localhost';
-      const wsUrl = window.location.port === '5173'
+      let wsUrl = window.location.port === '5173'
         ? `ws://${host}:3001`
         : `${protocol}//${window.location.host}/ws`;
 
-      const socket = new WebSocket(wsUrl);
+      if (this.authToken) {
+        const sep = wsUrl.includes('?') ? '&' : '?';
+        wsUrl = `${wsUrl}${sep}token=${encodeURIComponent(this.authToken)}`;
+      }
+
+      // If token is alphanumeric/hyphen/underscore, it is also safe to pass via subprotocol
+      const isSubprotocolSafe = /^[a-zA-Z0-9_\-\.]+$/.test(this.authToken);
+      const socket = this.authToken && isSubprotocolSafe
+        ? new WebSocket(wsUrl, ['cartsync-auth', this.authToken])
+        : new WebSocket(wsUrl);
+
       this.ws = socket;
 
       socket.onopen = () => {
@@ -359,6 +396,15 @@ class SyncClient {
     });
   }
 
+  // Authenticated HTTP Fetch Client helper
+  public async fetchWithAuth(url: string, init: RequestInit = {}): Promise<Response> {
+    const headers = new Headers(init.headers || {});
+    if (this.authToken && !headers.has('Authorization')) {
+      headers.set('Authorization', `Bearer ${this.authToken}`);
+    }
+    return fetch(url, { ...init, headers });
+  }
+
   // HTTP Fallback Sync
   public async httpSync(
     lists: GroceryList[],
@@ -366,9 +412,16 @@ class SyncClient {
     autoListRules?: AutoListRule[]
   ): Promise<HouseholdState | null> {
     try {
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (this.authToken) {
+        headers['Authorization'] = `Bearer ${this.authToken}`;
+      }
+
       const response = await fetch('/api/sync', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           lists,
           items,

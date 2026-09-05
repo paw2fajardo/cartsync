@@ -17,6 +17,36 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Shared Household Pre-Shared Key (Bearer Token)
+export function getHouseholdSecret() {
+  return process.env.HOUSEHOLD_SECRET || process.env.SYNC_AUTH_TOKEN || '';
+}
+
+// HTTP Authentication Middleware for /api/* routes
+export function authMiddleware(req, res, next) {
+  res.set('Cache-Control', 'no-store');
+  const secret = getHouseholdSecret();
+  if (!secret) {
+    return next(); // Open mode for local development
+  }
+
+  const authHeader = req.get('authorization') || '';
+  const match = authHeader.match(/^Bearer\s+(.+)$/i);
+  const token = match ? match[1].trim() : null;
+
+  if (!token || token !== secret) {
+    return res.status(401).json({
+      error: 'Unauthorized',
+      message: 'Invalid or missing household authentication token',
+    });
+  }
+
+  next();
+}
+
+// Intercept and authenticate all /api routes
+app.use('/api', authMiddleware);
+
 // REST Endpoints
 app.get('/api/health', (req, res) => {
   const state = cartSyncDb.getState();
@@ -33,6 +63,16 @@ app.get('/api/health', (req, res) => {
 
 app.get('/api/state', (req, res) => {
   res.json(cartSyncDb.getState());
+});
+
+app.get('/api/backup', (req, res) => {
+  const state = cartSyncDb.getState();
+  res.json({
+    app: 'CartSync',
+    version: state.version || 2,
+    exportedAt: new Date().toISOString(),
+    ...state,
+  });
 });
 
 app.post('/api/sync', (req, res) => {
@@ -70,9 +110,82 @@ if (fs.existsSync(distPath)) {
   });
 }
 
+// Extract authentication token from incoming WebSocket request
+export function extractWsToken(req) {
+  if (!req) return null;
+
+  // 1. Query parameters: ?token=xyz or ?auth=xyz
+  try {
+    const parsedUrl = new URL(req.url, 'http://localhost');
+    const queryToken =
+      parsedUrl.searchParams.get('token') ||
+      parsedUrl.searchParams.get('auth') ||
+      parsedUrl.searchParams.get('key') ||
+      parsedUrl.searchParams.get('bearer');
+    if (queryToken) return queryToken.trim();
+  } catch (_) {}
+
+  // 2. Authorization header: Bearer <token>
+  const authHeader = req.headers && (req.headers['authorization'] || req.headers['Authorization']);
+  if (authHeader) {
+    const match = String(authHeader).match(/^Bearer\s+(.+)$/i);
+    if (match) return match[1].trim();
+  }
+
+  // 3. Sec-WebSocket-Protocol: e.g. "cartsync-auth, <token>" or "cartsync-auth.<token>" or "<token>"
+  const wsProtocol = req.headers && req.headers['sec-websocket-protocol'];
+  if (wsProtocol) {
+    const parts = String(wsProtocol)
+      .split(',')
+      .map((p) => p.trim());
+    for (const part of parts) {
+      if (part.startsWith('cartsync-auth.')) {
+        return part.replace('cartsync-auth.', '').trim();
+      }
+    }
+    const candidates = parts.filter(
+      (p) => p !== 'cartsync-auth' && p !== 'bearer' && p !== 'websocket'
+    );
+    if (candidates.length > 0) {
+      return candidates[0];
+    }
+    if (parts.length === 1 && parts[0] !== 'cartsync-auth') {
+      return parts[0];
+    }
+  }
+
+  return null;
+}
+
 // Create HTTP and WebSocket Server
 const server = http.createServer(app);
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({
+  noServer: true,
+  handleProtocols: (protocols) => {
+    const secret = getHouseholdSecret();
+    if (protocols.has('cartsync-auth')) return 'cartsync-auth';
+    if (secret && protocols.has(secret)) return secret;
+    return Array.from(protocols)[0] || false;
+  },
+});
+
+server.on('upgrade', (req, socket, head) => {
+  const secret = getHouseholdSecret();
+  if (secret) {
+    const token = extractWsToken(req);
+    if (!token || token !== secret) {
+      // Reject unauthorized connection attempts with code 4401 or immediate socket closure
+      wss.handleUpgrade(req, socket, head, (ws) => {
+        ws.close(4401, 'Unauthorized');
+      });
+      return;
+    }
+  }
+
+  wss.handleUpgrade(req, socket, head, (ws) => {
+    wss.emit('connection', ws, req);
+  });
+});
 
 function broadcast(message, senderWs = null) {
   const payloadStr = JSON.stringify(message);

@@ -15,6 +15,7 @@ interface AuthContextType {
   isAdmin: boolean;
   adminPinConfigured: boolean;
   householdName: string;
+  householdKey: string;
   autoLockMinutes: number; // 0 = never, 1 = 1m, 15 = 15m, 60 = 1h
   isAdminModalOpen: boolean;
   isBiometricsSupported: boolean;
@@ -32,6 +33,7 @@ interface AuthContextType {
   openAdminModal: () => void;
   closeAdminModal: () => void;
   setHouseholdName: (name: string) => void;
+  setHouseholdKey: (key: string) => void;
   setAutoLockMinutes: (minutes: number) => void;
   purgeDevice: (deviceId: string) => void;
 }
@@ -41,6 +43,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const PIN_STORAGE_KEY = 'cartsync_household_pin';
 const SESSION_STORAGE_KEY = 'cartsync_auth_session';
 const HOUSEHOLD_NAME_KEY = 'cartsync_household_name';
+const AUTH_TOKEN_STORAGE_KEY = 'cartsync_auth_token';
 const IS_ADMIN_KEY = 'cartsync_is_admin_v1';
 const AUTOLOCK_KEY = 'cartsync_autolock_minutes';
 const LAST_ACTIVE_KEY = 'cartsync_last_active_timestamp';
@@ -64,6 +67,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [householdName, setHouseholdNameState] = useState<string>(() => {
     return (typeof window !== 'undefined' ? localStorage.getItem(HOUSEHOLD_NAME_KEY) : null) || 'Our Home';
+  });
+
+  const [householdKey, setHouseholdKeyState] = useState<string>(() => {
+    return (typeof window !== 'undefined' ? localStorage.getItem(AUTH_TOKEN_STORAGE_KEY) : null) || '';
   });
 
   const [adminPinConfigured, setAdminPinConfigured] = useState<boolean>(false);
@@ -253,6 +260,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     syncClient.broadcastHouseholdName(trimmed);
   };
 
+  const setHouseholdKey = (key: string) => {
+    const trimmed = (key || '').trim();
+    setHouseholdKeyState(trimmed);
+    if (typeof window !== 'undefined') {
+      if (trimmed) {
+        localStorage.setItem(AUTH_TOKEN_STORAGE_KEY, trimmed);
+      } else {
+        localStorage.removeItem(AUTH_TOKEN_STORAGE_KEY);
+      }
+    }
+    syncClient.setAuthToken(trimmed);
+  };
+
   const promoteToAdmin = (adminPin: string): boolean => {
     if (!adminPinConfigured) {
       setIsAdmin(true);
@@ -312,6 +332,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin,
         adminPinConfigured,
         householdName,
+        householdKey,
         autoLockMinutes,
         isAdminModalOpen,
         isBiometricsSupported,
@@ -329,6 +350,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         openAdminModal,
         closeAdminModal,
         setHouseholdName,
+        setHouseholdKey,
         setAutoLockMinutes,
         purgeDevice,
       }}
