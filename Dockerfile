@@ -5,11 +5,11 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
-# Install dependencies for building
+# Install build dependencies
 COPY package.json package-lock.json ./
 RUN npm ci
 
-# Copy project files and build Vite React PWA bundle
+# Copy full source and build production Vite bundle
 COPY . .
 RUN npm run build
 
@@ -20,26 +20,32 @@ FROM node:22-alpine AS runner
 
 WORKDIR /app
 
-# Default environment configuration
+# Production environment defaults
 ENV NODE_ENV=production \
     PORT=3001 \
     CART_SYNC_DB_PATH=/app/data/cartsync.db
+
+# Install non-root security user & runtime essentials
+RUN addgroup -S cartsync && adduser -S cartsync -G cartsync
 
 # Install production dependencies only
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 
-# Copy server code and built frontend dist from builder
+# Copy backend server code and built frontend dist
 COPY server/ ./server/
 COPY --from=builder /app/dist ./dist
 
-# Create persistent data directory for SQLite database
-RUN mkdir -p /app/data
+# Create persistent database folder with proper user permissions
+RUN mkdir -p /app/data && chown -R cartsync:cartsync /app
 
-# Expose application port
+# Switch to non-root user for container security
+USER cartsync
+
+# Expose HTTP & WebSocket port
 EXPOSE 3001
 
-# Container health check against backend API endpoint
+# Health check endpoint
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:3001/api/health || exit 1
 

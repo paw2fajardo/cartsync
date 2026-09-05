@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: cartsync-app
+    image: paw2fajardo/cartsync:latest
     restart: unless-stopped
     ports:
       - "3001:3001"
