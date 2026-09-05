@@ -18,6 +18,7 @@ import { CategoryManagerModal } from './components/CategoryManagerModal';
 import { AdminModal } from './components/AdminModal';
 import { UndoToast } from './components/UndoToast';
 import { ScrollToTopButton } from './components/ScrollToTopButton';
+import { AppUpdateBanner } from './components/AppUpdateBanner';
 import { useGrocery } from './context/GroceryContext';
 import { Download, Sparkles, X } from 'lucide-react';
 
@@ -53,6 +54,9 @@ const GroceryApp: React.FC = () => {
       <Header onToggleSidebar={() => setIsSidebarOpen(true)} />
 
       <main className="flex-1 max-w-2xl w-full mx-auto px-4 py-3 pb-32 space-y-4">
+        {/* Service Worker Update Notification Banner */}
+        <AppUpdateBanner />
+
         {/* Subtle PWA Install Banner */}
         {installPrompt && !dismissInstall && (
           <div className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl bg-emerald-50/90 dark:bg-emerald-950/50 border border-emerald-200/80 dark:border-emerald-800/60 text-xs text-emerald-800 dark:text-emerald-200 shadow-xs backdrop-blur-xs">
