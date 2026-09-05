@@ -7,6 +7,7 @@ import { DeviceIcon, GroceryList } from '../types';
 import { DeleteListModal } from './DeleteListModal';
 import { EditListModal } from './EditListModal';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { useModalBackNavigation } from '../hooks/useModalBackNavigation';
 
 interface ListSidebarProps {
   isOpen: boolean;
@@ -40,6 +41,13 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
   const [editingList, setEditingList] = useState<GroceryList | null>(null);
 
   const DeviceActiveIcon = DEVICE_ICONS[device.icon] || Smartphone;
+
+  // Intercept back button to close drawer when active
+  useModalBackNavigation(isOpen, onClose, 'list-sidebar');
+
+  // Intercept back button for sub-modals (edit / delete)
+  useModalBackNavigation(Boolean(editingList), () => setEditingList(null), 'edit-list-modal');
+  useModalBackNavigation(Boolean(deletingList), () => setDeletingList(null), 'delete-list-modal');
 
   // Prevent background scrolling while sidebar drawer is open
   useBodyScrollLock(isOpen);
@@ -154,7 +162,7 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
                           <Icon className="w-4 h-4" />
                         </div>
 
-                        <div className="min-w-0 flex-1">
+                        <div className="min-w-0 flex-1 pr-20">
                           <div className="flex items-center gap-1.5">
                             <span className="text-sm font-bold text-slate-900 dark:text-white truncate">
                               {list.name}
@@ -190,8 +198,11 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
                         {/* Edit List Button */}
                         <button
                           type="button"
-                          onClick={() => setEditingList(list)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 transition-all cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingList(list);
+                          }}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 transition-all cursor-pointer pr-2"
                           title={`Edit list "${list.name}"`}
                           aria-label={`Edit list ${list.name}`}
                         >
@@ -202,7 +213,10 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
                         {lists.length > 1 && (
                           <button
                             type="button"
-                            onClick={() => setDeletingList(list)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeletingList(list);
+                            }}
                             className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-95 transition-all cursor-pointer"
                             title={`Delete list "${list.name}"`}
                             aria-label={`Delete list ${list.name}`}

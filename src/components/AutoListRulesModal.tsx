@@ -4,6 +4,7 @@ import { useGrocery } from '../context/GroceryContext';
 import { AutoListRule, ItemCategory } from '../types';
 import { CATEGORY_COLORS } from '../utils/smartCategorizer';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { useModalBackNavigation } from '../hooks/useModalBackNavigation';
 
 const ALL_CATEGORIES: ItemCategory[] = [
   'Produce',
@@ -32,6 +33,9 @@ export const AutoListRulesModal: React.FC = () => {
     updateAutoListRule,
     deleteAutoListRule,
   } = useGrocery();
+
+  // Intercept back button to close auto list rules modal
+  useModalBackNavigation(isAutoListRulesModalOpen, closeAutoListRulesModal, 'auto-list-rules-modal');
 
   // Prevent background scrolling while modal is open
   useBodyScrollLock(isAutoListRulesModalOpen);

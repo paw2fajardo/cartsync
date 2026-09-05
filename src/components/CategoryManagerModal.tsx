@@ -4,6 +4,7 @@ import { useGrocery } from '../context/GroceryContext';
 import { ItemCategory } from '../types';
 import { CATEGORY_COLORS } from '../utils/smartCategorizer';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { useModalBackNavigation } from '../hooks/useModalBackNavigation';
 
 export const INITIAL_CATEGORIES_INFO: Array<{
   name: ItemCategory;
@@ -102,6 +103,9 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({ isOp
   const [categoriesInfo, setCategoriesInfo] = useState(INITIAL_CATEGORIES_INFO);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<ItemCategory>('Produce');
+
+  // Intercept back button to close category manager modal
+  useModalBackNavigation(isOpen, onClose, 'category-manager-modal');
 
   // Prevent background scrolling while modal is open
   useBodyScrollLock(isOpen);

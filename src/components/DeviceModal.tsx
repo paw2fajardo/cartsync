@@ -4,6 +4,7 @@ import { useDevice } from '../context/DeviceContext';
 import { useAuth } from '../context/AuthContext';
 import { DeviceIcon } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { useModalBackNavigation } from '../hooks/useModalBackNavigation';
 
 const AUTO_REORGANIZE_STORAGE_KEY = 'cartsync_auto_reorganize_category_v1';
 
@@ -48,6 +49,9 @@ export const DeviceModal: React.FC = () => {
     autoLockMinutes,
     setAutoLockMinutes,
   } = useAuth();
+
+  // Intercept back button to close device configuration modal
+  useModalBackNavigation(isRenameOpen, closeRenameModal, 'device-modal');
 
   // Prevent background scrolling while modal is open
   useBodyScrollLock(isRenameOpen);
@@ -142,14 +146,14 @@ export const DeviceModal: React.FC = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/50 dark:bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-slate-900 border-t sm:border border-slate-200/80 dark:border-slate-700/80 rounded-t-3xl sm:rounded-3xl max-w-lg sm:max-w-md w-full p-5 sm:p-6 shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] space-y-5 sm:space-y-6 pb-safe animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
+      <div className="bg-white dark:bg-slate-900 border-t sm:border border-slate-200/80 dark:border-slate-700/80 rounded-t-3xl sm:rounded-3xl max-w-lg sm:max-w-md w-full max-h-[90vh] sm:max-h-[85vh] flex flex-col shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] pb-safe animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
         {/* Mobile Pull Handle */}
-        <div className="sm:hidden flex justify-center -mt-1 pb-1">
+        <div className="sm:hidden flex justify-center pt-2 pb-1 shrink-0">
           <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
         </div>
 
-        {/* Header with Navigation Tabs */}
-        <div className="space-y-3">
+        {/* Header with Navigation Tabs (Sticky at top) */}
+        <div className="p-4 sm:p-5 pb-3 border-b border-slate-200/80 dark:border-slate-800 space-y-3 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div
@@ -211,10 +215,12 @@ export const DeviceModal: React.FC = () => {
           </div>
         </div>
 
-        {activeTab === 'device' ? (
-          <form onSubmit={handleSave} className="space-y-4">
-            {/* Household Name (Admin-Protected) */}
-            <div className="space-y-1.5 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/70">
+        {/* Scrollable Form Body */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4">
+          {activeTab === 'device' ? (
+            <form onSubmit={handleSave} className="space-y-4">
+              {/* Household Name (Admin-Protected) */}
+              <div className="space-y-1.5 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/70">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                   <Home className="w-3.5 h-3.5 text-emerald-500" />
@@ -553,6 +559,7 @@ export const DeviceModal: React.FC = () => {
           </form>
         </div>
       )}
+        </div>
       </div>
     </div>
   );

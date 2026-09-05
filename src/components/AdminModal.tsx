@@ -21,6 +21,7 @@ import { useAuth } from '../context/AuthContext';
 import { useDevice } from '../context/DeviceContext';
 import { useGrocery } from '../context/GroceryContext';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { useModalBackNavigation } from '../hooks/useModalBackNavigation';
 
 type AdminTab = 'access' | 'devices' | 'rules' | 'database';
 
@@ -54,6 +55,9 @@ export const AdminModal: React.FC = () => {
     openCategoryModal,
     openAutoListRulesModal,
   } = useGrocery();
+
+  // Intercept back button to close admin modal
+  useModalBackNavigation(isAdminModalOpen, closeAdminModal, 'admin-modal');
 
   useBodyScrollLock(isAdminModalOpen);
 

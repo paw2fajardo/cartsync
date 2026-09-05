@@ -4,6 +4,7 @@ import { useGrocery } from '../context/GroceryContext';
 import { useDevice } from '../context/DeviceContext';
 import { DeviceIcon } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { useModalBackNavigation } from '../hooks/useModalBackNavigation';
 
 const DEVICE_ICONS: Record<DeviceIcon, React.FC<{ className?: string }>> = {
   smartphone: Smartphone,
@@ -17,6 +18,9 @@ export const SyncStatusModal: React.FC = () => {
   const { isSyncModalOpen, closeSyncModal, syncStatus, lastSyncedAt, triggerManualSync } = useGrocery();
   const { activeHouseholdDevices } = useDevice();
   const [isSyncing, setIsSyncing] = useState(false);
+
+  // Intercept back button to close sync status modal
+  useModalBackNavigation(isSyncModalOpen, closeSyncModal, 'sync-modal');
 
   // Prevent background scrolling while modal is open
   useBodyScrollLock(isSyncModalOpen);

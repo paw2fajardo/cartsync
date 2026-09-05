@@ -6,6 +6,7 @@ import { useGrocery } from '../context/GroceryContext';
 import { useDevice } from '../context/DeviceContext';
 import { CATEGORY_COLORS, categorizeItem } from '../utils/smartCategorizer';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { useModalBackNavigation } from '../hooks/useModalBackNavigation';
 
 const AUTO_REORGANIZE_STORAGE_KEY = 'cartsync_auto_reorganize_category_v1';
 
@@ -57,6 +58,11 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
     suggestedCategory: ItemCategory;
   } | null>(null);
   const [alwaysAutoMove, setAlwaysAutoMove] = useState(false);
+
+  // Intercept back button to dismiss item edit sheet, quick dropdown, or prompt
+  useModalBackNavigation(isInlineEditing, () => setActiveEditingItemId(null), `item-edit-${item.id}`);
+  useModalBackNavigation(isCategoryDropdownOpen, () => setIsCategoryDropdownOpen(false), `item-cat-${item.id}`);
+  useModalBackNavigation(Boolean(categorySuggestionPrompt), () => setCategorySuggestionPrompt(null), `item-prompt-${item.id}`);
 
   // Lock canvas scroll whenever edit modal or quick category bottom sheet is open
   useBodyScrollLock(isInlineEditing || isCategoryDropdownOpen || Boolean(categorySuggestionPrompt));
