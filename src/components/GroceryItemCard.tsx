@@ -504,7 +504,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
           <div className="fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-6 animate-in fade-in duration-200">
             {/* Backdrop */}
             <div
-              className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity"
+              className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-md transition-opacity"
               onClick={() => setActiveEditingItemId(null)}
             />
 
@@ -519,11 +519,11 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
               }}
               className={`relative z-10 w-full ${
                 isKeyboardOpen ? 'h-[90dvh]' : 'h-auto max-h-[85dvh]'
-              } sm:h-auto sm:max-h-[90vh] max-w-lg sm:max-w-md bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 overscroll-contain pb-safe`}
+              } sm:h-auto sm:max-h-[90vh] max-w-lg sm:max-w-md bg-white dark:bg-slate-850 border-t sm:border border-slate-200 dark:border-slate-700/90 rounded-t-3xl sm:rounded-3xl shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] ring-1 ring-black/5 dark:ring-white/10 flex flex-col overflow-hidden animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 overscroll-contain pb-safe`}
             >
               {/* Mobile Pull Handle with visual drag cue */}
               <div className="sm:hidden flex flex-col items-center justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing shrink-0">
-                <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-700 transition-colors" />
+                <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 transition-colors" />
                 <span className="text-[9px] text-slate-400 font-medium mt-1">Swipe down or tap outside to close</span>
               </div>
 

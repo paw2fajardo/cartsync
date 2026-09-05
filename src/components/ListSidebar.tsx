@@ -57,16 +57,16 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
   return (
     <>
       <div className="fixed inset-0 z-40 flex">
-        {/* Backdrop */}
+        {/* Backdrop: High contrast dark dimmer */}
         <div
           onClick={onClose}
-          className="fixed inset-0 bg-slate-950/50 dark:bg-slate-950/70 backdrop-blur-sm transition-opacity animate-in fade-in"
+          className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-md transition-opacity animate-in fade-in duration-200"
         />
 
-        {/* Drawer: Full window width on mobile, responsive max-w on desktop */}
-        <div className="relative w-full sm:w-96 sm:max-w-[85vw] bg-white dark:bg-slate-900 h-full shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] flex flex-col z-50 animate-in slide-in-from-left duration-200">
+        {/* Drawer: Full window width on mobile, responsive max-w on desktop. Elevated dark:bg-slate-850 */}
+        <div className="relative w-full sm:w-96 sm:max-w-[85vw] bg-white dark:bg-slate-850 border-r border-slate-200/80 dark:border-slate-700/80 h-full shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] flex flex-col z-50 animate-in slide-in-from-left duration-200">
           {/* Drawer Header with Active Device Profile Banner */}
-          <div className="p-4 sm:p-5 border-b border-slate-200/80 dark:border-slate-800/80 space-y-3">
+          <div className="p-4 sm:p-5 border-b border-slate-200/80 dark:border-slate-750 space-y-3">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-base font-bold text-slate-900 dark:text-white">
@@ -250,8 +250,8 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
             <button
               type="button"
               onClick={() => {
-                openNewListModal();
                 onClose();
+                openNewListModal();
               }}
               className="w-full py-2.5 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 active:scale-95 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-3"
             >
@@ -262,8 +262,8 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
             <button
               type="button"
               onClick={() => {
-                openCategoryModal();
                 onClose();
+                openCategoryModal();
               }}
               className="w-full py-2.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100/80 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 active:scale-95 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-2"
             >
@@ -274,8 +274,8 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
             <button
               type="button"
               onClick={() => {
-                openAutoListRulesModal();
                 onClose();
+                openAutoListRulesModal();
               }}
               className="w-full py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 border border-amber-200/80 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 active:scale-95 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-2"
             >
@@ -286,8 +286,8 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
             <button
               type="button"
               onClick={() => {
-                openAdminModal();
                 onClose();
+                openAdminModal();
               }}
               className="w-full py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-750 border border-slate-200/80 dark:border-slate-700 text-slate-800 dark:text-slate-200 active:scale-95 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-2"
             >

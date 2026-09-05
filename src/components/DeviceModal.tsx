@@ -145,15 +145,15 @@ export const DeviceModal: React.FC = () => {
   const SelectedIcon = ICONS.find((i) => i.type === icon)?.icon || Smartphone;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/50 dark:bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-slate-900 border-t sm:border border-slate-200/80 dark:border-slate-700/80 rounded-t-3xl sm:rounded-3xl max-w-lg sm:max-w-md w-full max-h-[90vh] sm:max-h-[85vh] flex flex-col shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)] pb-safe animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
+      <div className="bg-white dark:bg-slate-850 border-t sm:border border-slate-200/80 dark:border-slate-700/90 rounded-t-3xl sm:rounded-3xl max-w-lg sm:max-w-md w-full max-h-[90vh] sm:max-h-[85vh] flex flex-col shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] ring-1 ring-black/5 dark:ring-white/10 pb-safe animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
         {/* Mobile Pull Handle */}
         <div className="sm:hidden flex justify-center pt-2 pb-1 shrink-0">
-          <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+          <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
         </div>
 
         {/* Header with Navigation Tabs (Sticky at top) */}
-        <div className="p-4 sm:p-5 pb-3 border-b border-slate-200/80 dark:border-slate-800 space-y-3 shrink-0">
+        <div className="p-4 sm:p-5 pb-3 border-b border-slate-200/80 dark:border-slate-750 space-y-3 shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div

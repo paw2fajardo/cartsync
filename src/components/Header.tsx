@@ -27,7 +27,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
   const IconComponent = DEVICE_ICONS[device.icon] || Smartphone;
 
   return (
-    <header className="sticky top-0 z-30 bg-white/85 dark:bg-slate-900/85 backdrop-blur-xl border-b border-slate-200/70 dark:border-slate-800/80 transition-colors">
+    <header className="sticky top-0 z-30 bg-white/85 dark:bg-slate-950/85 backdrop-blur-xl border-b border-slate-200/70 dark:border-slate-800/80 transition-colors">
       <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between gap-2">
         {/* Left: Brand Logo & Household Name */}
         <div className="flex items-center gap-2.5 min-w-0">

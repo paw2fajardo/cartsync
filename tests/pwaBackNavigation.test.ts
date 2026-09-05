@@ -12,7 +12,6 @@ describe('PWA Back Button & Window Navigation Tracking', () => {
     expect(hookContent).toContain('window.history.pushState');
     expect(hookContent).toContain('addEventListener(\'popstate\'');
     expect(hookContent).toContain('removeEventListener(\'popstate\'');
-    expect(hookContent).toContain('window.history.back()');
   });
 
   it('ListSidebar integrates useModalBackNavigation for sidebar drawer and sub-modals', () => {

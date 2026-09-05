@@ -95,9 +95,9 @@ export const AutoListRulesModal: React.FC = () => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="auto-list-rules-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 dark:bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
     >
-      <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl space-y-4 max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-150">
+      <div className="bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/90 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] ring-1 ring-black/5 dark:ring-white/10 space-y-4 max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-150">
         
         {/* Modal Header */}
         <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">

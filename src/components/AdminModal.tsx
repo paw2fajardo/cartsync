@@ -197,15 +197,15 @@ export const AdminModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-950/60 dark:bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-slate-900 border-t sm:border border-slate-200/90 dark:border-slate-800 rounded-t-3xl sm:rounded-3xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.8)] pb-safe animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
+      <div className="bg-white dark:bg-slate-850 border-t sm:border border-slate-200/90 dark:border-slate-700/90 rounded-t-3xl sm:rounded-3xl max-w-xl w-full max-h-[90vh] flex flex-col shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] ring-1 ring-black/5 dark:ring-white/10 pb-safe animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
         {/* Top Handle on Mobile */}
         <div className="sm:hidden flex justify-center pt-2 pb-1">
-          <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
+          <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
         </div>
 
         {/* Modal Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-slate-200/80 dark:border-slate-750 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-2xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center justify-center shadow-xs">
               <Shield className="w-5 h-5 stroke-[2.2]" />
