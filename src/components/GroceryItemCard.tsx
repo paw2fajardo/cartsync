@@ -7,6 +7,8 @@ import { useDevice } from '../context/DeviceContext';
 import { CATEGORY_COLORS, categorizeItem } from '../utils/smartCategorizer';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useModalBackNavigation } from '../hooks/useModalBackNavigation';
+import { usePullDownDismiss } from '../hooks/usePullDownDismiss';
+import { PullDownHandle } from './PullDownHandle';
 
 const AUTO_REORGANIZE_STORAGE_KEY = 'cartsync_auto_reorganize_category_v1';
 
@@ -69,11 +71,19 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
 
   const catStyle = CATEGORY_COLORS[item.category] || CATEGORY_COLORS.Other;
 
-  // Swipe-down to dismiss bottom sheet on mobile for Edit Modal
-  const [modalDragY, setModalDragY] = useState(0);
-  const [isModalDragging, setIsModalDragging] = useState(false);
   const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
-  const modalTouchStartRef = React.useRef<{ y: number; x: number; isVertical?: boolean } | null>(null);
+
+  // Pull-down-to-dismiss for Edit Modal
+  const editModalDismiss = usePullDownDismiss({
+    onDismiss: () => setActiveEditingItemId(null),
+    enabled: isInlineEditing,
+  });
+
+  // Pull-down-to-dismiss for Category Switcher
+  const categoryDismiss = usePullDownDismiss({
+    onDismiss: () => setIsCategoryDropdownOpen(false),
+    enabled: isCategoryDropdownOpen,
+  });
 
   // Detect virtual keyboard presence via visualViewport resizing
   React.useEffect(() => {
@@ -99,42 +109,6 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
       window.removeEventListener('resize', handleResize);
     };
   }, [isInlineEditing]);
-
-  const handleModalTouchStart = (e: React.TouchEvent) => {
-    if (e.touches.length !== 1) return;
-    modalTouchStartRef.current = {
-      y: e.touches[0].clientY,
-      x: e.touches[0].clientX,
-    };
-    setIsModalDragging(false);
-  };
-
-  const handleModalTouchMove = (e: React.TouchEvent) => {
-    if (!modalTouchStartRef.current || e.touches.length !== 1) return;
-    const dy = e.touches[0].clientY - modalTouchStartRef.current.y;
-    const dx = e.touches[0].clientX - modalTouchStartRef.current.x;
-
-    if (modalTouchStartRef.current.isVertical === undefined) {
-      if (Math.abs(dy) > 8 || Math.abs(dx) > 8) {
-        modalTouchStartRef.current.isVertical = Math.abs(dy) > Math.abs(dx);
-      }
-    }
-
-    // Only allow dragging downwards (dy > 0)
-    if (modalTouchStartRef.current.isVertical && dy > 0) {
-      setIsModalDragging(true);
-      setModalDragY(dy);
-    }
-  };
-
-  const handleModalTouchEnd = () => {
-    if (modalDragY > 90) {
-      setActiveEditingItemId(null);
-    }
-    setModalDragY(0);
-    setIsModalDragging(false);
-    modalTouchStartRef.current = null;
-  };
 
   // Intercept Escape key when category popup is open
   React.useEffect(() => {
@@ -336,18 +310,30 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                           {/* Backdrop */}
                           <div
                             className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity"
+                            style={categoryDismiss.backdropStyle}
                             onClick={() => setIsCategoryDropdownOpen(false)}
                           />
 
                           {/* Slide-Up Bottom Sheet on Mobile, Centered Card on Desktop */}
-                          <div className="relative z-10 w-full max-w-lg sm:max-w-sm bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 pb-safe overscroll-contain">
+                          <div
+                            role="dialog"
+                            aria-modal="true"
+                            aria-label="Change Category"
+                            {...categoryDismiss.containerProps}
+                            className="relative z-10 w-full max-w-lg sm:max-w-sm bg-white dark:bg-slate-900 border-t sm:border border-slate-200 dark:border-slate-800 rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 pb-safe overscroll-contain"
+                          >
                             {/* Mobile Pull Handle */}
-                            <div className="sm:hidden flex flex-col items-center justify-center pt-3 pb-1">
-                              <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-700" />
-                            </div>
+                            <PullDownHandle
+                              onPointerDown={categoryDismiss.handlePointerDown}
+                              isDragging={categoryDismiss.isDragging}
+                              showCue={false}
+                            />
 
                             {/* Header */}
-                            <div className="flex items-center justify-between px-5 py-3 sm:py-4 border-b border-slate-100 dark:border-slate-800">
+                            <div
+                              {...categoryDismiss.headerProps}
+                              className="flex items-center justify-between px-5 py-3 sm:py-4 border-b border-slate-100 dark:border-slate-800 cursor-grab active:cursor-grabbing select-none"
+                            >
                               <div>
                                 <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
                                   Change Category
@@ -505,30 +491,38 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
             {/* Backdrop */}
             <div
               className="fixed inset-0 bg-black/60 dark:bg-black/80 backdrop-blur-md transition-opacity"
+              style={editModalDismiss.backdropStyle}
               onClick={() => setActiveEditingItemId(null)}
             />
 
             {/* Modal Card / Bottom Sheet: Adaptive height (compact auto-fit when keyboard closed, 90% when keyboard open) */}
             <div
-              onTouchStart={handleModalTouchStart}
-              onTouchMove={handleModalTouchMove}
-              onTouchEnd={handleModalTouchEnd}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Edit Item"
+              {...editModalDismiss.containerProps}
               style={{
-                transform: modalDragY > 0 ? `translateY(${modalDragY}px)` : undefined,
-                transition: isModalDragging ? 'none' : 'transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1), height 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), max-height 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                ...editModalDismiss.containerProps.style,
+                transition: editModalDismiss.isDragging
+                  ? 'none'
+                  : 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), height 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), max-height 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)',
               }}
               className={`relative z-10 w-full ${
                 isKeyboardOpen ? 'h-[90dvh]' : 'h-auto max-h-[85dvh]'
               } sm:h-auto sm:max-h-[90vh] max-w-lg sm:max-w-md bg-white dark:bg-slate-850 border-t sm:border border-slate-200 dark:border-slate-700/90 rounded-t-3xl sm:rounded-3xl shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] ring-1 ring-black/5 dark:ring-white/10 flex flex-col overflow-hidden animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200 overscroll-contain pb-safe`}
             >
               {/* Mobile Pull Handle with visual drag cue */}
-              <div className="sm:hidden flex flex-col items-center justify-center pt-3 pb-1 cursor-grab active:cursor-grabbing shrink-0">
-                <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-slate-600 transition-colors" />
-                <span className="text-[9px] text-slate-400 font-medium mt-1">Swipe down or tap outside to close</span>
-              </div>
+              <PullDownHandle
+                onPointerDown={editModalDismiss.handlePointerDown}
+                isDragging={editModalDismiss.isDragging}
+                showCue={true}
+              />
 
               {/* Header */}
-              <div className="flex items-center justify-between px-5 py-3 sm:py-4 border-b border-slate-100 dark:border-slate-800 shrink-0">
+              <div
+                {...editModalDismiss.headerProps}
+                className="flex items-center justify-between px-5 py-3 sm:py-4 border-b border-slate-100 dark:border-slate-800 shrink-0 cursor-grab active:cursor-grabbing select-none"
+              >
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shadow-xs">
                     <Edit3 className="w-4 h-4" />

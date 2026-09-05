@@ -5,6 +5,8 @@ import { AutoListRule, ItemCategory } from '../types';
 import { CATEGORY_COLORS } from '../utils/smartCategorizer';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useModalBackNavigation } from '../hooks/useModalBackNavigation';
+import { usePullDownDismiss } from '../hooks/usePullDownDismiss';
+import { PullDownHandle } from './PullDownHandle';
 
 const ALL_CATEGORIES: ItemCategory[] = [
   'Produce',
@@ -39,6 +41,12 @@ export const AutoListRulesModal: React.FC = () => {
 
   // Prevent background scrolling while modal is open
   useBodyScrollLock(isAutoListRulesModalOpen);
+
+  // Pull-down-to-dismiss for mobile bottom sheet
+  const pullDown = usePullDownDismiss({
+    onDismiss: closeAutoListRulesModal,
+    enabled: isAutoListRulesModalOpen,
+  });
 
   const [searchQuery, setSearchQuery] = useState('');
   const [keyword, setKeyword] = useState('');
@@ -95,12 +103,26 @@ export const AutoListRulesModal: React.FC = () => {
       role="dialog"
       aria-modal="true"
       aria-labelledby="auto-list-rules-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
+      style={pullDown.backdropStyle}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) closeAutoListRulesModal();
+      }}
     >
-      <div className="bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/90 rounded-3xl max-w-lg w-full p-5 sm:p-6 shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] ring-1 ring-black/5 dark:ring-white/10 space-y-4 max-h-[90vh] flex flex-col animate-in zoom-in-95 duration-150">
+      <div
+        {...pullDown.containerProps}
+        className="bg-white dark:bg-slate-850 border-t sm:border border-slate-200/80 dark:border-slate-700/90 rounded-t-3xl sm:rounded-3xl max-w-lg w-full p-5 sm:p-6 pt-2 sm:pt-6 shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] ring-1 ring-black/5 dark:ring-white/10 space-y-4 max-h-[90vh] flex flex-col pb-safe animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
+      >
+        <PullDownHandle
+          onPointerDown={pullDown.handlePointerDown}
+          isDragging={pullDown.isDragging}
+        />
         
         {/* Modal Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+        <div
+          {...pullDown.headerProps}
+          className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3 cursor-grab active:cursor-grabbing select-none"
+        >
           <div className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-xs">
               <Sparkles className="w-4 h-4 stroke-[2.5]" />

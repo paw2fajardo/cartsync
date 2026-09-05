@@ -3,6 +3,8 @@ import { X, ShoppingCart, Store, Box, Pill, Sparkles, Apple, Carrot, Coffee, Che
 import { useGrocery } from '../context/GroceryContext';
 import { GroceryList } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { usePullDownDismiss } from '../hooks/usePullDownDismiss';
+import { PullDownHandle } from './PullDownHandle';
 
 export const LIST_ICONS = [
   { name: 'shopping-cart', icon: ShoppingCart, label: 'Cart' },
@@ -35,6 +37,12 @@ export const EditListModal: React.FC<EditListModalProps> = ({ list, isOpen, onCl
 
   // Prevent background scrolling while modal is open
   useBodyScrollLock(isOpen);
+
+  // Pull-down-to-dismiss for mobile bottom sheet
+  const pullDown = usePullDownDismiss({
+    onDismiss: onClose,
+    enabled: isOpen,
+  });
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -89,12 +97,26 @@ export const EditListModal: React.FC<EditListModalProps> = ({ list, isOpen, onCl
       role="dialog"
       aria-modal="true"
       aria-labelledby="edit-list-title"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
+      style={pullDown.backdropStyle}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
-      <div className="bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/90 rounded-3xl max-w-md w-full p-6 shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] ring-1 ring-black/5 dark:ring-white/10 space-y-5 animate-in zoom-in-95 duration-150">
+      <div
+        {...pullDown.containerProps}
+        className="bg-white dark:bg-slate-850 border-t sm:border border-slate-200/80 dark:border-slate-700/90 rounded-t-3xl sm:rounded-3xl max-w-md w-full p-6 pt-2 sm:pt-6 shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] ring-1 ring-black/5 dark:ring-white/10 space-y-5 max-h-[90vh] overflow-y-auto pb-safe animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
+      >
+        <PullDownHandle
+          onPointerDown={pullDown.handlePointerDown}
+          isDragging={pullDown.isDragging}
+        />
         
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div
+          {...pullDown.headerProps}
+          className="flex items-center justify-between cursor-grab active:cursor-grabbing select-none"
+        >
           <div>
             <h2 id="edit-list-title" className="text-lg font-bold text-slate-900 dark:text-white">
               Edit List

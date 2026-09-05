@@ -4,6 +4,8 @@ import { GroceryList } from '../types';
 import { useGrocery } from '../context/GroceryContext';
 import { SlideToConfirm } from './SlideToConfirm';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
+import { usePullDownDismiss } from '../hooks/usePullDownDismiss';
+import { PullDownHandle } from './PullDownHandle';
 
 interface DeleteListModalProps {
   list: GroceryList | null;
@@ -16,6 +18,12 @@ export const DeleteListModal: React.FC<DeleteListModalProps> = ({ list, isOpen, 
 
   // Prevent background scrolling while modal is open
   useBodyScrollLock(isOpen);
+
+  // Pull-down-to-dismiss for mobile bottom sheet
+  const pullDown = usePullDownDismiss({
+    onDismiss: onClose,
+    enabled: isOpen,
+  });
 
   if (!isOpen || !list) return null;
 
@@ -30,10 +38,29 @@ export const DeleteListModal: React.FC<DeleteListModalProps> = ({ list, isOpen, 
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/90 rounded-3xl max-w-md w-full p-6 shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] ring-1 ring-black/5 dark:ring-white/10 space-y-5 animate-in zoom-in-95 duration-150">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Delete List"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
+      style={pullDown.backdropStyle}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        {...pullDown.containerProps}
+        className="bg-white dark:bg-slate-850 border-t sm:border border-slate-200/80 dark:border-slate-700/90 rounded-t-3xl sm:rounded-3xl max-w-md w-full p-6 pt-2 sm:pt-6 shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] ring-1 ring-black/5 dark:ring-white/10 space-y-5 max-h-[90vh] overflow-y-auto pb-safe animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
+      >
+        <PullDownHandle
+          onPointerDown={pullDown.handlePointerDown}
+          isDragging={pullDown.isDragging}
+        />
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div
+          {...pullDown.headerProps}
+          className="flex items-center justify-between cursor-grab active:cursor-grabbing select-none"
+        >
           <div className="flex items-center gap-3">
             <div className={`w-10 h-10 rounded-2xl flex items-center justify-center text-white shadow-xs ${isNotEmpty ? 'bg-rose-500' : 'bg-slate-600'}`}>
               {isNotEmpty ? <AlertTriangle className="w-5 h-5 stroke-[2.5]" /> : <Trash2 className="w-5 h-5" />}

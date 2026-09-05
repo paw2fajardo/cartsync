@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { DeviceIcon } from '../types';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useModalBackNavigation } from '../hooks/useModalBackNavigation';
+import { usePullDownDismiss } from '../hooks/usePullDownDismiss';
+import { PullDownHandle } from './PullDownHandle';
 
 const AUTO_REORGANIZE_STORAGE_KEY = 'cartsync_auto_reorganize_category_v1';
 
@@ -55,6 +57,13 @@ export const DeviceModal: React.FC = () => {
 
   // Prevent background scrolling while modal is open
   useBodyScrollLock(isRenameOpen);
+
+  // Pull-down-to-dismiss for mobile bottom sheet
+  const pullDown = usePullDownDismiss({
+    onDismiss: closeRenameModal,
+    enabled: isRenameOpen,
+  });
+
   const [name, setName] = useState(device.name);
   const [color, setColor] = useState(device.color);
   const [icon, setIcon] = useState<DeviceIcon>(device.icon);
@@ -145,15 +154,31 @@ export const DeviceModal: React.FC = () => {
   const SelectedIcon = ICONS.find((i) => i.type === icon)?.icon || Smartphone;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-slate-850 border-t sm:border border-slate-200/80 dark:border-slate-700/90 rounded-t-3xl sm:rounded-3xl max-w-lg sm:max-w-md w-full max-h-[90vh] sm:max-h-[85vh] flex flex-col shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] ring-1 ring-black/5 dark:ring-white/10 pb-safe animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
+      style={pullDown.backdropStyle}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) closeRenameModal();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Device and Household Settings"
+        {...pullDown.containerProps}
+        className="bg-white dark:bg-slate-850 border-t sm:border border-slate-200/80 dark:border-slate-700/90 rounded-t-3xl sm:rounded-3xl max-w-lg sm:max-w-md w-full max-h-[90vh] sm:max-h-[85vh] flex flex-col shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] ring-1 ring-black/5 dark:ring-white/10 pb-safe animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
+      >
         {/* Mobile Pull Handle */}
-        <div className="sm:hidden flex justify-center pt-2 pb-1 shrink-0">
-          <div className="w-10 h-1 rounded-full bg-slate-300 dark:bg-slate-600" />
-        </div>
+        <PullDownHandle
+          onPointerDown={pullDown.handlePointerDown}
+          isDragging={pullDown.isDragging}
+        />
 
         {/* Header with Navigation Tabs (Sticky at top) */}
-        <div className="p-4 sm:p-5 pb-3 border-b border-slate-200/80 dark:border-slate-750 space-y-3 shrink-0">
+        <div
+          {...pullDown.headerProps}
+          className="p-4 sm:p-5 pb-3 border-b border-slate-200/80 dark:border-slate-750 space-y-3 shrink-0 cursor-grab active:cursor-grabbing select-none"
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div

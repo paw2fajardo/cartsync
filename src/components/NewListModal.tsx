@@ -3,6 +3,8 @@ import { X, ShoppingCart, Store, Box, Pill, Sparkles, Apple, Carrot, Coffee } fr
 import { useGrocery } from '../context/GroceryContext';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useModalBackNavigation } from '../hooks/useModalBackNavigation';
+import { usePullDownDismiss } from '../hooks/usePullDownDismiss';
+import { PullDownHandle } from './PullDownHandle';
 
 const LIST_ICONS = [
   { name: 'shopping-cart', icon: ShoppingCart, label: 'Cart' },
@@ -32,6 +34,13 @@ export const NewListModal: React.FC = () => {
 
   // Prevent background scrolling while modal is open
   useBodyScrollLock(isNewListModalOpen);
+
+  // Pull-down-to-dismiss for mobile bottom sheet
+  const pullDown = usePullDownDismiss({
+    onDismiss: closeNewListModal,
+    enabled: isNewListModalOpen,
+  });
+
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [selectedIcon, setSelectedIcon] = useState('shopping-cart');
@@ -50,10 +59,29 @@ export const NewListModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-150">
-      <div className="bg-white dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/90 rounded-3xl max-w-md w-full p-6 shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] ring-1 ring-black/5 dark:ring-white/10 space-y-5">
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 dark:bg-black/80 backdrop-blur-md animate-in fade-in duration-150"
+      style={pullDown.backdropStyle}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) closeNewListModal();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Create New List"
+        {...pullDown.containerProps}
+        className="bg-white dark:bg-slate-850 border-t sm:border border-slate-200/80 dark:border-slate-700/90 rounded-t-3xl sm:rounded-3xl max-w-md w-full p-6 pt-2 sm:pt-6 shadow-2xl dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95)] ring-1 ring-black/5 dark:ring-white/10 space-y-5 max-h-[90vh] overflow-y-auto pb-safe animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200"
+      >
+        <PullDownHandle
+          onPointerDown={pullDown.handlePointerDown}
+          isDragging={pullDown.isDragging}
+        />
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div
+          {...pullDown.headerProps}
+          className="flex items-center justify-between cursor-grab active:cursor-grabbing select-none"
+        >
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               Create New List
