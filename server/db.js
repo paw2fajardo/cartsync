@@ -486,6 +486,11 @@ export class CartSyncDatabase {
     });
   }
 
+  deleteDevice(deviceId) {
+    const stmt = this.db.prepare('DELETE FROM devices WHERE id = ?');
+    stmt.run(deviceId);
+  }
+
   upsertAutoListRule(rule) {
     const stmt = this.db.prepare(`
       INSERT INTO auto_list_rules (id, keyword, target_list_id, category, created_at)

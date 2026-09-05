@@ -82,7 +82,8 @@ export interface SyncMessage {
     | 'ADMIN_PIN_UPDATE'
     | 'BATCH_UPDATE'
     | 'DEVICE_PING'
-    | 'DEVICE_LIST';
+    | 'DEVICE_LIST'
+    | 'DEVICE_DELETE';
   deviceId: string;
   timestamp: number;
   payload?: any;

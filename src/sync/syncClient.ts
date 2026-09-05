@@ -290,6 +290,15 @@ class SyncClient {
     });
   }
 
+  public broadcastDeviceDelete(deviceId: string): void {
+    this.send({
+      type: 'DEVICE_DELETE',
+      deviceId: this.currentDevice ? this.currentDevice.id : 'unknown',
+      timestamp: Date.now(),
+      payload: { deviceId },
+    });
+  }
+
   public send(msg: SyncMessage): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(msg));

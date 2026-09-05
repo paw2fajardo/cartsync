@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { syncClient } from '../sync/syncClient';
+import {
+  isBiometricsAvailable,
+  isBiometricsEnrolled,
+  registerBiometrics,
+  verifyBiometrics,
+  removeBiometrics,
+} from '../utils/biometrics';
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -9,15 +16,24 @@ interface AuthContextType {
   adminPinConfigured: boolean;
   householdName: string;
   autoLockMinutes: number; // 0 = never, 1 = 1m, 15 = 15m, 60 = 1h
+  isAdminModalOpen: boolean;
+  isBiometricsSupported: boolean;
+  isBiometricsActive: boolean;
   unlock: (pin: string) => boolean;
+  unlockWithBiometrics: () => Promise<boolean>;
+  enableBiometrics: (userName?: string) => Promise<{ success: boolean; error?: string }>;
+  disableBiometrics: () => void;
   setPin: (newPin: string, currentPin?: string) => boolean;
   removePin: (currentPin: string) => boolean;
   promoteToAdmin: (adminPin: string) => boolean;
   setAdminMasterPin: (newPin: string, currentPin?: string) => boolean;
   revokeAdmin: () => void;
   lock: () => void;
+  openAdminModal: () => void;
+  closeAdminModal: () => void;
   setHouseholdName: (name: string) => void;
   setAutoLockMinutes: (minutes: number) => void;
+  purgeDevice: (deviceId: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -51,9 +67,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const [adminPinConfigured, setAdminPinConfigured] = useState<boolean>(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
-    // If no admin PIN is configured yet, or previously verified admin
     return typeof window !== 'undefined' ? localStorage.getItem(IS_ADMIN_KEY) === 'true' : false;
   });
 
@@ -69,10 +85,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return !sessionActive;
   });
 
+  // Biometrics State
+  const [isBiometricsSupported, setIsBiometricsSupported] = useState<boolean>(false);
+  const [isBiometricsActive, setIsBiometricsActive] = useState<boolean>(() => {
+    return isBiometricsEnrolled();
+  });
+
   const hasPinSet = Boolean(storedPinHash);
   const isAuthenticated = !hasPinSet || !isLocked;
 
-  // Listen to WebSocket sync events for real-time Household Name updates
+  // Detect platform biometrics capability
+  useEffect(() => {
+    isBiometricsAvailable().then((supported) => {
+      setIsBiometricsSupported(supported);
+    });
+  }, []);
+
+  // Listen to WebSocket sync events for real-time updates
   useEffect(() => {
     const unsubscribe = syncClient.onSync((event) => {
       if (event.type === 'SYNC_STATE' && event.state) {
@@ -83,7 +112,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (event.state.adminPinConfigured !== undefined) {
           setAdminPinConfigured(event.state.adminPinConfigured);
           if (!event.state.adminPinConfigured) {
-            // If no admin pin configured on server, grant default admin access
             setIsAdmin(true);
             localStorage.setItem(IS_ADMIN_KEY, 'true');
           }
@@ -111,7 +139,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
     };
 
-    // Check inactivity periodically
     const interval = setInterval(() => {
       const lastActive = parseInt(localStorage.getItem(LAST_ACTIVE_KEY) || '0', 10);
       if (lastActive && Date.now() - lastActive > autoLockMinutes * 60 * 1000) {
@@ -137,7 +164,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return true;
     }
 
-    // Direct match or hash comparison
     const syncHash = hashPinSync(enteredPin);
     if (storedPinHash === enteredPin || storedPinHash === syncHash) {
       setIsLocked(false);
@@ -149,6 +175,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return false;
   };
 
+  const unlockWithBiometrics = async (): Promise<boolean> => {
+    const res = await verifyBiometrics();
+    if (res.success) {
+      setIsLocked(false);
+      localStorage.setItem(SESSION_STORAGE_KEY, 'true');
+      localStorage.setItem(LAST_ACTIVE_KEY, Date.now().toString());
+      return true;
+    }
+    return false;
+  };
+
+  const enableBiometrics = async (userName?: string): Promise<{ success: boolean; error?: string }> => {
+    const res = await registerBiometrics(userName || householdName);
+    if (res.success) {
+      setIsBiometricsActive(true);
+    }
+    return res;
+  };
+
+  const disableBiometrics = () => {
+    removeBiometrics();
+    setIsBiometricsActive(false);
+  };
+
   const setPin = (newPin: string, currentPin?: string): boolean => {
     if (hasPinSet && currentPin !== undefined) {
       const isOldValid = unlock(currentPin);
@@ -158,7 +208,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const trimmed = newPin.trim();
     if (!trimmed || trimmed.length < 4) return false;
 
-    // Generate synchronous hash representation
     let hash = 0;
     const str = `cartsync_${trimmed}_salt`;
     for (let i = 0; i < str.length; i++) {
@@ -194,6 +243,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const openAdminModal = () => setIsAdminModalOpen(true);
+  const closeAdminModal = () => setIsAdminModalOpen(false);
+
   const setHouseholdName = (name: string) => {
     const trimmed = name.trim() || 'Our Home';
     setHouseholdNameState(trimmed);
@@ -209,7 +261,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     const enteredHash = hashPinSync(adminPin);
-    // Compare with stored or server hash
     if (storedPinHash === enteredHash || unlock(adminPin)) {
       setIsAdmin(true);
       localStorage.setItem(IS_ADMIN_KEY, 'true');
@@ -248,6 +299,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem(AUTOLOCK_KEY, minutes.toString());
   };
 
+  const purgeDevice = (deviceId: string) => {
+    syncClient.broadcastDeviceDelete(deviceId);
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -258,15 +313,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         adminPinConfigured,
         householdName,
         autoLockMinutes,
+        isAdminModalOpen,
+        isBiometricsSupported,
+        isBiometricsActive,
         unlock,
+        unlockWithBiometrics,
+        enableBiometrics,
+        disableBiometrics,
         setPin,
         removePin,
         promoteToAdmin,
         setAdminMasterPin,
         revokeAdmin,
         lock,
+        openAdminModal,
+        closeAdminModal,
         setHouseholdName,
         setAutoLockMinutes,
+        purgeDevice,
       }}
     >
       {children}

@@ -1,14 +1,34 @@
-import React, { useState } from 'react';
-import { Lock, ShieldAlert, Delete, Home } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Lock, ShieldAlert, Delete, Home, Fingerprint, Sparkles } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { CartSyncLogo } from './CartSyncLogo';
 
 export const LockScreen: React.FC = () => {
-  const { isLocked, hasPinSet, householdName, unlock } = useAuth();
+  const {
+    isLocked,
+    hasPinSet,
+    householdName,
+    unlock,
+    unlockWithBiometrics,
+    isBiometricsSupported,
+    isBiometricsActive,
+  } = useAuth();
 
   const [pinInput, setPinInput] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isShaking, setIsShaking] = useState(false);
+  const [isBiometricPrompting, setIsBiometricPrompting] = useState(false);
+
+  // Trigger biometric prompt on load if enrolled and active
+  useEffect(() => {
+    if (hasPinSet && isLocked && isBiometricsActive) {
+      // Short delay for smooth modal mount
+      const timer = setTimeout(() => {
+        handleBiometricScan();
+      }, 350);
+      return () => clearTimeout(timer);
+    }
+  }, [hasPinSet, isLocked, isBiometricsActive]);
 
   // Only show LockScreen if a PIN is actually configured AND the app is locked
   if (!hasPinSet || !isLocked) return null;
@@ -41,6 +61,22 @@ export const LockScreen: React.FC = () => {
     setPinInput((prev) => prev.slice(0, -1));
   };
 
+  const handleBiometricScan = async () => {
+    if (isBiometricPrompting) return;
+    setIsBiometricPrompting(true);
+    setErrorMessage('');
+    try {
+      const success = await unlockWithBiometrics();
+      if (!success) {
+        setErrorMessage('Biometric scan canceled or failed');
+      }
+    } catch (_) {
+      setErrorMessage('Biometric authentication failed');
+    } finally {
+      setIsBiometricPrompting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex flex-col items-center justify-between p-6 bg-slate-900/95 text-white backdrop-blur-2xl animate-in fade-in duration-200">
       {/* Background ambient lighting */}
@@ -59,9 +95,24 @@ export const LockScreen: React.FC = () => {
       </div>
 
       {/* Main Lock Display & Dots */}
-      <div className={`w-full max-w-xs flex flex-col items-center text-center space-y-4 my-auto transition-transform ${isShaking ? 'animate-shake' : ''}`}>
-        <div className="w-16 h-16 rounded-3xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-xl shadow-emerald-500/10 mb-1">
-          <Lock className="w-8 h-8 stroke-[2.2]" />
+      <div
+        className={`w-full max-w-xs flex flex-col items-center text-center space-y-4 my-auto transition-transform ${
+          isShaking ? 'animate-shake' : ''
+        }`}
+      >
+        <div className="relative">
+          <div className="w-16 h-16 rounded-3xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-xl shadow-emerald-500/10 mb-1">
+            {isBiometricsActive ? (
+              <Fingerprint className="w-8 h-8 stroke-[2.2] animate-pulse" />
+            ) : (
+              <Lock className="w-8 h-8 stroke-[2.2]" />
+            )}
+          </div>
+          {isBiometricsActive && (
+            <div className="absolute -bottom-1 -right-1 p-1 rounded-full bg-emerald-500 text-slate-900 shadow-sm">
+              <Sparkles className="w-2.5 h-2.5 stroke-[3]" />
+            </div>
+          )}
         </div>
 
         <div className="space-y-1">
@@ -69,7 +120,9 @@ export const LockScreen: React.FC = () => {
             Enter Household PIN
           </h1>
           <p className="text-xs text-slate-400 max-w-[240px] mx-auto">
-            Keep your shared lists private & synchronized
+            {isBiometricsActive
+              ? 'Touch fingerprint sensor or enter your 4-digit PIN'
+              : 'Keep your shared lists private & synchronized'}
           </p>
         </div>
 
@@ -99,7 +152,7 @@ export const LockScreen: React.FC = () => {
         )}
       </div>
 
-      {/* Numeric Keypad (1 - 9, Delete, 0, Action) */}
+      {/* Numeric Keypad (1 - 9, Delete, 0, Biometrics) */}
       <div className="w-full max-w-xs space-y-3 pb-4">
         <div className="grid grid-cols-3 gap-3">
           {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
@@ -119,6 +172,7 @@ export const LockScreen: React.FC = () => {
             onClick={handleDelete}
             className="h-14 rounded-2xl bg-slate-800/40 hover:bg-slate-800/80 active:bg-slate-700 border border-transparent hover:border-slate-700/60 active:scale-95 transition-all text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
             title="Delete digit"
+            aria-label="Delete digit"
           >
             <Delete className="w-5 h-5" />
           </button>
@@ -132,8 +186,23 @@ export const LockScreen: React.FC = () => {
             0
           </button>
 
-          {/* Empty spacer / Cancel slot */}
-          <div className="h-14" />
+          {/* Biometrics Fingerprint Trigger Button */}
+          {isBiometricsActive ? (
+            <button
+              type="button"
+              onClick={handleBiometricScan}
+              className="h-14 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 active:bg-emerald-500/40 border border-emerald-500/40 active:scale-95 transition-all text-emerald-400 flex flex-col items-center justify-center cursor-pointer group shadow-lg shadow-emerald-500/10"
+              title="Unlock with Fingerprint / Touch ID"
+              aria-label="Unlock with Fingerprint"
+            >
+              <Fingerprint className="w-6 h-6 group-hover:scale-110 transition-transform" />
+              <span className="text-[9px] font-bold tracking-tight uppercase mt-0.5">Scan</span>
+            </button>
+          ) : isBiometricsSupported ? (
+            <div className="h-14 flex items-center justify-center text-slate-600 text-xs" />
+          ) : (
+            <div className="h-14" />
+          )}
         </div>
       </div>
     </div>

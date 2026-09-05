@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { X, Plus, Trash2, Pencil, ShoppingCart, Store, Box, Pill, Sparkles, Apple, Carrot, Coffee, Smartphone, Tablet, Laptop, Monitor, Home, Users, Layers } from 'lucide-react';
+import { X, Plus, Trash2, Pencil, ShoppingCart, Store, Box, Pill, Sparkles, Apple, Carrot, Coffee, Smartphone, Tablet, Laptop, Monitor, Home, Users, Layers, Shield } from 'lucide-react';
 import { useGrocery } from '../context/GroceryContext';
 import { useDevice } from '../context/DeviceContext';
+import { useAuth } from '../context/AuthContext';
 import { DeviceIcon, GroceryList } from '../types';
 import { DeleteListModal } from './DeleteListModal';
 import { EditListModal } from './EditListModal';
@@ -34,6 +35,7 @@ const DEVICE_ICONS: Record<DeviceIcon, React.FC<{ className?: string }>> = {
 export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => {
   const { lists, activeListId, setActiveListId, openNewListModal, openAutoListRulesModal, openCategoryModal, items } = useGrocery();
   const { activeHouseholdDevices, openRenameModal } = useDevice();
+  const { openAdminModal } = useAuth();
   const [deletingList, setDeletingList] = useState<GroceryList | null>(null);
   const [editingList, setEditingList] = useState<GroceryList | null>(null);
 
@@ -228,6 +230,18 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
             >
               <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <span>Auto-Route Keyword Rules</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                openAdminModal();
+                onClose();
+              }}
+              className="w-full py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-750 border border-slate-200/80 dark:border-slate-700 text-slate-800 dark:text-slate-200 active:scale-95 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-2"
+            >
+              <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+              <span>Admin Control Center</span>
             </button>
           </div>
 

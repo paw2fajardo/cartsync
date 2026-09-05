@@ -15,6 +15,7 @@ import { NewListModal } from './components/NewListModal';
 import { ListSidebar } from './components/ListSidebar';
 import { AutoListRulesModal } from './components/AutoListRulesModal';
 import { CategoryManagerModal } from './components/CategoryManagerModal';
+import { AdminModal } from './components/AdminModal';
 import { UndoToast } from './components/UndoToast';
 import { ScrollToTopButton } from './components/ScrollToTopButton';
 import { useGrocery } from './context/GroceryContext';
@@ -100,6 +101,7 @@ const GroceryApp: React.FC = () => {
       <UndoToast />
 
       {/* Modals */}
+      <AdminModal />
       <DeviceModal />
       <SyncStatusModal />
       <NewListModal />

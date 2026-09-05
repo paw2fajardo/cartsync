@@ -124,6 +124,20 @@ wss.on('connection', (ws, req) => {
           break;
         }
 
+        case 'DEVICE_DELETE': {
+          if (payload && payload.deviceId) {
+            cartSyncDb.deleteDevice(payload.deviceId);
+            const devices = cartSyncDb.getState().devices;
+            broadcast({
+              type: 'DEVICE_LIST',
+              deviceId: deviceId || 'server',
+              timestamp: Date.now(),
+              payload: devices,
+            });
+          }
+          break;
+        }
+
         case 'ITEM_UPSERT': {
           if (payload && payload.id) {
             cartSyncDb.upsertItem(payload);

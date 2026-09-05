@@ -1,5 +1,5 @@
 import React from 'react';
-import { Smartphone, Tablet, Laptop, Monitor, Home, WifiOff, RefreshCw, Lock } from 'lucide-react';
+import { Smartphone, Tablet, Laptop, Monitor, Home, WifiOff, RefreshCw, Lock, Shield } from 'lucide-react';
 import { useDevice } from '../context/DeviceContext';
 import { useGrocery } from '../context/GroceryContext';
 import { useAuth } from '../context/AuthContext';
@@ -22,7 +22,7 @@ const DEVICE_ICONS: Record<DeviceIcon, React.FC<{ className?: string }>> = {
 export const Header: React.FC<HeaderProps> = () => {
   const { device, openRenameModal } = useDevice();
   const { syncStatus, openSyncModal } = useGrocery();
-  const { hasPinSet, householdName, lock } = useAuth();
+  const { hasPinSet, householdName, lock, isAdmin, openAdminModal } = useAuth();
 
   const IconComponent = DEVICE_ICONS[device.icon] || Smartphone;
 
@@ -74,8 +74,23 @@ export const Header: React.FC<HeaderProps> = () => {
           </button>
         </div>
 
-        {/* Right: Theme Toggle, Quick Lock & Device Attribution Pill */}
+        {/* Right: Theme Toggle, Admin Shield, Quick Lock & Device Attribution Pill */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* Admin Control Center Trigger */}
+          <button
+            type="button"
+            onClick={openAdminModal}
+            className={`p-2 rounded-full border transition-all duration-200 active:scale-90 cursor-pointer ${
+              isAdmin
+                ? 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 hover:bg-emerald-100/80 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 border-emerald-200/80 dark:border-emerald-800/60 shadow-2xs'
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 border-slate-200/60 dark:border-slate-700/60'
+            }`}
+            title="Admin Control Center"
+            aria-label="Admin Control Center"
+          >
+            <Shield className="w-3.5 h-3.5 stroke-[2.2]" />
+          </button>
+
           {/* Quick Lock Button (if PIN configured) */}
           {hasPinSet && (
             <button
