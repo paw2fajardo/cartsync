@@ -79,4 +79,13 @@ describe('PWA Back Button & Window Navigation Tracking', () => {
     expect(content).toContain('useModalBackNavigation');
     expect(content).toContain('useModalBackNavigation(isInlineEditing');
   });
+
+  it('ShopModeView intercepts popstate back navigation to prevent app exit', () => {
+    const shopViewPath = path.join(rootDir, 'src/components/ShopModeView.tsx');
+    const content = fs.readFileSync(shopViewPath, 'utf-8');
+
+    expect(content).toContain('window.history.pushState');
+    expect(content).toContain('addEventListener(\'popstate\'');
+    expect(content).toContain('setShowExitConfirm(true)');
+  });
 });

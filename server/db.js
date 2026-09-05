@@ -61,13 +61,19 @@ export class CartSyncDatabase {
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
         content_updated_at INTEGER,
+        contributors TEXT,
         FOREIGN KEY (list_id) REFERENCES lists(id) ON DELETE CASCADE
       );
     `);
 
-    // Migration: Add content_updated_at column if missing (for existing databases)
+    // Migration: Add content_updated_at and contributors columns if missing (for existing databases)
     try {
       this.db.exec('ALTER TABLE items ADD COLUMN content_updated_at INTEGER;');
+    } catch (_) {
+      // Column already exists
+    }
+    try {
+      this.db.exec('ALTER TABLE items ADD COLUMN contributors TEXT;');
     } catch (_) {
       // Column already exists
     }
@@ -350,6 +356,7 @@ export class CartSyncDatabase {
       createdAt: Number(r.created_at),
       updatedAt: Number(r.updated_at),
       contentUpdatedAt: r.content_updated_at ? Number(r.content_updated_at) : undefined,
+      contributors: r.contributors ? JSON.parse(r.contributors) : [],
     }));
 
     const deviceRows = this.db.prepare('SELECT * FROM devices ORDER BY last_seen_at DESC').all();
@@ -416,6 +423,7 @@ export class CartSyncDatabase {
       createdAt: Number(row.created_at),
       updatedAt: Number(row.updated_at),
       contentUpdatedAt: row.content_updated_at ? Number(row.content_updated_at) : undefined,
+      contributors: row.contributors ? JSON.parse(row.contributors) : [],
     };
   }
 
@@ -479,13 +487,14 @@ export class CartSyncDatabase {
         completedAt: completionBase.completed ? (completionBase.completedAt || now) : null,
         completedBy: completionBase.completed ? completionBase.completedBy : null,
         contentUpdatedAt: resolvedContentTime,
+        contributors: contentBase.contributors || existing.contributors || [],
         updatedAt: Math.max(existing.updatedAt || 0, incomingItem.updatedAt || 0, resolvedContentTime),
       };
     }
 
     const stmt = this.db.prepare(`
-      INSERT INTO items (id, list_id, name, quantity, unit, category, note, completed, completed_at, completed_by, added_by, created_at, updated_at, content_updated_at)
-      VALUES (@id, @list_id, @name, @quantity, @unit, @category, @note, @completed, @completed_at, @completed_by, @added_by, @created_at, @updated_at, @content_updated_at)
+      INSERT INTO items (id, list_id, name, quantity, unit, category, note, completed, completed_at, completed_by, added_by, created_at, updated_at, content_updated_at, contributors)
+      VALUES (@id, @list_id, @name, @quantity, @unit, @category, @note, @completed, @completed_at, @completed_by, @added_by, @created_at, @updated_at, @content_updated_at, @contributors)
       ON CONFLICT(id) DO UPDATE SET
         list_id = excluded.list_id,
         name = excluded.name,
@@ -498,7 +507,8 @@ export class CartSyncDatabase {
         completed_by = excluded.completed_by,
         added_by = excluded.added_by,
         updated_at = excluded.updated_at,
-        content_updated_at = excluded.content_updated_at
+        content_updated_at = excluded.content_updated_at,
+        contributors = excluded.contributors
     `);
 
     stmt.run({
@@ -516,6 +526,7 @@ export class CartSyncDatabase {
       created_at: finalItem.createdAt || now,
       updated_at: finalItem.updatedAt || now,
       content_updated_at: finalItem.contentUpdatedAt || null,
+      contributors: finalItem.contributors && finalItem.contributors.length > 0 ? JSON.stringify(finalItem.contributors) : null,
     });
 
     return finalItem;

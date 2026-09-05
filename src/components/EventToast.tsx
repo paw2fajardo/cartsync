@@ -2,21 +2,13 @@ import React from 'react';
 import { RotateCcw, X } from 'lucide-react';
 import { useGrocery } from '../context/GroceryContext';
 
-export const UndoToast: React.FC = () => {
-  const { activeToast, lastDeletedItem, undoLastDelete, dismissUndoToast, dismissToast } = useGrocery();
+export const EventToast: React.FC = () => {
+  const { activeToast, dismissToast, undoLastDelete } = useGrocery();
 
-  // If there is an activeToast, render the glassmorphic event toast
-  // If only lastDeletedItem exists without activeToast (e.g. edge cases), fallback cleanly
-  const toast = activeToast;
-  if (!toast && !lastDeletedItem) return null;
+  if (!activeToast) return null;
 
-  const isCreation = toast?.type === 'created';
-  const item = toast?.item || lastDeletedItem!;
-
-  const handleDismiss = () => {
-    dismissUndoToast();
-    dismissToast();
-  };
+  const isCreation = activeToast.type === 'created';
+  const item = activeToast.item;
 
   return (
     <aside
@@ -29,9 +21,9 @@ export const UndoToast: React.FC = () => {
         {/* Left Side: Indicator & Text */}
         <div className="flex items-center gap-2.5 min-w-0">
           {isCreation ? (
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-xs" />
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0 shadow-xs" />
           ) : (
-            <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0 shadow-xs" />
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0 shadow-xs" />
           )}
 
           <p className="text-xs font-medium text-slate-200 truncate">
@@ -42,9 +34,9 @@ export const UndoToast: React.FC = () => {
                   {item.quantity > 1 ? `${item.quantity}× ` : ''}
                   {item.name}
                 </span>
-                {toast?.actorDevice && (
+                {activeToast.actorDevice && (
                   <span className="text-slate-400 font-normal">
-                    {' '}from {toast.actorDevice.deviceName}
+                    {' '}from {activeToast.actorDevice.deviceName}
                   </span>
                 )}
               </>
@@ -75,7 +67,7 @@ export const UndoToast: React.FC = () => {
 
           <button
             type="button"
-            onClick={handleDismiss}
+            onClick={dismissToast}
             className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
             title="Dismiss"
             aria-label="Dismiss notification"

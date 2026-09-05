@@ -31,6 +31,13 @@ export interface DeviceRef {
   color?: string;
 }
 
+export interface ContributorRecord {
+  deviceId: string;
+  deviceName?: string;
+  color?: string;
+  count: number;
+}
+
 export interface GroceryItem {
   id: string;
   listId: string;
@@ -43,9 +50,18 @@ export interface GroceryItem {
   completedAt: number | null;
   completedBy: DeviceRef | null;
   addedBy: DeviceRef;
+  contributors?: ContributorRecord[];
   createdAt: number;
   updatedAt: number;
   contentUpdatedAt?: number;
+}
+
+export interface EventToastMessage {
+  id: string;
+  type: 'created' | 'deleted';
+  item: GroceryItem;
+  actorDevice?: DeviceRef;
+  timestamp: number;
 }
 
 export interface GroceryList {

@@ -39,6 +39,22 @@ Built with **Vite, React 18, TypeScript, Tailwind CSS, Lucide Icons, IndexedDB, 
   - Intelligent Auto-List Routing (`AutoListRulesModal`) to route specific items to dedicated lists automatically (e.g., medications to *Pharmacy*, bulk goods to *Costco*).
   - Optional expander to add custom notes or override aisles.
 
+- **Intelligent Duplicate Detection & Suffix Distinction**:
+  - Automatically matches incoming items against active, uncompleted items on the target list.
+  - Normalizes casing, whitespace, and minor plural variants (e.g., `apple` vs `apples`, `berries` vs `berry`, `tomatoes` vs `tomato`).
+  - Strict Modifier Distinction: Explicit qualifiers, suffixes, or owner tags (e.g., `Soap - Daddy` vs `Soap - Mommy`, `Milk (Almond)` vs `Milk (Oat)`) are treated as distinct items and are never merged.
+  - Generic matches automatically increment the existing item's quantity rather than creating duplicate rows.
+
+- **Multi-Device Contributor Badges & LIFO Decrement Stack**:
+  - Extended item schema tracks the primary author (`createdBy` / `addedBy`) and subsequent incrementing devices (`contributors: Array<{ deviceId, count }>`).
+  - Badge Presentation: Primary creator dot and badge with an adjacent increment pill (e.g., `+1`) themed with the contributing device's color. Tapping the badge opens a glassmorphic popover showing the exact contributor breakdown.
+  - Decrement ("-") Reversal: Tapping `-` on an item with quantity > 1 decrements total quantity and pops the most recent incrementing contributor from the stack (LIFO). When their count hits 0, their badge pill is cleanly removed. Dropping to 0 triggers standard deletion.
+
+- **Glassmorphic Event Toasts (Creation & Deletion Only)**:
+  - Frosted glassmorphic notification banner (`backdrop-blur-md`, slate border/background) anchored above the QuickAdd bar.
+  - Emits when a brand-new item is created (locally or incoming from another device via WebSocket) or when an item is deleted (with an "Undo" action).
+  - Strict Suppression Rule: Quantity adjustments (`+`/`-` clicks, inline edits, and duplicate auto-increments) are completely silent. Auto-dismisses in 3 seconds without vertical stacking.
+
 - **Multiple List Management & In-Place Editing**:
   - Out of the box: *Supermarket*, *Costco*, *Pharmacy*, and *Farmers Market*.
   - Create and manage custom lists with distinct icons and color accents.
@@ -107,7 +123,10 @@ docker run -d \
 ---
 
 ## Test Coverage
-- **220+ Automated Tests** across 21 test suites covering:
+- **290+ Automated Tests** across 29 test suites covering:
+  - Intelligent duplicate detection, plural normalization, and modifier distinction
+  - Multi-device contributor badge stacking and LIFO decrement reversal
+  - Glassmorphic event toasts and strict quantity adjustment suppression
   - Docker multi-stage build, compose, and containerization configuration
   - SQLite backend database and REST/WebSocket synchronization
   - Local-first IndexedDB and localStorage dual-write persistence

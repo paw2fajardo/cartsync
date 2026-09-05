@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Plus, Trash2, Pencil, ShoppingCart, Store, Box, Pill, Sparkles, Apple, Carrot, Coffee, Smartphone, Tablet, Laptop, Monitor, Home, Users, Layers, Shield } from 'lucide-react';
+import { X, Plus, Trash2, Pencil, ShoppingCart, Store, Box, Pill, Sparkles, Apple, Carrot, Coffee, Smartphone, Tablet, Laptop, Monitor, Home, Users, Layers, Shield, Zap } from 'lucide-react';
 import { useGrocery } from '../context/GroceryContext';
 import { useDevice } from '../context/DeviceContext';
 import { useAuth } from '../context/AuthContext';
@@ -34,7 +34,7 @@ const DEVICE_ICONS: Record<DeviceIcon, React.FC<{ className?: string }>> = {
 };
 
 export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => {
-  const { lists, activeListId, setActiveListId, openNewListModal, openAutoListRulesModal, openCategoryModal, items } = useGrocery();
+  const { lists, activeListId, setActiveListId, openNewListModal, openAutoListRulesModal, openCategoryModal, openShopMode, items } = useGrocery();
   const { device, activeHouseholdDevices, openRenameModal } = useDevice();
   const { householdName, openAdminModal } = useAuth();
   const [deletingList, setDeletingList] = useState<GroceryList | null>(null);
@@ -251,9 +251,21 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
               type="button"
               onClick={() => {
                 onClose();
+                openShopMode();
+              }}
+              className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs mt-3"
+            >
+              <Zap className="w-4 h-4 fill-white stroke-none" />
+              <span>Start Shopping Mode</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
                 openNewListModal();
               }}
-              className="w-full py-2.5 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 active:scale-95 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-3"
+              className="w-full py-2.5 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 active:scale-95 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-2"
             >
               <Plus className="w-4 h-4" />
               <span>Create Custom List</span>

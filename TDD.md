@@ -76,19 +76,21 @@ CREATE TABLE IF NOT EXISTS lists (
 -- Grocery Items Table
 CREATE TABLE IF NOT EXISTS items (
   id TEXT PRIMARY KEY,
-  listId TEXT NOT NULL,
+  list_id TEXT NOT NULL,
   name TEXT NOT NULL,
-  category TEXT NOT NULL DEFAULT 'Other',
-  quantity REAL,
+  quantity REAL DEFAULT 1,
   unit TEXT,
+  category TEXT DEFAULT 'Other',
   note TEXT,
-  completed INTEGER NOT NULL DEFAULT 0,
-  createdBy TEXT,
-  completedBy TEXT,
-  createdAt INTEGER NOT NULL,
-  updatedAt INTEGER NOT NULL,
-  completedAt INTEGER,
-  FOREIGN KEY (listId) REFERENCES lists(id) ON DELETE CASCADE
+  completed INTEGER DEFAULT 0,
+  completed_at INTEGER,
+  completed_by TEXT,
+  added_by TEXT,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  content_updated_at INTEGER,
+  contributors TEXT,
+  FOREIGN KEY (list_id) REFERENCES lists(id) ON DELETE CASCADE
 );
 
 -- Device Registry Table
@@ -180,6 +182,8 @@ export interface SyncMessage<T = unknown> {
 
 ### 4.3 Key Utilities
 - **`src/utils/smartCategorizer.ts`**: Natural language lexer and tokenizer for quantity extraction (`/^(\d+(?:\.\d+)?)\s*([a-zA-Z]+)?\s+(.*)$/i`) and keyword dictionary matching across 12+ grocery categories.
+- **`src/utils/itemMatching.ts`**: Intelligent duplicate detector with plural normalization (`apples` -> `apple`, `berries` -> `berry`) and modifier distinction ensuring owner/qualifier variants (`Soap - Daddy` vs `Soap - Mommy`) remain distinct items.
+- **`src/utils/contributorStack.ts`**: Multi-device attribution engine managing LIFO contributor stack push, count increments, decrement layer popping, and 0-quantity deletion triggers.
 - **`src/utils/biometrics.ts`**: WebAuthn credential creation (`navigator.credentials.create`) and assertion (`navigator.credentials.get`) supporting Touch ID, Face ID, and Windows Hello.
 - **`src/utils/deviceDetector.ts`**: User-agent parser identifying mobile/tablet/desktop platforms and assigning palette colors.
 
@@ -196,7 +200,7 @@ export interface SyncMessage<T = unknown> {
 ## 6. Testing & Quality Assurance Architecture
 
 CartSync enforces a rigorous 3-tier testing strategy via **Vitest**:
-1. **Unit Tests**: NLP categorization, unit regex parser, device detector heuristics, biometrics fallbacks.
-2. **Integration Tests**: SQLite CRUD, foreign key cascades, REST `/api/sync` merge algorithms, WebSocket peer broadcasts.
-3. **Component & Hook Tests**: Modal back navigation, list swipe gestures, undo toasts, and dark mode WCAG contrast ergonomics.
-- **Current Test Coverage**: **226 automated tests across 21 test suites (100% passing)**.
+1. **Unit Tests**: NLP categorization, duplicate detection, plural normalization, modifier distinction, contributor stacking and LIFO decrements, unit regex parser, device detector heuristics, biometrics fallbacks.
+2. **Integration Tests**: SQLite CRUD, contributor serialization, foreign key cascades, REST `/api/sync` merge algorithms, WebSocket peer broadcasts.
+3. **Component & Hook Tests**: Modal back navigation, list swipe gestures, glassmorphic event toasts and quantity suppression, undo toasts, and dark mode WCAG contrast ergonomics.
+- **Current Test Coverage**: **293 automated tests across 29 test suites (100% passing)**.

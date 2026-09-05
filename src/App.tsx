@@ -19,11 +19,12 @@ import { AdminModal } from './components/AdminModal';
 import { UndoToast } from './components/UndoToast';
 import { ScrollToTopButton } from './components/ScrollToTopButton';
 import { AppUpdateBanner } from './components/AppUpdateBanner';
+import { ShopModeView } from './components/ShopModeView';
 import { useGrocery } from './context/GroceryContext';
 import { Download, Sparkles, X } from 'lucide-react';
 
 const GroceryApp: React.FC = () => {
-  const { isCategoryModalOpen, closeCategoryModal } = useGrocery();
+  const { isCategoryModalOpen, closeCategoryModal, isShopModeOpen, closeShopMode } = useGrocery();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [dismissInstall, setDismissInstall] = useState(false);
@@ -112,6 +113,9 @@ const GroceryApp: React.FC = () => {
       <AutoListRulesModal />
       <CategoryManagerModal isOpen={isCategoryModalOpen} onClose={closeCategoryModal} />
       <ListSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+
+      {/* Full-Viewport In-Store Focus Mode ("Shop Mode") */}
+      <ShopModeView isOpen={isShopModeOpen} onClose={closeShopMode} />
     </div>
   );
 };

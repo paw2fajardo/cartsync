@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, ShoppingBasket, X, Layers, Smartphone } from 'lucide-react';
+import { Search, ShoppingBasket, X, Layers, Smartphone, Zap } from 'lucide-react';
 import { useGrocery } from '../context/GroceryContext';
 import { useDevice } from '../context/DeviceContext';
 import { GroceryItemCard } from './GroceryItemCard';
@@ -17,6 +17,7 @@ export const ItemList: React.FC = () => {
     activeListId,
     setActiveListId,
     items,
+    openShopMode,
   } = useGrocery();
   const { device, activeHouseholdDevices } = useDevice();
   const [showSearch, setShowSearch] = useState(false);
@@ -115,8 +116,20 @@ export const ItemList: React.FC = () => {
             </span>
           </div>
 
-          {/* Quick Sort Toggle (Category (A-Z) vs Device Name) */}
+          {/* Quick Sort Toggle & Shop Mode Trigger */}
           <div className="flex items-center gap-1.5">
+            {/* Shop Mode Button */}
+            <button
+              type="button"
+              onClick={openShopMode}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold shadow-xs active:scale-95 transition-all cursor-pointer"
+              title="Enter In-Store Shop Mode (Focus view, high contrast & keep awake)"
+              aria-label="Enter Shop Mode"
+            >
+              <Zap className="w-3 h-3 fill-white stroke-none" />
+              <span>Shop Mode</span>
+            </button>
+
             <div className="flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300/60 dark:border-slate-700/80 text-[11px] font-medium">
               <button
                 type="button"
@@ -129,7 +142,7 @@ export const ItemList: React.FC = () => {
                 title="Sort by Category (A–Z)"
               >
                 <Layers className="w-3 h-3" />
-                <span>Category (A–Z)</span>
+                <span className="hidden sm:inline">Category</span>
               </button>
 
               <button
@@ -143,7 +156,7 @@ export const ItemList: React.FC = () => {
                 title="Sort by Device Name"
               >
                 <Smartphone className="w-3.5 h-3.5" />
-                <span>Device Name</span>
+                <span className="hidden sm:inline">Device</span>
               </button>
             </div>
           </div>

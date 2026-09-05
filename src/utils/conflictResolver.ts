@@ -75,6 +75,7 @@ export function resolveItemConflict(existing: GroceryItem, incoming: GroceryItem
     completed: completionBase.completed,
     completedAt: completionBase.completed ? completionBase.completedAt : null,
     completedBy: completionBase.completed ? completionBase.completedBy : null,
+    contributors: contentBase.contributors ?? existing.contributors ?? incoming.contributors ?? [],
     contentUpdatedAt: resolvedContentTime,
     updatedAt: Math.max(existing.updatedAt || 0, incoming.updatedAt || 0, resolvedContentTime),
   };

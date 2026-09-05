@@ -47,22 +47,25 @@ CartSync is a **local-first, privacy-centric, mobile-first household grocery & s
 - **FR-1.3 Tactile Item Interaction**: 40px+ touch targets for round checkboxes, tactile micro-interactions (`active:scale-95`), collapsible completed accordion, and undo toast feedback (`UndoToast`).
 - **FR-1.4 Native Modal Navigation**: Interception of hardware/browser back buttons (`useModalBackNavigation`) so back gestures dismiss open modals rather than exiting the application.
 - **FR-1.5 Theme System**: Seamless toggle between Light (`slate-50`), Dark (`slate-900` midnight slate with frosted glassmorphism), and System Auto.
+- **FR-1.6 Glassmorphic Event Toasts**: Lightweight frosted glassmorphic notification banner (`backdrop-blur-md`, slate border/background) triggered strictly on new item creation (locally or via WebSocket) and deletion (with 3-second Undo safety action). Strictly suppressed for quantity changes.
 
 ### 3.2 Local-First Dual-Database Sync
 - **FR-2.1 Client Offline Persistence**: All lists, items, and device settings persist immediately to browser IndexedDB (`cartsync_db`) with fallback to `localStorage`.
-- **FR-2.2 Server Embedded SQLite**: Server persists state in durable, ACID-compliant SQLite (`cartsync.db`) using native `node:sqlite` in WAL mode.
+- **FR-2.2 Server Embedded SQLite**: Server persists state in durable, ACID-compliant SQLite (`cartsync.db`) using native `node:sqlite` in WAL mode, persisting full contributor attribution stacks.
 - **FR-2.3 Real-Time WebSocket Synchronization**: Automatic bi-directional syncing of item inserts, updates, toggles, deletions, and list mutations with heartbeat and reconnect resilience.
 - **FR-2.4 Connection Indicator & Sync Modal**: Header live status badge with detailed `SyncStatusModal` showing WebSocket state, connected peers, and manual sync triggers.
 
-### 3.3 Smart Categorization & NLP
+### 3.3 Smart Categorization, NLP & Duplicate Detection
 - **FR-3.1 Automated Parser**: Regular expression and dictionary-based extraction of quantities, measurement units (`kg`, `g`, `L`, `ml`, `pack`, `dozen`, `cans`, etc.), and category classification across 12+ aisles.
 - **FR-3.2 Category Reorganization**: `CategoryManagerModal` allowing households to reorder aisles to match physical supermarket floor layouts.
 - **FR-3.3 Auto-List Routing Rules**: `AutoListRulesModal` allowing keyword and category triggers to automatically direct items to target lists (e.g. pharmacy items automatically filed under "Pharmacy").
+- **FR-3.4 Smart Duplicate Detection & Suffix Distinction**: Text normalization for casing, whitespace, and minor plurals (`apples` -> `apple`). Explicit qualifiers/modifiers (`Soap - Daddy` vs `Soap - Mommy`, `Milk (Almond)`) are preserved distinctly without merging. Generic matches auto-increment existing item quantity.
 
-### 3.4 Device Attribution & Multi-Device Profiles
+### 3.4 Device Attribution, Contributor Badges & Decrement Stack
 - **FR-4.1 Automatic Device Detection**: Detects device class (Mobile, Tablet, Desktop, Hub) and OS to generate friendly defaults (e.g., *Kitchen iPad*, *Pixel Phone*).
 - **FR-4.2 Device Customization**: `DeviceModal` allows users to select avatar color, icon, and custom name.
 - **FR-4.3 Subtle Attribution Tags**: Displays author and completed-by attribution tags on grocery cards.
+- **FR-4.4 Multi-Device Contributor Badges & LIFO Decrement Reversal**: Tracks ordered contributor stack (`contributors: Array<{ deviceId, count }>`). Shows primary creator badge + colored increment pill (e.g. `+1`) with tap-to-inspect popover breakdown. Tapping `-` decrements quantity and pops the most recent contributor layer (LIFO), deleting item when quantity reaches 0.
 
 ### 3.5 Household Security & Administration
 - **FR-5.1 Passcode Lock**: Configurable household lock screen (`LockScreen`) with customizable 4-to-6 digit PIN.
@@ -84,4 +87,4 @@ CartSync is a **local-first, privacy-centric, mobile-first household grocery & s
 ## 5. Success Metrics & KPIs
 - **Sync Reliability**: Zero sync collision errors during concurrent family shopping sessions.
 - **Offline Availability**: 100% core shopping functionality retained when disconnected.
-- **Test Quality**: > 95% test coverage across backend SQLite, REST/WS sync, and React UI workflows (226+ automated tests).
+- **Test Quality**: > 95% test coverage across backend SQLite, REST/WS sync, and React UI workflows (290+ automated tests across 29 test suites).

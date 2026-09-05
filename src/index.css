@@ -50,3 +50,17 @@
     padding-top: env(safe-area-inset-top);
   }
 }
+
+/* Shop Mode battery-conscious OLED styles */
+.shop-mode-active {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.shop-mode-active * {
+  /* Disable non-critical CSS animations to save GPU/CPU cycles in Shop Mode */
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+}
+

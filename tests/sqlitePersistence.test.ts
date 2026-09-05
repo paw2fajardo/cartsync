@@ -374,5 +374,37 @@ describe('CartSync SQLite Persistence Layer Verification', () => {
       const fromState = state.items.find((i) => i.id === 'cp_lww_test_4');
       expect(fromState?.contentUpdatedAt).toBe(baseTime + 500);
     });
+
+    it('should store and retrieve contributors stack for round-trip consistency', () => {
+      const itemWithContributors = {
+        id: 'cp_lww_test_contributors',
+        listId: 'list_supermarket',
+        name: 'Whole Milk',
+        quantity: 3,
+        category: 'Dairy & Eggs',
+        completed: false,
+        completedAt: null,
+        completedBy: null,
+        addedBy: { deviceId: 'dev_a', deviceName: 'Kitchen iPad', color: '#10b981' },
+        contributors: [
+          { deviceId: 'dev_b', deviceName: 'Dad Phone', color: '#3b82f6', count: 2 },
+        ],
+        createdAt: baseTime,
+        updatedAt: baseTime + 1000,
+      };
+
+      db.upsertItem(itemWithContributors);
+
+      const retrieved = db.getItem('cp_lww_test_contributors');
+      expect(retrieved).toBeDefined();
+      expect(retrieved.contributors).toHaveLength(1);
+      expect(retrieved.contributors[0].deviceId).toBe('dev_b');
+      expect(retrieved.contributors[0].count).toBe(2);
+
+      const state = db.getState();
+      const fromState = state.items.find((i) => i.id === 'cp_lww_test_contributors');
+      expect(fromState?.contributors).toHaveLength(1);
+      expect(fromState?.contributors[0].deviceId).toBe('dev_b');
+    });
   });
 });

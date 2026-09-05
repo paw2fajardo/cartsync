@@ -3,12 +3,12 @@ import { createPortal } from 'react-dom';
 import { Check, Trash2, Plus, Minus, Edit3, StickyNote, X, ArrowRight, FolderSync } from 'lucide-react';
 import { GroceryItem, ItemCategory } from '../types';
 import { useGrocery } from '../context/GroceryContext';
-import { useDevice } from '../context/DeviceContext';
 import { CATEGORY_COLORS, categorizeItem } from '../utils/smartCategorizer';
 import { useBodyScrollLock } from '../hooks/useBodyScrollLock';
 import { useModalBackNavigation } from '../hooks/useModalBackNavigation';
 import { usePullDownDismiss } from '../hooks/usePullDownDismiss';
 import { PullDownHandle } from './PullDownHandle';
+import { ContributorBadge } from './ContributorBadge';
 
 const AUTO_REORGANIZE_STORAGE_KEY = 'cartsync_auto_reorganize_category_v1';
 
@@ -38,13 +38,14 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
     toggleItem,
     updateItem,
     deleteItem,
+    incrementItem,
+    decrementItem,
     lists,
     autoListRules,
     addAutoListRule,
     activeEditingItemId,
     setActiveEditingItemId,
   } = useGrocery();
-  const { device, activeHouseholdDevices } = useDevice();
   const isInlineEditing = activeEditingItemId === item.id;
   const [editName, setEditName] = useState(item.name);
   const [editQuantity, setEditQuantity] = useState(item.quantity);
@@ -387,7 +388,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                   </div>
                 </div>
 
-                {/* Sub-line: Note (if any) + compact device dot & name */}
+                {/* Sub-line: Note (if any) + multi-device contributor badge */}
                 <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
                   {/* Note if available */}
                   {item.note && (
@@ -397,29 +398,8 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                     </div>
                   )}
 
-                  {/* Compact Device attribution */}
-                  {(() => {
-                    const targetDev = item.completed && item.completedBy ? item.completedBy : item.addedBy;
-                    const matchedProfile = targetDev?.deviceId
-                      ? (activeHouseholdDevices.find((d) => d.id === targetDev.deviceId) ||
-                         (device.id === targetDev.deviceId ? device : null))
-                      : null;
-
-                    const displayName = matchedProfile?.name || targetDev?.deviceName || 'Household';
-                    const displayColor = matchedProfile?.color || targetDev?.color || '#10b981';
-
-                    return (
-                      <div className="flex items-center gap-1 shrink-0 opacity-75">
-                        <span
-                          className="w-1.5 h-1.5 rounded-full shrink-0"
-                          style={{ backgroundColor: displayColor }}
-                        />
-                        <span className="truncate max-w-[140px] sm:max-w-[220px]">
-                          {displayName}
-                        </span>
-                      </div>
-                    );
-                  })()}
+                  {/* Multi-Device Contributor Badge with stack breakdown popover */}
+                  <ContributorBadge item={item} />
                 </div>
               </div>
 
@@ -435,11 +415,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                   <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-850 p-0.5 rounded-xl border border-slate-200/90 dark:border-slate-700/80 shadow-2xs">
                     <button
                       type="button"
-                      onClick={() =>
-                        updateItem(item.id, {
-                          quantity: Math.max(1, item.quantity - 1),
-                        })
-                      }
+                      onClick={() => decrementItem(item.id)}
                       className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:bg-white dark:hover:bg-slate-750 active:scale-90 transition-all cursor-pointer"
                       title="Decrease quantity"
                       aria-label="Decrease quantity"
@@ -453,11 +429,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                     )}
                     <button
                       type="button"
-                      onClick={() =>
-                        updateItem(item.id, {
-                          quantity: item.quantity + 1,
-                        })
-                      }
+                      onClick={() => incrementItem(item.id)}
                       className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:bg-white dark:hover:bg-slate-750 active:scale-90 transition-all cursor-pointer"
                       title="Increase quantity"
                       aria-label="Increase quantity"

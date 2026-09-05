@@ -22,6 +22,9 @@ import { INITIAL_LISTS, INITIAL_ITEMS, INITIAL_AUTO_LIST_RULES } from '../storag
 import { syncClient } from '../sync/syncClient';
 import { findMatchingAutoListRule } from '../utils/smartCategorizer';
 import { resolveItemConflict, resolveItemListConflict } from '../utils/conflictResolver';
+import { findDuplicateItem } from '../utils/itemMatching';
+import { pushContributor, popContributor } from '../utils/contributorStack';
+import { EventToastMessage } from '../types';
 
 interface GroceryContextType {
   lists: GroceryList[];
@@ -40,6 +43,8 @@ interface GroceryContextType {
     note?: string,
     targetListId?: string
   ) => Promise<GroceryItem>;
+  incrementItem: (id: string, qty?: number) => Promise<void>;
+  decrementItem: (id: string, qty?: number) => Promise<void>;
   toggleItem: (id: string) => Promise<void>;
   updateItem: (id: string, updates: Partial<GroceryItem>) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
@@ -70,6 +75,9 @@ interface GroceryContextType {
   isCategoryModalOpen: boolean;
   openCategoryModal: () => void;
   closeCategoryModal: () => void;
+  isShopModeOpen: boolean;
+  openShopMode: () => void;
+  closeShopMode: () => void;
   activeEditingItemId: string | null;
   setActiveEditingItemId: (id: string | null) => void;
   isQuickAddOptionsOpen: boolean;
@@ -77,6 +85,8 @@ interface GroceryContextType {
   lastDeletedItem: GroceryItem | null;
   undoLastDelete: () => Promise<void>;
   dismissUndoToast: () => void;
+  activeToast: EventToastMessage | null;
+  dismissToast: () => void;
 }
 
 const GroceryContext = createContext<GroceryContextType | undefined>(undefined);
@@ -130,8 +140,31 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
   const [isAutoListRulesModalOpen, setIsAutoListRulesModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [isShopModeOpen, setIsShopModeOpen] = useState(false);
   const [activeEditingItemId, setActiveEditingItemIdState] = useState<string | null>(null);
   const [isQuickAddOptionsOpen, setIsQuickAddOptionsOpenState] = useState(false);
+  const [activeToast, setActiveToast] = useState<EventToastMessage | null>(null);
+  const toastTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const dismissToast = useCallback(() => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = null;
+    }
+    setActiveToast(null);
+  }, []);
+
+  const showToast = useCallback((toast: EventToastMessage) => {
+    if (toastTimeoutRef.current) {
+      clearTimeout(toastTimeoutRef.current);
+      toastTimeoutRef.current = null;
+    }
+    setActiveToast(toast);
+    toastTimeoutRef.current = setTimeout(() => {
+      setActiveToast(null);
+      toastTimeoutRef.current = null;
+    }, 3000);
+  }, []);
 
   const setActiveEditingItemId = useCallback((id: string | null) => {
     setActiveEditingItemIdState(id);
@@ -206,17 +239,44 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         const incomingItem = event.item;
         setItems((prev) => {
           const existing = prev.find((i) => i.id === incomingItem.id);
+          const isBrandNewItem = !existing;
+
           const resolvedItem = existing ? resolveItemConflict(existing, incomingItem) : incomingItem;
           const idx = prev.findIndex((i) => i.id === resolvedItem.id);
           const next = idx >= 0 ? [...prev] : [resolvedItem, ...prev];
           if (idx >= 0) next[idx] = resolvedItem;
           idbSaveItem(resolvedItem);
+
+          // Trigger toast ONLY for brand-new item creation from another device
+          // Strictly suppress toasts for quantity updates / inline edits
+          if (isBrandNewItem && incomingItem.addedBy.deviceId !== device.id) {
+            showToast({
+              id: `toast_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+              type: 'created',
+              item: resolvedItem,
+              actorDevice: resolvedItem.addedBy,
+              timestamp: Date.now(),
+            });
+          }
+
           return next;
         });
         setLastSyncedAt(Date.now());
       } else if (event.type === 'ITEM_DELETE' && event.deletedItemId) {
         const id = event.deletedItemId;
-        setItems((prev) => prev.filter((i) => i.id !== id));
+        setItems((prev) => {
+          const deleted = prev.find((i) => i.id === id);
+          if (deleted) {
+            // Toast notification for remote deletion (if not deleted locally)
+            showToast({
+              id: `toast_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+              type: 'deleted',
+              item: deleted,
+              timestamp: Date.now(),
+            });
+          }
+          return prev.filter((i) => i.id !== id);
+        });
         deleteItemFromStorage(id);
         setLastSyncedAt(Date.now());
       } else if (event.type === 'LIST_UPSERT' && event.list) {
@@ -315,6 +375,38 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     }
 
+    // 1. Check for intelligent duplicate matching against active, uncompleted items on target list
+    const existingDuplicate = findDuplicateItem(name, items, destinationListId);
+
+    if (existingDuplicate) {
+      // Auto-increment the existing duplicate item using pushContributor
+      const updatedItem = pushContributor(
+        existingDuplicate,
+        {
+          deviceId: device.id,
+          deviceName: device.name,
+          color: device.color,
+        },
+        quantity || 1
+      );
+
+      // Preserve any custom unit or note if provided and existing was empty
+      if (!updatedItem.unit && unit) updatedItem.unit = unit;
+      if (!updatedItem.note && note) updatedItem.note = note.trim();
+
+      setItems((prev) => prev.map((i) => (i.id === updatedItem.id ? updatedItem : i)));
+      await idbSaveItem(updatedItem);
+
+      if (destinationListId !== activeListId) {
+        setActiveListId(destinationListId);
+      }
+
+      syncClient.broadcastItemUpsert(updatedItem);
+
+      // STRICT SUPPRESSION RULE: Do NOT trigger toast notifications for duplicate auto-increments
+      return updatedItem;
+    }
+
     const now = Date.now();
     const newItem: GroceryItem = {
       id: `item_${now}_${Math.random().toString(36).substring(2, 7)}`,
@@ -332,6 +424,7 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         deviceName: device.name,
         color: device.color,
       },
+      contributors: [],
       createdAt: now,
       contentUpdatedAt: now,
       updatedAt: now,
@@ -349,7 +442,55 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     // Broadcast to household sync
     syncClient.broadcastItemUpsert(newItem);
 
+    // Trigger glassmorphic creation toast for brand-new item
+    showToast({
+      id: `toast_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+      type: 'created',
+      item: newItem,
+      actorDevice: newItem.addedBy,
+      timestamp: Date.now(),
+    });
+
     return newItem;
+  };
+
+  const incrementItem = async (id: string, qty: number = 1) => {
+    const target = items.find((i) => i.id === id);
+    if (!target) return;
+
+    const updated = pushContributor(
+      target,
+      {
+        deviceId: device.id,
+        deviceName: device.name,
+        color: device.color,
+      },
+      qty
+    );
+
+    setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));
+    await idbSaveItem(updated);
+    syncClient.broadcastItemUpsert(updated);
+    // Suppress toast for quantity increments
+  };
+
+  const decrementItem = async (id: string, qty: number = 1) => {
+    const target = items.find((i) => i.id === id);
+    if (!target) return;
+
+    const { updatedItem, shouldDelete } = popContributor(target, qty);
+
+    if (shouldDelete) {
+      await deleteItem(id);
+      return;
+    }
+
+    if (updatedItem) {
+      setItems((prev) => prev.map((i) => (i.id === id ? updatedItem : i)));
+      await idbSaveItem(updatedItem);
+      syncClient.broadcastItemUpsert(updatedItem);
+      // Suppress toast for quantity decrements
+    }
   };
 
   const toggleItem = async (id: string) => {
@@ -433,7 +574,7 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const deleteItem = async (id: string) => {
     const itemToDelete = items.find((i) => i.id === id);
     if (itemToDelete) {
-      // Set for undo toast and schedule auto-dismiss in 5s
+      // Set for undo toast and schedule auto-dismiss in 3s
       setLastDeletedItem(itemToDelete);
       if (undoTimeoutRef.current) {
         clearTimeout(undoTimeoutRef.current);
@@ -441,7 +582,15 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       undoTimeoutRef.current = setTimeout(() => {
         setLastDeletedItem(null);
         undoTimeoutRef.current = null;
-      }, 5000);
+      }, 3000);
+
+      // Glassmorphic deletion toast
+      showToast({
+        id: `toast_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
+        type: 'deleted',
+        item: itemToDelete,
+        timestamp: Date.now(),
+      });
     }
 
     setItems((prev) => prev.filter((i) => i.id !== id));
@@ -453,6 +602,7 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     if (!lastDeletedItem) return;
     const restored = { ...lastDeletedItem, updatedAt: Date.now() };
     dismissUndoToast();
+    dismissToast();
 
     setItems((prev) => {
       const exists = prev.some((i) => i.id === restored.id);
@@ -606,6 +756,8 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         completedItems,
         autoListRules,
         addItem,
+        incrementItem,
+        decrementItem,
         toggleItem,
         updateItem,
         deleteItem,
@@ -636,6 +788,9 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isCategoryModalOpen,
         openCategoryModal: () => setIsCategoryModalOpen(true),
         closeCategoryModal: () => setIsCategoryModalOpen(false),
+        isShopModeOpen,
+        openShopMode: () => setIsShopModeOpen(true),
+        closeShopMode: () => setIsShopModeOpen(false),
         activeEditingItemId,
         setActiveEditingItemId,
         isQuickAddOptionsOpen,
@@ -643,6 +798,8 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         lastDeletedItem,
         undoLastDelete,
         dismissUndoToast,
+        activeToast,
+        dismissToast,
       }}
     >
       {children}
