@@ -78,6 +78,37 @@ export class CartSyncDatabase {
       // Column already exists
     }
 
+    // Migration: Add status, is_unavailable_revert, unavailable_by, unavailable_at columns
+    try {
+      this.db.exec("ALTER TABLE items ADD COLUMN status TEXT DEFAULT 'active';");
+    } catch (_) {}
+    try {
+      this.db.exec('ALTER TABLE items ADD COLUMN is_unavailable_revert INTEGER DEFAULT 0;');
+    } catch (_) {}
+    try {
+      this.db.exec('ALTER TABLE items ADD COLUMN unavailable_by TEXT;');
+    } catch (_) {}
+    try {
+      this.db.exec('ALTER TABLE items ADD COLUMN unavailable_at INTEGER;');
+    } catch (_) {}
+
+    // 2b. Device-Name Scoped Item History Table
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS device_item_history (
+        id TEXT PRIMARY KEY,
+        device_name TEXT NOT NULL,
+        clean_name TEXT NOT NULL,
+        category TEXT DEFAULT 'Other',
+        last_unit TEXT,
+        last_completed_at INTEGER NOT NULL,
+        purchase_count INTEGER DEFAULT 1,
+        UNIQUE(device_name, clean_name) ON CONFLICT REPLACE
+      );
+    `);
+    this.db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_device_history_lookup ON device_item_history(device_name, clean_name);
+    `);
+
     // 3. Connected Devices Table
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS devices (
@@ -357,6 +388,10 @@ export class CartSyncDatabase {
       updatedAt: Number(r.updated_at),
       contentUpdatedAt: r.content_updated_at ? Number(r.content_updated_at) : undefined,
       contributors: r.contributors ? JSON.parse(r.contributors) : [],
+      status: r.status || 'active',
+      isUnavailableRevert: Boolean(r.is_unavailable_revert),
+      unavailableBy: r.unavailable_by || null,
+      unavailableAt: r.unavailable_at ? Number(r.unavailable_at) : null,
     }));
 
     const deviceRows = this.db.prepare('SELECT * FROM devices ORDER BY last_seen_at DESC').all();
@@ -382,6 +417,20 @@ export class CartSyncDatabase {
       }));
     } catch (_) {}
 
+    let deviceItemHistory = [];
+    try {
+      const histRows = this.db.prepare('SELECT * FROM device_item_history ORDER BY last_completed_at DESC').all();
+      deviceItemHistory = histRows.map((r) => ({
+        id: r.id,
+        deviceName: r.device_name,
+        cleanName: r.clean_name,
+        category: r.category || 'Other',
+        lastUnit: r.last_unit || undefined,
+        lastCompletedAt: Number(r.last_completed_at),
+        purchaseCount: Number(r.purchase_count),
+      }));
+    } catch (_) {}
+
     let householdName = 'Our Home';
     let adminPinConfigured = false;
     try {
@@ -402,6 +451,7 @@ export class CartSyncDatabase {
       items,
       devices,
       autoListRules,
+      deviceItemHistory,
     };
   }
 
@@ -424,7 +474,91 @@ export class CartSyncDatabase {
       updatedAt: Number(row.updated_at),
       contentUpdatedAt: row.content_updated_at ? Number(row.content_updated_at) : undefined,
       contributors: row.contributors ? JSON.parse(row.contributors) : [],
+      status: row.status || 'active',
+      isUnavailableRevert: Boolean(row.is_unavailable_revert),
+      unavailableBy: row.unavailable_by || null,
+      unavailableAt: row.unavailable_at ? Number(row.unavailable_at) : null,
     };
+  }
+
+  getDeviceHistory(deviceName) {
+    if (!deviceName) return [];
+    const rows = this.db.prepare(`
+      SELECT * FROM device_item_history
+      WHERE device_name = ?
+      ORDER BY last_completed_at DESC
+    `).all(deviceName);
+
+    return rows.map((r) => ({
+      id: r.id,
+      deviceName: r.device_name,
+      cleanName: r.clean_name,
+      category: r.category || 'Other',
+      lastUnit: r.last_unit || undefined,
+      lastCompletedAt: Number(r.last_completed_at),
+      purchaseCount: Number(r.purchase_count),
+    }));
+  }
+
+  upsertDeviceHistoryItem(deviceNameOrObj, cleanName, category, lastUnit, lastCompletedAt) {
+    const item = typeof deviceNameOrObj === 'object' && deviceNameOrObj !== null
+      ? deviceNameOrObj
+      : {
+          deviceName: deviceNameOrObj,
+          cleanName,
+          category,
+          lastUnit,
+          lastCompletedAt,
+        };
+
+    const now = Date.now();
+    const existing = this.db.prepare(`
+      SELECT * FROM device_item_history
+      WHERE device_name = ? AND clean_name = ?
+    `).get(item.deviceName, item.cleanName);
+
+    const count = existing ? (Number(existing.purchase_count) + (item.purchaseCountIncrement || 1)) : (item.purchaseCount || 1);
+    const id = existing ? existing.id : (item.id || `hist_${now}_${Math.random().toString(36).substring(2, 7)}`);
+
+    this.db.prepare(`
+      INSERT INTO device_item_history (id, device_name, clean_name, category, last_unit, last_completed_at, purchase_count)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(device_name, clean_name) DO UPDATE SET
+        category = excluded.category,
+        last_unit = excluded.last_unit,
+        last_completed_at = excluded.last_completed_at,
+        purchase_count = excluded.purchase_count
+    `).run(
+      id,
+      item.deviceName,
+      item.cleanName,
+      item.category || 'Other',
+      item.lastUnit || null,
+      item.lastCompletedAt || now,
+      count
+    );
+  }
+
+  setItemStatus(itemId, status, options = {}) {
+    const now = Date.now();
+    const existing = this.getItem(itemId);
+    if (!existing) return null;
+
+    const isUnavailableRevert = options.isUnavailableRevert !== undefined ? (options.isUnavailableRevert ? 1 : 0) : (existing.isUnavailableRevert ? 1 : 0);
+    const unavailableBy = options.unavailableBy !== undefined ? options.unavailableBy : (status === 'unavailable' ? existing.unavailableBy : null);
+    const unavailableAt = options.unavailableAt !== undefined ? options.unavailableAt : (status === 'unavailable' ? existing.unavailableAt : null);
+
+    this.db.prepare(`
+      UPDATE items
+      SET status = ?,
+          is_unavailable_revert = ?,
+          unavailable_by = ?,
+          unavailable_at = ?,
+          updated_at = ?
+      WHERE id = ?
+    `).run(status, isUnavailableRevert, unavailableBy, unavailableAt, now, itemId);
+
+    return this.getItem(itemId);
   }
 
   upsertItem(incomingItem) {
@@ -434,10 +568,6 @@ export class CartSyncDatabase {
     let finalItem = incomingItem;
     if (existing) {
       // Content resolution: LWW based on content updatedAt
-      // When an item has contentUpdatedAt, use it directly.
-      // For items without contentUpdatedAt (legacy or completion-only toggles):
-      //   - completed items: use createdAt (content wasn't changed by the completion toggle)
-      //   - uncompleted items: use updatedAt (last content edit)
       const existingContentTime = existing.contentUpdatedAt ?? (
         existing.completed ? (existing.createdAt || existing.updatedAt || 0) : (existing.updatedAt || 0)
       );
@@ -449,7 +579,6 @@ export class CartSyncDatabase {
       const resolvedContentTime = Math.max(existingContentTime, incomingContentTime);
 
       // Completion resolution: LWW based on completion action timestamp
-      // Uses same logic as client-side resolveItemConflict
       let useIncomingCompletion = false;
 
       if (incomingItem.completed && !existing.completed) {
@@ -459,7 +588,6 @@ export class CartSyncDatabase {
       } else if (!incomingItem.completed && existing.completed) {
         const existingCompTime = existing.completedAt ?? existing.updatedAt ?? 0;
         const incomingUncheckTime = incomingItem.updatedAt ?? 0;
-        // Distinguish content-only edits from explicit unchecks
         const incContentTime = incomingItem.contentUpdatedAt ?? 0;
         const isContentOnlyEdit = incContentTime > 0 && incContentTime === (incomingItem.updatedAt ?? 0);
         useIncomingCompletion = !isContentOnlyEdit && incomingUncheckTime > existingCompTime;
@@ -468,10 +596,15 @@ export class CartSyncDatabase {
         const incomingCompTime = incomingItem.completedAt ?? incomingItem.updatedAt ?? 0;
         useIncomingCompletion = incomingCompTime >= existingCompTime;
       } else {
-        // Both uncompleted
         useIncomingCompletion = (incomingItem.updatedAt ?? 0) >= (existing.updatedAt ?? 0);
       }
       const completionBase = useIncomingCompletion ? incomingItem : existing;
+
+      // Status resolution
+      const resolvedStatus = incomingItem.status !== undefined ? incomingItem.status : (existing.status || 'active');
+      const resolvedIsUnavailableRevert = incomingItem.isUnavailableRevert !== undefined
+        ? (incomingItem.completed ? false : Boolean(incomingItem.isUnavailableRevert))
+        : (incomingItem.completed ? false : Boolean(existing.isUnavailableRevert));
 
       finalItem = {
         id: incomingItem.id,
@@ -489,12 +622,34 @@ export class CartSyncDatabase {
         contentUpdatedAt: resolvedContentTime,
         contributors: contentBase.contributors || existing.contributors || [],
         updatedAt: Math.max(existing.updatedAt || 0, incomingItem.updatedAt || 0, resolvedContentTime),
+        status: resolvedStatus,
+        isUnavailableRevert: resolvedIsUnavailableRevert,
+        unavailableBy: incomingItem.unavailableBy !== undefined ? incomingItem.unavailableBy : (existing.unavailableBy || null),
+        unavailableAt: incomingItem.unavailableAt !== undefined ? incomingItem.unavailableAt : (existing.unavailableAt || null),
+      };
+    } else {
+      finalItem = {
+        ...incomingItem,
+        status: incomingItem.status || 'active',
+        isUnavailableRevert: Boolean(incomingItem.isUnavailableRevert),
+        unavailableBy: incomingItem.unavailableBy || null,
+        unavailableAt: incomingItem.unavailableAt || null,
       };
     }
 
     const stmt = this.db.prepare(`
-      INSERT INTO items (id, list_id, name, quantity, unit, category, note, completed, completed_at, completed_by, added_by, created_at, updated_at, content_updated_at, contributors)
-      VALUES (@id, @list_id, @name, @quantity, @unit, @category, @note, @completed, @completed_at, @completed_by, @added_by, @created_at, @updated_at, @content_updated_at, @contributors)
+      INSERT INTO items (
+        id, list_id, name, quantity, unit, category, note, completed,
+        completed_at, completed_by, added_by, created_at, updated_at,
+        content_updated_at, contributors, status, is_unavailable_revert,
+        unavailable_by, unavailable_at
+      )
+      VALUES (
+        @id, @list_id, @name, @quantity, @unit, @category, @note, @completed,
+        @completed_at, @completed_by, @added_by, @created_at, @updated_at,
+        @content_updated_at, @contributors, @status, @is_unavailable_revert,
+        @unavailable_by, @unavailable_at
+      )
       ON CONFLICT(id) DO UPDATE SET
         list_id = excluded.list_id,
         name = excluded.name,
@@ -508,7 +663,11 @@ export class CartSyncDatabase {
         added_by = excluded.added_by,
         updated_at = excluded.updated_at,
         content_updated_at = excluded.content_updated_at,
-        contributors = excluded.contributors
+        contributors = excluded.contributors,
+        status = excluded.status,
+        is_unavailable_revert = excluded.is_unavailable_revert,
+        unavailable_by = excluded.unavailable_by,
+        unavailable_at = excluded.unavailable_at
     `);
 
     stmt.run({
@@ -527,10 +686,167 @@ export class CartSyncDatabase {
       updated_at: finalItem.updatedAt || now,
       content_updated_at: finalItem.contentUpdatedAt || null,
       contributors: finalItem.contributors && finalItem.contributors.length > 0 ? JSON.stringify(finalItem.contributors) : null,
+      status: finalItem.status || 'active',
+      is_unavailable_revert: finalItem.isUnavailableRevert ? 1 : 0,
+      unavailable_by: finalItem.unavailableBy || null,
+      unavailable_at: finalItem.unavailableAt || null,
     });
 
     return finalItem;
   }
+
+  // Atomic Finish Shopping Batch Execution
+  executeFinishShoppingBatch({
+    deviceName,
+    device,
+    completedItemIds = [],
+    archiveCompletedIds = [],
+    moveRemainingToUnavailable = false,
+    moveRemainingToUnavailableIds = [],
+    uncheckedItemIds = [],
+    keepActiveRemainingIds = [],
+    listId = null,
+  }) {
+    const activeDeviceName = deviceName || device?.deviceName || 'Household';
+    const cIds = completedItemIds.length > 0 ? completedItemIds : archiveCompletedIds;
+    const shouldMove = moveRemainingToUnavailable || moveRemainingToUnavailableIds.length > 0;
+    const uncheckIds = moveRemainingToUnavailableIds.length > 0 ? moveRemainingToUnavailableIds : uncheckedItemIds;
+
+    const now = Date.now();
+    let archivedCount = 0;
+    let markedUnavailableCount = 0;
+
+    // Begin SQLite Transaction
+    this.db.exec('BEGIN TRANSACTION;');
+    try {
+      // 1. Move unchecked items to unavailable if requested
+      if (shouldMove && uncheckIds.length > 0) {
+        const markUnavailableStmt = this.db.prepare(`
+          UPDATE items
+          SET status = 'unavailable',
+              unavailable_by = ?,
+              unavailable_at = ?,
+              updated_at = ?
+          WHERE id = ? AND completed = 0
+        `);
+        for (const uncheckId of uncheckIds) {
+          const res = markUnavailableStmt.run(activeDeviceName, now, now, uncheckId);
+          if (res.changes > 0) markedUnavailableCount++;
+        }
+      }
+
+      // 2. Archive completed items into device_item_history scoped strictly to active deviceName
+      if (cIds.length > 0) {
+        const findItemStmt = this.db.prepare('SELECT * FROM items WHERE id = ?');
+        const upsertHistStmt = this.db.prepare(`
+          INSERT INTO device_item_history (id, device_name, clean_name, category, last_unit, last_completed_at, purchase_count)
+          VALUES (@id, @device_name, @clean_name, @category, @last_unit, @last_completed_at, @purchase_count)
+          ON CONFLICT(device_name, clean_name) DO UPDATE SET
+            category = excluded.category,
+            last_unit = excluded.last_unit,
+            last_completed_at = excluded.last_completed_at,
+            purchase_count = device_item_history.purchase_count + 1
+        `);
+
+        for (const cId of cIds) {
+          const itemRow = findItemStmt.get(cId);
+          if (itemRow) {
+            // Clean name normalization (strip status tags, bracketed tags, trailing punctuation, extra spaces)
+            let clean = (itemRow.name || '').trim();
+            clean = clean.replace(/\s*(\[|\()(unavailable|out of stock|restocked|reverted|oos|revert|urgent!?|sweet|ripene?d?|costco)(\]|\))\s*/gi, ' ');
+            clean = clean.replace(/\s*\(\d+\s*[a-zA-Z]+\)\s*$/g, '');
+            clean = clean.replace(/\s+#\w+/g, ' ');
+            clean = clean.replace(/^[\s\-–—:*#"'`]+|[\s\-–—:*#"'`]+$/g, '');
+            clean = clean.replace(/\s+/g, ' ').trim();
+            clean = clean.replace(/^[\s\-–—:*#"'`]+|[\s\-–—:*#"'`]+$/g, '').trim();
+
+            if (clean && activeDeviceName) {
+              const histId = `hist_${now}_${Math.random().toString(36).substring(2, 7)}`;
+              upsertHistStmt.run({
+                id: histId,
+                device_name: activeDeviceName,
+                clean_name: clean,
+                category: itemRow.category || 'Other',
+                last_unit: itemRow.unit || null,
+                last_completed_at: itemRow.completed_at ? Number(itemRow.completed_at) : now,
+                purchase_count: 1,
+              });
+            }
+          }
+        }
+
+        // Delete completed items
+        const deleteItemStmt = this.db.prepare('DELETE FROM items WHERE id = ?');
+        for (const cId of cIds) {
+          const res = deleteItemStmt.run(cId);
+          if (res.changes > 0) archivedCount++;
+        }
+      }
+
+      // 3. Restore any previously unavailable items on this list back to active list with is_unavailable_revert = 1
+      // Note: do not immediately revert items that were just marked unavailable in step 1!
+      const uncheckPlaceholder = uncheckIds.length > 0 ? uncheckIds.map(() => '?').join(',') : null;
+      if (listId) {
+        if (uncheckPlaceholder && shouldMove) {
+          this.db.prepare(`
+            UPDATE items
+            SET status = 'active',
+                is_unavailable_revert = 1,
+                unavailable_by = NULL,
+                unavailable_at = NULL,
+                updated_at = ?
+            WHERE status = 'unavailable' AND list_id = ? AND id NOT IN (${uncheckPlaceholder})
+          `).run(now, listId, ...uncheckIds);
+        } else {
+          this.db.prepare(`
+            UPDATE items
+            SET status = 'active',
+                is_unavailable_revert = 1,
+                unavailable_by = NULL,
+                unavailable_at = NULL,
+                updated_at = ?
+            WHERE status = 'unavailable' AND list_id = ?
+          `).run(now, listId);
+        }
+      } else {
+        if (uncheckPlaceholder && shouldMove) {
+          this.db.prepare(`
+            UPDATE items
+            SET status = 'active',
+                is_unavailable_revert = 1,
+                unavailable_by = NULL,
+                unavailable_at = NULL,
+                updated_at = ?
+            WHERE status = 'unavailable' AND id NOT IN (${uncheckPlaceholder})
+          `).run(now, ...uncheckIds);
+        } else {
+          this.db.prepare(`
+            UPDATE items
+            SET status = 'active',
+                is_unavailable_revert = 1,
+                unavailable_by = NULL,
+                unavailable_at = NULL,
+                updated_at = ?
+            WHERE status = 'unavailable'
+          `).run(now);
+        }
+      }
+
+      this.db.exec('COMMIT;');
+    } catch (err) {
+      this.db.exec('ROLLBACK;');
+      throw err;
+    }
+
+    const state = this.getState();
+    return {
+      success: true,
+      archivedCount,
+      markedUnavailableCount,
+      state,
+    };
+  }
+
 
   deleteItem(itemId) {
     const stmt = this.db.prepare('DELETE FROM items WHERE id = ?');
@@ -658,7 +974,7 @@ export class CartSyncDatabase {
     return row.value === pinHash;
   }
 
-  syncState({ lists, items, device, autoListRules, householdName }) {
+  syncState({ lists, items, device, autoListRules, householdName, deviceItemHistory }) {
     if (householdName) {
       this.setHouseholdName(householdName);
     }
@@ -677,10 +993,64 @@ export class CartSyncDatabase {
         this.upsertAutoListRule(r);
       }
     }
+    if (deviceItemHistory && Array.isArray(deviceItemHistory)) {
+      for (const h of deviceItemHistory) {
+        this.upsertDeviceHistoryItem(h);
+      }
+    }
     if (device && device.id) {
       this.upsertDevice(device);
     }
     return this.getState();
+  }
+
+  restoreBackup(backupData) {
+    this.db.exec('BEGIN TRANSACTION;');
+    try {
+      this.db.exec('DELETE FROM items;');
+      this.db.exec('DELETE FROM lists;');
+      this.db.exec('DELETE FROM devices;');
+      this.db.exec('DELETE FROM auto_list_rules;');
+      this.db.exec('DELETE FROM device_item_history;');
+
+      if (backupData.householdName) {
+        this.setHouseholdName(backupData.householdName);
+      }
+      if (Array.isArray(backupData.lists)) {
+        for (const l of backupData.lists) {
+          this.upsertList(l);
+        }
+      }
+      if (Array.isArray(backupData.items)) {
+        for (const i of backupData.items) {
+          this.upsertItem(i);
+        }
+      }
+      if (Array.isArray(backupData.autoListRules)) {
+        for (const r of backupData.autoListRules) {
+          this.upsertAutoListRule(r);
+        }
+      }
+      if (Array.isArray(backupData.devices)) {
+        for (const d of backupData.devices) {
+          this.upsertDevice(d);
+        }
+      }
+      if (Array.isArray(backupData.deviceItemHistory)) {
+        for (const h of backupData.deviceItemHistory) {
+          this.upsertDeviceHistoryItem(h);
+        }
+      }
+      this.db.exec('COMMIT;');
+    } catch (err) {
+      this.db.exec('ROLLBACK;');
+      throw err;
+    }
+    const state = this.getState();
+    return {
+      success: true,
+      state,
+    };
   }
 
   resetDatabase() {
@@ -688,9 +1058,11 @@ export class CartSyncDatabase {
     this.db.exec('DELETE FROM lists;');
     this.db.exec('DELETE FROM devices;');
     this.db.exec('DELETE FROM auto_list_rules;');
+    this.db.exec('DELETE FROM device_item_history;');
     this.seedDefaultsIfEmpty();
     return this.getState();
   }
+
 
   close() {
     try {

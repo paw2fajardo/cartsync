@@ -396,6 +396,22 @@ class SyncClient {
     });
   }
 
+  public broadcastFinishShoppingBatch(payload: {
+    deviceName: string;
+    completedItemIds: string[];
+    moveRemainingToUnavailable: boolean;
+    uncheckedItemIds: string[];
+    listId?: string;
+  }): void {
+    this.send({
+      type: 'FINISH_SHOPPING_BATCH',
+      deviceId: this.currentDevice ? this.currentDevice.id : 'unknown',
+      timestamp: Date.now(),
+      payload,
+    });
+  }
+
+
   // Authenticated HTTP Fetch Client helper
   public async fetchWithAuth(url: string, init: RequestInit = {}): Promise<Response> {
     const headers = new Headers(init.headers || {});

@@ -1,7 +1,7 @@
-import { GroceryItem, GroceryList, AutoListRule } from '../types';
+import { GroceryItem, GroceryList, AutoListRule, DeviceItemHistory } from '../types';
 
 const DB_NAME = 'cartsync_db';
-const DB_VERSION = 2;
+const DB_VERSION = 3;
 
 let dbPromise: Promise<IDBDatabase> | null = null;
 
@@ -23,10 +23,20 @@ function openDB(): Promise<IDBDatabase> {
         db.createObjectStore('lists', { keyPath: 'id' });
       }
 
+      let itemStore: IDBObjectStore;
       if (!db.objectStoreNames.contains('items')) {
-        const itemStore = db.createObjectStore('items', { keyPath: 'id' });
+        itemStore = db.createObjectStore('items', { keyPath: 'id' });
         itemStore.createIndex('listId', 'listId', { unique: false });
         itemStore.createIndex('completed', 'completed', { unique: false });
+      } else {
+        itemStore = (event.target as IDBOpenDBRequest).transaction!.objectStore('items');
+      }
+
+      if (!itemStore.indexNames.contains('status')) {
+        itemStore.createIndex('status', 'status', { unique: false });
+      }
+      if (!itemStore.indexNames.contains('isUnavailableRevert')) {
+        itemStore.createIndex('isUnavailableRevert', 'isUnavailableRevert', { unique: false });
       }
 
       if (!db.objectStoreNames.contains('autoListRules')) {
@@ -35,6 +45,12 @@ function openDB(): Promise<IDBDatabase> {
 
       if (!db.objectStoreNames.contains('meta')) {
         db.createObjectStore('meta', { keyPath: 'key' });
+      }
+
+      if (!db.objectStoreNames.contains('device_item_history')) {
+        const histStore = db.createObjectStore('device_item_history', { keyPath: 'id' });
+        histStore.createIndex('device_clean_lookup', ['deviceName', 'cleanName'], { unique: true });
+        histStore.createIndex('deviceName', 'deviceName', { unique: false });
       }
     };
 
@@ -49,6 +65,7 @@ function openDB(): Promise<IDBDatabase> {
 
   return dbPromise;
 }
+
 
 // Fallback to localStorage if IndexedDB is blocked in some environments
 export const LS_LISTS_KEY = 'cartsync_lists_v1';
@@ -299,15 +316,102 @@ export async function deleteAutoListRuleFromStorage(ruleId: string): Promise<voi
   } catch (_) {}
 }
 
+export const LS_HISTORY_KEY = 'cartsync_device_item_history_v1';
+
+export function getCachedHistory(deviceName?: string): DeviceItemHistory[] {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(LS_HISTORY_KEY) : null;
+    const all: DeviceItemHistory[] = raw ? JSON.parse(raw) : [];
+    if (!deviceName) return all;
+    return all.filter((h) => h.deviceName === deviceName);
+  } catch {
+    return [];
+  }
+}
+
+export async function getDeviceHistoryFromStorage(deviceName: string): Promise<DeviceItemHistory[]> {
+  if (!deviceName) return [];
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction('device_item_history', 'readonly');
+      const store = tx.objectStore('device_item_history');
+      const index = store.index('deviceName');
+      const request = index.getAll(deviceName);
+      request.onsuccess = () => {
+        const records: DeviceItemHistory[] = request.result || [];
+        records.sort((a, b) => b.lastCompletedAt - a.lastCompletedAt);
+        resolve(records);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.warn('IDB fallback to localStorage for getDeviceHistoryFromStorage:', err);
+    return getCachedHistory(deviceName);
+  }
+}
+
+export async function saveDeviceHistoryItem(item: DeviceItemHistory): Promise<void> {
+  try {
+    const db = await openDB();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction('device_item_history', 'readwrite');
+      const store = tx.objectStore('device_item_history');
+      const request = store.put(item);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.warn('IDB fallback to localStorage for saveDeviceHistoryItem:', err);
+  }
+
+  try {
+    const all = getCachedHistory();
+    const idx = all.findIndex((h) => h.id === item.id || (h.deviceName === item.deviceName && h.cleanName === item.cleanName));
+    if (idx >= 0) {
+      all[idx] = item;
+    } else {
+      all.unshift(item);
+    }
+    localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(all));
+  } catch (_) {}
+}
+
+export async function saveDeviceHistoryBatch(items: DeviceItemHistory[]): Promise<void> {
+  if (!items || items.length === 0) return;
+  try {
+    const db = await openDB();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction('device_item_history', 'readwrite');
+      const store = tx.objectStore('device_item_history');
+      items.forEach((item) => store.put(item));
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    console.warn('IDB fallback to localStorage for saveDeviceHistoryBatch:', err);
+  }
+
+  try {
+    const all = getCachedHistory();
+    const map = new Map<string, DeviceItemHistory>();
+    all.forEach((h) => map.set(`${h.deviceName}:::${h.cleanName}`, h));
+    items.forEach((h) => map.set(`${h.deviceName}:::${h.cleanName}`, h));
+    localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(Array.from(map.values())));
+  } catch (_) {}
+}
+
 export async function bulkSaveData(
   lists: GroceryList[],
   items: GroceryItem[],
-  autoListRules?: AutoListRule[]
+  autoListRules?: AutoListRule[],
+  deviceItemHistory?: DeviceItemHistory[]
 ): Promise<void> {
   try {
     const db = await openDB();
     const storeNames: string[] = ['lists', 'items'];
     if (autoListRules) storeNames.push('autoListRules');
+    if (deviceItemHistory) storeNames.push('device_item_history');
 
     await new Promise<void>((resolve, reject) => {
       const tx = db.transaction(storeNames, 'readwrite');
@@ -320,6 +424,11 @@ export async function bulkSaveData(
       if (autoListRules) {
         const ruleStore = tx.objectStore('autoListRules');
         autoListRules.forEach((rule) => ruleStore.put(rule));
+      }
+
+      if (deviceItemHistory) {
+        const histStore = tx.objectStore('device_item_history');
+        deviceItemHistory.forEach((h) => histStore.put(h));
       }
 
       tx.oncomplete = () => resolve();
@@ -335,5 +444,9 @@ export async function bulkSaveData(
     if (autoListRules) {
       localStorage.setItem(LS_RULES_KEY, JSON.stringify(autoListRules));
     }
+    if (deviceItemHistory) {
+      localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(deviceItemHistory));
+    }
   } catch (_) {}
 }
+

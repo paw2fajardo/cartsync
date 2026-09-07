@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Search, ShoppingBasket, X, Layers, Smartphone, Zap } from 'lucide-react';
+import { Search, ShoppingBasket, X, Layers, Smartphone, Zap, CheckCircle } from 'lucide-react';
 import { useGrocery } from '../context/GroceryContext';
 import { useDevice } from '../context/DeviceContext';
 import { GroceryItemCard } from './GroceryItemCard';
@@ -18,6 +18,7 @@ export const ItemList: React.FC = () => {
     setActiveListId,
     items,
     openShopMode,
+    openFinishShoppingModal,
   } = useGrocery();
   const { device, activeHouseholdDevices } = useDevice();
   const [showSearch, setShowSearch] = useState(false);
@@ -36,6 +37,7 @@ export const ItemList: React.FC = () => {
     const color = matchedProfile?.color || targetDev?.color || '#10b981';
     return { name, color };
   };
+
 
   // Memoize grouped items and sort groups/items immutably
   const { groupedItems, sortedGroups, groupMeta } = React.useMemo(() => {
@@ -116,8 +118,20 @@ export const ItemList: React.FC = () => {
             </span>
           </div>
 
-          {/* Quick Sort Toggle & Shop Mode Trigger */}
+          {/* Finish Shopping Button, Quick Sort Toggle & Shop Mode Trigger */}
           <div className="flex items-center gap-1.5">
+            {/* Finish Shopping Button */}
+            <button
+              type="button"
+              onClick={openFinishShoppingModal}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-200/80 hover:bg-slate-300/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-[11px] font-bold border border-slate-300/60 dark:border-slate-700/80 active:scale-95 transition-all cursor-pointer"
+              title="Complete shopping trip and archive items to history"
+              aria-label="Finish Shopping"
+            >
+              <CheckCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+              <span>Finish</span>
+            </button>
+
             {/* Shop Mode Button */}
             <button
               type="button"
@@ -129,6 +143,7 @@ export const ItemList: React.FC = () => {
               <Zap className="w-3 h-3 fill-white stroke-none" />
               <span>Shop Mode</span>
             </button>
+
 
             <div className="flex items-center p-0.5 rounded-xl bg-slate-200/80 dark:bg-slate-800 border border-slate-300/60 dark:border-slate-700/80 text-[11px] font-medium">
               <button

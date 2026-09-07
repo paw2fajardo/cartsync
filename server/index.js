@@ -80,6 +80,31 @@ app.get('/api/backup', (req, res) => {
   });
 });
 
+app.post('/api/backup/restore', (req, res) => {
+  try {
+    const result = cartSyncDb.restoreBackup(req.body);
+    const restoredState = result.state || result;
+    broadcast({
+      type: 'SYNC_STATE',
+      deviceId: 'server',
+      timestamp: Date.now(),
+      payload: restoredState,
+    });
+    res.json({ status: 'restore_successful', state: restoredState });
+  } catch (err) {
+    res.status(500).json({ error: 'Restore failed', message: err.message });
+  }
+});
+
+app.get('/api/history', (req, res) => {
+  const deviceName = req.query.deviceName;
+  if (!deviceName) {
+    return res.json([]);
+  }
+  const history = cartSyncDb.getDeviceHistory(String(deviceName).trim());
+  res.json(history);
+});
+
 app.post('/api/sync', (req, res) => {
   const syncedState = cartSyncDb.syncState(req.body);
 
@@ -105,6 +130,7 @@ app.post('/api/reset', (req, res) => {
 
   res.json({ status: 'reset_successful', state: freshState });
 });
+
 
 // Serve static frontend assets in production if dist/ exists
 if (fs.existsSync(distPath)) {
@@ -357,6 +383,32 @@ wss.on('connection', (ws, req) => {
           }
           break;
         }
+
+        case 'FINISH_SHOPPING_BATCH': {
+          if (payload) {
+            const updatedState = cartSyncDb.executeFinishShoppingBatch({
+              deviceName: payload.deviceName,
+              completedItemIds: payload.completedItemIds || [],
+              moveRemainingToUnavailable: Boolean(payload.moveRemainingToUnavailable),
+              uncheckedItemIds: payload.uncheckedItemIds || [],
+              listId: payload.listId || null,
+            });
+
+            // Broadcast state update to all clients including sender
+            const syncMsg = {
+              type: 'SYNC_STATE',
+              deviceId: deviceId || 'server',
+              timestamp: Date.now(),
+              payload: updatedState,
+            };
+            broadcast(syncMsg);
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify(syncMsg));
+            }
+          }
+          break;
+        }
+
 
         default:
           console.log('[WS] Unknown message type:', type);

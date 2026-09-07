@@ -58,10 +58,15 @@ export function resolveItemConflict(existing: GroceryItem, incoming: GroceryItem
     // Both active / uncompleted
     useIncomingCompletion = (incoming.updatedAt ?? 0) >= (existing.updatedAt ?? 0);
   }
-
   const completionBase = useIncomingCompletion ? incoming : existing;
 
-  // 3. Compose merged canonical item
+  // 3. Status & Unavailable Revert Resolution
+  const resolvedStatus = incoming.status !== undefined ? incoming.status : (existing.status || 'active');
+  const resolvedIsUnavailableRevert = incoming.isUnavailableRevert !== undefined
+    ? (completionBase.completed ? false : Boolean(incoming.isUnavailableRevert))
+    : (completionBase.completed ? false : Boolean(existing.isUnavailableRevert));
+
+  // 4. Compose merged canonical item
   const merged: GroceryItem = {
     id: existing.id || incoming.id,
     listId: contentBase.listId,
@@ -78,10 +83,15 @@ export function resolveItemConflict(existing: GroceryItem, incoming: GroceryItem
     contributors: contentBase.contributors ?? existing.contributors ?? incoming.contributors ?? [],
     contentUpdatedAt: resolvedContentTime,
     updatedAt: Math.max(existing.updatedAt || 0, incoming.updatedAt || 0, resolvedContentTime),
+    status: resolvedStatus,
+    isUnavailableRevert: resolvedIsUnavailableRevert,
+    unavailableBy: incoming.unavailableBy !== undefined ? incoming.unavailableBy : (existing.unavailableBy || null),
+    unavailableAt: incoming.unavailableAt !== undefined ? incoming.unavailableAt : (existing.unavailableAt || null),
   };
 
   return merged;
 }
+
 
 /**
  * Reconciles an array of incoming items with an existing array of items using Completion-Preserving LWW.

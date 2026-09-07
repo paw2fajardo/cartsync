@@ -48,12 +48,16 @@ CartSync is a **local-first, privacy-centric, mobile-first household grocery & s
 - **FR-1.4 Native Modal Navigation**: Interception of hardware/browser back buttons (`useModalBackNavigation`) so back gestures dismiss open modals rather than exiting the application.
 - **FR-1.5 Theme System**: Seamless toggle between Light (`slate-50`), Dark (`slate-900` midnight slate with frosted glassmorphism), and System Auto.
 - **FR-1.6 Glassmorphic Event Toasts**: Lightweight frosted glassmorphic notification banner (`backdrop-blur-md`, slate border/background) triggered strictly on new item creation (locally or via WebSocket) and deletion (with 3-second Undo safety action). Strictly suppressed for quantity changes.
+- **FR-1.7 Distraction-Free Dedicated Shop Mode**: High-contrast, true-black OLED shopping mode (`ShopModeView`) with aisle grouping, live progress meter, collapsible in-cart basket, haptic feedback (`triggerHaptic`), and Screen Wake Lock API integration (`useShopModeWakeLock`) with 4-minute battery-saving inactivity auto-release.
+- **FR-1.8 Universal Pull-to-Dismiss Gestures**: Seamless downward drag-to-dismiss interaction (`usePullDownDismiss` and `PullDownHandle`) across modals and bottom sheets with velocity flick detection and nested scroll compatibility.
 
 ### 3.2 Local-First Dual-Database Sync
 - **FR-2.1 Client Offline Persistence**: All lists, items, and device settings persist immediately to browser IndexedDB (`cartsync_db`) with fallback to `localStorage`.
 - **FR-2.2 Server Embedded SQLite**: Server persists state in durable, ACID-compliant SQLite (`cartsync.db`) using native `node:sqlite` in WAL mode, persisting full contributor attribution stacks.
 - **FR-2.3 Real-Time WebSocket Synchronization**: Automatic bi-directional syncing of item inserts, updates, toggles, deletions, and list mutations with heartbeat and reconnect resilience.
 - **FR-2.4 Connection Indicator & Sync Modal**: Header live status badge with detailed `SyncStatusModal` showing WebSocket state, connected peers, and manual sync triggers.
+- **FR-2.5 Household Pre-Shared Key (PSK) Security**: Optional token-based authentication (`HOUSEHOLD_SECRET`) securing REST endpoints (`/api/*`) and WebSocket connections (`cartsync-auth` protocol or `?token=`), configurable via `AdminModal`.
+- **FR-2.6 Seamless PWA Update Lifecycle**: Service worker update detection hook (`useServiceWorkerUpdate`) with non-intrusive alert banner (`AppUpdateBanner`) prompting users to activate fresh app bundles.
 
 ### 3.3 Smart Categorization, NLP & Duplicate Detection
 - **FR-3.1 Automated Parser**: Regular expression and dictionary-based extraction of quantities, measurement units (`kg`, `g`, `L`, `ml`, `pack`, `dozen`, `cans`, etc.), and category classification across 12+ aisles.
@@ -87,4 +91,4 @@ CartSync is a **local-first, privacy-centric, mobile-first household grocery & s
 ## 5. Success Metrics & KPIs
 - **Sync Reliability**: Zero sync collision errors during concurrent family shopping sessions.
 - **Offline Availability**: 100% core shopping functionality retained when disconnected.
-- **Test Quality**: > 95% test coverage across backend SQLite, REST/WS sync, and React UI workflows (290+ automated tests across 29 test suites).
+- **Test Quality**: > 95% test coverage across backend SQLite, REST/WS sync, and React UI workflows (293 automated tests across 29 test suites, 100% passing).

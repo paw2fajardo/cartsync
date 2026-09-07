@@ -20,6 +20,9 @@ import { UndoToast } from './components/UndoToast';
 import { ScrollToTopButton } from './components/ScrollToTopButton';
 import { AppUpdateBanner } from './components/AppUpdateBanner';
 import { ShopModeView } from './components/ShopModeView';
+import { UnavailableDrawer } from './components/UnavailableDrawer';
+import { FinishShoppingModal } from './components/FinishShoppingModal';
+import { ReplenishmentDrawer } from './components/ReplenishmentDrawer';
 import { useGrocery } from './context/GroceryContext';
 import { Download, Sparkles, X } from 'lucide-react';
 
@@ -92,6 +95,9 @@ const GroceryApp: React.FC = () => {
         {/* Active Grocery Items List */}
         <ItemList />
 
+        {/* Not Available (Out of Stock) Drawer */}
+        <UnavailableDrawer />
+
         {/* Collapsed/Expandable Completed Items */}
         <CompletedList />
       </main>
@@ -105,7 +111,7 @@ const GroceryApp: React.FC = () => {
       {/* Floating Undo Notification Toast */}
       <UndoToast />
 
-      {/* Modals */}
+      {/* Modals & Slide-up Drawers */}
       <AdminModal />
       <DeviceModal />
       <SyncStatusModal />
@@ -113,6 +119,8 @@ const GroceryApp: React.FC = () => {
       <AutoListRulesModal />
       <CategoryManagerModal isOpen={isCategoryModalOpen} onClose={closeCategoryModal} />
       <ListSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
+      <FinishShoppingModal />
+      <ReplenishmentDrawer />
 
       {/* Full-Viewport In-Store Focus Mode ("Shop Mode") */}
       <ShopModeView isOpen={isShopModeOpen} onClose={closeShopMode} />

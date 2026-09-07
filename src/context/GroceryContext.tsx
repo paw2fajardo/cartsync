@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import confetti from 'canvas-confetti';
-import { GroceryItem, GroceryList, ItemCategory, SyncStatus, AutoListRule } from '../types';
+import { GroceryItem, GroceryList, ItemCategory, SyncStatus, AutoListRule, DeviceItemHistory } from '../types';
 import { useDevice } from './DeviceContext';
 import {
   getAllLists,
@@ -9,9 +9,12 @@ import {
   getCachedLists,
   getCachedItems,
   getCachedRules,
+  getCachedHistory,
+  getDeviceHistoryFromStorage,
   saveItem as idbSaveItem,
   saveList as idbSaveList,
   saveAutoListRule as idbSaveAutoListRule,
+  saveDeviceHistoryBatch,
   deleteAutoListRuleFromStorage,
   deleteItemFromStorage,
   deleteListFromStorage,
@@ -24,7 +27,9 @@ import { findMatchingAutoListRule } from '../utils/smartCategorizer';
 import { resolveItemConflict, resolveItemListConflict } from '../utils/conflictResolver';
 import { findDuplicateItem } from '../utils/itemMatching';
 import { pushContributor, popContributor } from '../utils/contributorStack';
+import { normalizeCleanName } from '../utils/nameNormalization';
 import { EventToastMessage } from '../types';
+
 
 interface GroceryContextType {
   lists: GroceryList[];
@@ -34,7 +39,9 @@ interface GroceryContextType {
   items: GroceryItem[];
   activeItems: GroceryItem[];
   completedItems: GroceryItem[];
+  unavailableItems: GroceryItem[];
   autoListRules: AutoListRule[];
+  deviceItemHistory: DeviceItemHistory[];
   addItem: (
     name: string,
     quantity?: number,
@@ -47,9 +54,13 @@ interface GroceryContextType {
   decrementItem: (id: string, qty?: number) => Promise<void>;
   toggleItem: (id: string) => Promise<void>;
   updateItem: (id: string, updates: Partial<GroceryItem>) => Promise<void>;
+  markItemUnavailable: (id: string) => Promise<void>;
+  restoreUnavailableItem: (id: string) => Promise<void>;
   deleteItem: (id: string) => Promise<void>;
   clearCompleted: (listId?: string) => Promise<void>;
   uncheckAll: (listId?: string) => Promise<void>;
+  finishShoppingTrip: (moveRemainingToUnavailable: boolean, listId?: string) => Promise<void>;
+  addFromHistory: (historyItem: DeviceItemHistory) => Promise<GroceryItem>;
   createList: (name: string, icon?: string, color?: string, description?: string) => Promise<GroceryList>;
   updateList: (id: string, updates: Partial<GroceryList>) => Promise<void>;
   deleteList: (id: string) => Promise<void>;
@@ -78,6 +89,12 @@ interface GroceryContextType {
   isShopModeOpen: boolean;
   openShopMode: () => void;
   closeShopMode: () => void;
+  isFinishShoppingModalOpen: boolean;
+  openFinishShoppingModal: () => void;
+  closeFinishShoppingModal: () => void;
+  isReplenishmentDrawerOpen: boolean;
+  openReplenishmentDrawer: () => void;
+  closeReplenishmentDrawer: () => void;
   activeEditingItemId: string | null;
   setActiveEditingItemId: (id: string | null) => void;
   isQuickAddOptionsOpen: boolean;
@@ -88,6 +105,7 @@ interface GroceryContextType {
   activeToast: EventToastMessage | null;
   dismissToast: () => void;
 }
+
 
 const GroceryContext = createContext<GroceryContextType | undefined>(undefined);
 
@@ -116,6 +134,10 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return isInitialized ? [] : INITIAL_AUTO_LIST_RULES;
   });
 
+  const [deviceItemHistory, setDeviceItemHistory] = useState<DeviceItemHistory[]>(() => {
+    return getCachedHistory(device?.name);
+  });
+
   const [activeListId, setActiveListIdState] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(ACTIVE_LIST_STORAGE_KEY);
@@ -141,10 +163,27 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isAutoListRulesModalOpen, setIsAutoListRulesModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [isShopModeOpen, setIsShopModeOpen] = useState(false);
+  const [isFinishShoppingModalOpen, setIsFinishShoppingModalOpen] = useState(false);
+  const [isReplenishmentDrawerOpen, setIsReplenishmentDrawerOpen] = useState(false);
   const [activeEditingItemId, setActiveEditingItemIdState] = useState<string | null>(null);
   const [isQuickAddOptionsOpen, setIsQuickAddOptionsOpenState] = useState(false);
   const [activeToast, setActiveToast] = useState<EventToastMessage | null>(null);
   const toastTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const openFinishShoppingModal = useCallback(() => setIsFinishShoppingModalOpen(true), []);
+  const closeFinishShoppingModal = useCallback(() => setIsFinishShoppingModalOpen(false), []);
+  const openReplenishmentDrawer = useCallback(() => setIsReplenishmentDrawerOpen(true), []);
+  const closeReplenishmentDrawer = useCallback(() => setIsReplenishmentDrawerOpen(false), []);
+
+  // Refresh history whenever active device name changes
+  useEffect(() => {
+    if (device?.name) {
+      getDeviceHistoryFromStorage(device.name).then((hist) => {
+        setDeviceItemHistory(hist);
+      });
+    }
+  }, [device?.name]);
+
 
   const dismissToast = useCallback(() => {
     if (toastTimeoutRef.current) {
@@ -353,8 +392,9 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return true;
   });
 
-  const activeItems = filteredItems.filter((i) => !i.completed);
-  const completedItems = filteredItems.filter((i) => i.completed);
+  const activeItems = filteredItems.filter((i) => !i.completed && i.status !== 'unavailable');
+  const completedItems = filteredItems.filter((i) => i.completed && i.status !== 'unavailable');
+  const unavailableItems = filteredItems.filter((i) => i.status === 'unavailable');
 
   const addItem = async (
     name: string,
@@ -428,6 +468,8 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       createdAt: now,
       contentUpdatedAt: now,
       updatedAt: now,
+      status: 'active',
+      isUnavailableRevert: false,
     };
 
     // Optimistic local update
@@ -454,7 +496,19 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     return newItem;
   };
 
+  const addFromHistory = async (historyItem: DeviceItemHistory): Promise<GroceryItem> => {
+    return await addItem(
+      historyItem.cleanName,
+      1,
+      historyItem.lastUnit,
+      historyItem.category,
+      undefined,
+      activeListId
+    );
+  };
+
   const incrementItem = async (id: string, qty: number = 1) => {
+    // Suppress toast for quantity increments
     const target = items.find((i) => i.id === id);
     if (!target) return;
 
@@ -471,10 +525,10 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));
     await idbSaveItem(updated);
     syncClient.broadcastItemUpsert(updated);
-    // Suppress toast for quantity increments
   };
 
   const decrementItem = async (id: string, qty: number = 1) => {
+    // Suppress toast for quantity decrements
     const target = items.find((i) => i.id === id);
     if (!target) return;
 
@@ -489,7 +543,6 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setItems((prev) => prev.map((i) => (i.id === id ? updatedItem : i)));
       await idbSaveItem(updatedItem);
       syncClient.broadcastItemUpsert(updatedItem);
-      // Suppress toast for quantity decrements
     }
   };
 
@@ -510,13 +563,15 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
             color: device.color,
           }
         : null,
+      // Remove Unavailable badge automatically when marked completed on a future trip
+      isUnavailableRevert: willBeCompleted ? false : target.isUnavailableRevert,
       updatedAt: now,
     };
 
     // Confetti celebration when checking off the last remaining item on a list!
     if (willBeCompleted) {
       const remainingUncompleted = items.filter(
-        (i) => i.listId === target.listId && !i.completed && i.id !== id
+        (i) => i.listId === target.listId && !i.completed && i.id !== id && i.status !== 'unavailable'
       );
       if (remainingUncompleted.length === 0) {
         try {
@@ -529,6 +584,42 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         } catch (_) {}
       }
     }
+
+    setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));
+    await idbSaveItem(updated);
+    syncClient.broadcastItemUpsert(updated);
+  };
+
+  const markItemUnavailable = async (id: string) => {
+    const target = items.find((i) => i.id === id);
+    if (!target) return;
+
+    const now = Date.now();
+    const updated: GroceryItem = {
+      ...target,
+      status: 'unavailable',
+      unavailableBy: device.name,
+      unavailableAt: now,
+      updatedAt: now,
+    };
+
+    setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));
+    await idbSaveItem(updated);
+    syncClient.broadcastItemUpsert(updated);
+  };
+
+  const restoreUnavailableItem = async (id: string) => {
+    const target = items.find((i) => i.id === id);
+    if (!target) return;
+
+    const now = Date.now();
+    const updated: GroceryItem = {
+      ...target,
+      status: 'active',
+      unavailableBy: null,
+      unavailableAt: null,
+      updatedAt: now,
+    };
 
     setItems((prev) => prev.map((i) => (i.id === id ? updated : i)));
     await idbSaveItem(updated);
@@ -559,6 +650,85 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     await idbSaveItem(updated);
     syncClient.broadcastItemUpsert(updated);
   };
+
+  const finishShoppingTrip = async (moveRemainingToUnavailable: boolean, listId: string = activeListId) => {
+    const targetListItems = items.filter((i) => i.listId === listId);
+    const completedList = targetListItems.filter((i) => i.completed);
+    const uncompletedList = targetListItems.filter((i) => !i.completed && i.status !== 'unavailable');
+    const completedItemIds = completedList.map((i) => i.id);
+    const uncheckedItemIds = uncompletedList.map((i) => i.id);
+    const now = Date.now();
+
+    // 1. Locally archive completed items to deviceItemHistory for this device
+    const newHistories: DeviceItemHistory[] = [];
+    for (const cItem of completedList) {
+      const clean = normalizeCleanName(cItem.name);
+      if (clean) {
+        newHistories.push({
+          id: `hist_${now}_${Math.random().toString(36).substring(2, 7)}`,
+          deviceName: device.name,
+          cleanName: clean,
+          category: cItem.category || 'Other',
+          lastUnit: cItem.unit,
+          lastCompletedAt: cItem.completedAt || now,
+          purchaseCount: 1,
+        });
+      }
+    }
+
+    if (newHistories.length > 0) {
+      await saveDeviceHistoryBatch(newHistories);
+      const refreshed = await getDeviceHistoryFromStorage(device.name);
+      setDeviceItemHistory(refreshed);
+    }
+
+    // 2. Perform optimistic local state updates
+    setItems((prev) => {
+      let next = prev.filter((i) => !completedItemIds.includes(i.id));
+
+      if (moveRemainingToUnavailable && uncheckedItemIds.length > 0) {
+        next = next.map((i) => {
+          if (uncheckedItemIds.includes(i.id)) {
+            return {
+              ...i,
+              status: 'unavailable',
+              unavailableBy: device.name,
+              unavailableAt: now,
+              updatedAt: now,
+            };
+          }
+          return i;
+        });
+      }
+
+      // Revert all unavailable items back to active list with isUnavailableRevert = true
+      next = next.map((i) => {
+        if (i.listId === listId && i.status === 'unavailable') {
+          return {
+            ...i,
+            status: 'active',
+            isUnavailableRevert: true,
+            unavailableBy: null,
+            unavailableAt: null,
+            updatedAt: now,
+          };
+        }
+        return i;
+      });
+
+      return next;
+    });
+
+    // 3. Broadcast batch to WebSocket server
+    syncClient.broadcastFinishShoppingBatch({
+      deviceName: device.name,
+      completedItemIds,
+      moveRemainingToUnavailable,
+      uncheckedItemIds,
+      listId,
+    });
+  };
+
 
   const [lastDeletedItem, setLastDeletedItem] = useState<GroceryItem | null>(null);
   const undoTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -754,15 +924,21 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         items,
         activeItems,
         completedItems,
+        unavailableItems,
         autoListRules,
+        deviceItemHistory,
         addItem,
         incrementItem,
         decrementItem,
         toggleItem,
         updateItem,
+        markItemUnavailable,
+        restoreUnavailableItem,
         deleteItem,
         clearCompleted,
         uncheckAll,
+        finishShoppingTrip,
+        addFromHistory,
         createList,
         updateList,
         deleteList,
@@ -791,6 +967,12 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         isShopModeOpen,
         openShopMode: () => setIsShopModeOpen(true),
         closeShopMode: () => setIsShopModeOpen(false),
+        isFinishShoppingModalOpen,
+        openFinishShoppingModal,
+        closeFinishShoppingModal,
+        isReplenishmentDrawerOpen,
+        openReplenishmentDrawer,
+        closeReplenishmentDrawer,
         activeEditingItemId,
         setActiveEditingItemId,
         isQuickAddOptionsOpen,
@@ -814,3 +996,4 @@ export function useGrocery(): GroceryContextType {
   }
   return context;
 }
+

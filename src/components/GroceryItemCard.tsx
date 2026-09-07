@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, Trash2, Plus, Minus, Edit3, StickyNote, X, ArrowRight, FolderSync } from 'lucide-react';
+import { Check, Trash2, Plus, Minus, Edit3, StickyNote, X, ArrowRight, FolderSync, PackageX } from 'lucide-react';
 import { GroceryItem, ItemCategory } from '../types';
 import { useGrocery } from '../context/GroceryContext';
 import { CATEGORY_COLORS, categorizeItem } from '../utils/smartCategorizer';
@@ -9,6 +9,7 @@ import { useModalBackNavigation } from '../hooks/useModalBackNavigation';
 import { usePullDownDismiss } from '../hooks/usePullDownDismiss';
 import { PullDownHandle } from './PullDownHandle';
 import { ContributorBadge } from './ContributorBadge';
+
 
 const AUTO_REORGANIZE_STORAGE_KEY = 'cartsync_auto_reorganize_category_v1';
 
@@ -37,6 +38,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
   const {
     toggleItem,
     updateItem,
+    markItemUnavailable,
     deleteItem,
     incrementItem,
     decrementItem,
@@ -46,6 +48,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
     activeEditingItemId,
     setActiveEditingItemId,
   } = useGrocery();
+
   const isInlineEditing = activeEditingItemId === item.id;
   const [editName, setEditName] = useState(item.name);
   const [editQuantity, setEditQuantity] = useState(item.quantity);
@@ -228,11 +231,14 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
         }`}
       >
         <div className="py-2.5 px-3 sm:py-3 sm:px-4 flex items-center gap-3">
-          {/* Compact Round Checkbox with ergonomic touch zone */}
+          {/* Dedicated Left Checkbox: 40px+ round touch target strictly dedicated to toggling completion */}
           <button
             type="button"
-            onClick={() => toggleItem(item.id)}
-            className="w-8 h-8 -my-1 -ml-1 flex items-center justify-center shrink-0 cursor-pointer group/cb"
+            onClick={(e) => {
+              e.stopPropagation();
+              toggleItem(item.id);
+            }}
+            className="w-8 h-8 min-w-[40px] min-h-[40px] -my-1 -ml-1 flex items-center justify-center shrink-0 cursor-pointer group/cb"
             title={item.completed ? 'Mark as active' : 'Mark as completed'}
             aria-label={item.completed ? 'Mark as active' : 'Mark as completed'}
           >
@@ -244,7 +250,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
               }`}
             >
               <Check
-                className={`w-3 h-3 stroke-[3] transition-all duration-150 ${
+                className={`w-3.5 h-3.5 stroke-[3] transition-all duration-150 ${
                   item.completed ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
                 }`}
               />
@@ -259,7 +265,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
             <div className="flex items-center justify-between gap-2 min-w-0">
               {/* Left Column: Name + Badges + Note + Sub-attribution */}
               <div className="min-w-0 flex-1 pr-1">
-                {/* Main line: Item Name + Quantity Badge + Category Pill */}
+                {/* Main line: Item Name + Quantity Badge + Category Pill + Restored Unavailable Pill */}
                 <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                   <span
                     className={`text-[14px] sm:text-[15px] font-semibold tracking-tight transition-colors truncate max-w-[200px] sm:max-w-none ${
@@ -270,6 +276,16 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                   >
                     {item.name}
                   </span>
+
+                  {/* Persistent Amber "Unavailable" Pill Badge on Restored Items */}
+                  {item.isUnavailableRevert && !item.completed && (
+                    <span
+                      className="text-[9.5px] font-bold px-1.5 py-0.2 rounded-md bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300/80 dark:border-amber-700/80 shrink-0 animate-in fade-in"
+                      title="Item was out of stock on a previous trip and restored to your aisle"
+                    >
+                      Unavailable
+                    </span>
+                  )}
 
                   {/* Quantity Badge */}
                   {(item.quantity > 1 || item.unit) && (
@@ -283,6 +299,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                       {item.quantity} {item.unit || ''}
                     </span>
                   )}
+
 
                   {/* Clickable Category Pill */}
                   <div
@@ -403,40 +420,53 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                 </div>
               </div>
 
-              {/* Right Column: Fast Stepper & Desktop Hover Delete */}
+              {/* Right Column: Fast Stepper, Out of Stock, & Desktop Hover Delete */}
               <div
                 className="flex items-center gap-1 shrink-0"
                 onClick={(e) => {
-                  // Prevent opening edit modal when clicking +/- buttons
+                  // Prevent opening edit modal when clicking +/- buttons or action icons
                   e.stopPropagation();
                 }}
               >
                 {!item.completed && (
-                  <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-850 p-0.5 rounded-xl border border-slate-200/90 dark:border-slate-700/80 shadow-2xs">
+                  <>
+                    <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-850 p-0.5 rounded-xl border border-slate-200/90 dark:border-slate-700/80 shadow-2xs">
+                      <button
+                        type="button"
+                        onClick={() => decrementItem(item.id)}
+                        className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:bg-white dark:hover:bg-slate-750 active:scale-90 transition-all cursor-pointer"
+                        title="Decrease quantity"
+                        aria-label="Decrease quantity"
+                      >
+                        <Minus className="w-3 h-3 stroke-[2.5]" />
+                      </button>
+                      {item.quantity > 1 && (
+                        <span className="text-[11px] font-bold text-slate-800 dark:text-slate-100 px-1 select-none">
+                          {item.quantity}
+                        </span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => incrementItem(item.id)}
+                        className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:bg-white dark:hover:bg-slate-750 active:scale-90 transition-all cursor-pointer"
+                        title="Increase quantity"
+                        aria-label="Increase quantity"
+                      >
+                        <Plus className="w-3 h-3 stroke-[2.5]" />
+                      </button>
+                    </div>
+
+                    {/* Dedicated Out of Stock button - moves item immediately to Not Available drawer */}
                     <button
                       type="button"
-                      onClick={() => decrementItem(item.id)}
-                      className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:bg-white dark:hover:bg-slate-750 active:scale-90 transition-all cursor-pointer"
-                      title="Decrease quantity"
-                      aria-label="Decrease quantity"
+                      onClick={() => markItemUnavailable(item.id)}
+                      className="w-7 h-7 flex items-center justify-center rounded-lg text-amber-500/80 hover:text-amber-600 dark:text-amber-400/80 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 active:scale-90 transition-all cursor-pointer"
+                      title="Out of stock - Move to Not Available drawer"
+                      aria-label="Mark Out of Stock"
                     >
-                      <Minus className="w-3 h-3 stroke-[2.5]" />
+                      <PackageX className="w-3.5 h-3.5" />
                     </button>
-                    {item.quantity > 1 && (
-                      <span className="text-[11px] font-bold text-slate-800 dark:text-slate-100 px-1 select-none">
-                        {item.quantity}
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => incrementItem(item.id)}
-                      className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:bg-white dark:hover:bg-slate-750 active:scale-90 transition-all cursor-pointer"
-                      title="Increase quantity"
-                      aria-label="Increase quantity"
-                    >
-                      <Plus className="w-3 h-3 stroke-[2.5]" />
-                    </button>
-                  </div>
+                  </>
                 )}
 
                 {/* Desktop hover delete button (hidden on touch, smooth reveal on pointer devices) */}
@@ -450,6 +480,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
+
             </div>
           </div>
         </div>

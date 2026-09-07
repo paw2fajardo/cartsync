@@ -178,9 +178,14 @@ export interface SyncMessage<T = unknown> {
 ### 4.2 Custom React Hooks
 - **`useModalBackNavigation(isOpen, onClose, modalId)`**: Pushes synthetic history state onto the browser window history when a modal opens, intercepting `popstate` events (hardware back button / mobile swipe back) to dismiss modals without exiting the PWA.
 - **`useSwipeListNavigation({ lists, activeListId, onSelect, enabled })`**: Touch gesture handler supporting smooth horizontal swipes with distance thresholds (`> 50px`) and velocity checks.
+- **`usePullDownDismiss({ onDismiss, threshold, velocityThreshold, rubberBandFactor, enabled })`**: High-performance downward drag-to-dismiss gesture hook for mobile bottom sheets, supporting elastic rubber-banding, velocity flick dismissal, non-interfering scroll container detection, and pointer-event drag support with visual grab handles (`PullDownHandle`).
+- **`useShopModeWakeLock({ enabled, inactivityTimeoutMs })`**: Screen Wake Lock API controller maintaining continuous display illumination during in-store shopping trips, coupled with a 4-minute inactivity timer and auto-release on tab backgrounding (`visibilitychange`).
+- **`useServiceWorkerUpdate()`**: PWA service worker lifecycle manager listening to `updatefound` and `statechange` events on `ServiceWorkerRegistration`, providing reactive state and reload triggering via `AppUpdateBanner`.
 - **`useBodyScrollLock(isLocked)`**: Disables underlying viewport scrolling when high-elevation drawers or modals are rendered.
 
-### 4.3 Key Utilities
+### 4.3 Key Utilities & Specialized Views
+- **`src/components/ShopModeView.tsx`**: Full-screen high-contrast OLED shopping experience with category grouping, active item progress bar, collapsible "In Cart" accordion, and tactile feedback.
+- **`src/utils/haptics.ts`**: Mobile haptic vibration actuator (`navigator.vibrate`) with sensory vibration patterns for item check-off.
 - **`src/utils/smartCategorizer.ts`**: Natural language lexer and tokenizer for quantity extraction (`/^(\d+(?:\.\d+)?)\s*([a-zA-Z]+)?\s+(.*)$/i`) and keyword dictionary matching across 12+ grocery categories.
 - **`src/utils/itemMatching.ts`**: Intelligent duplicate detector with plural normalization (`apples` -> `apple`, `berries` -> `berry`) and modifier distinction ensuring owner/qualifier variants (`Soap - Daddy` vs `Soap - Mommy`) remain distinct items.
 - **`src/utils/contributorStack.ts`**: Multi-device attribution engine managing LIFO contributor stack push, count increments, decrement layer popping, and 0-quantity deletion triggers.
@@ -191,16 +196,17 @@ export interface SyncMessage<T = unknown> {
 
 ## 5. Security & Authentication Architecture
 
-1. **Client-Side PIN Hashing**: Passcodes are hashed with SHA-256 before persistence in IndexedDB or SQLite config stores.
-2. **WebAuthn Biometric Handshake**: Platform authenticator (`attachment: "platform"`) challenges generate ECDSA credential pairs stored securely in device hardware enclaves.
-3. **Containerized Process Isolation**: Multi-stage Docker image runs under a dedicated unprivileged non-root user (`nodejs:nodejs`, UID 10001) with persistent data mounted to `/app/data`.
+1. **Pre-Shared Key (PSK) Token Protection**: Optional `HOUSEHOLD_SECRET` environment variable restricts REST API endpoints (`/api/state`, `/api/sync`, `/api/reset`, `/api/backup`) via HTTP Bearer tokens and rejects unauthenticated WebSocket handshake upgrades with code `4401 Unauthorized`. Client persists and injects tokens automatically via `syncClient`. Health checks (`/api/health`) remain open for orchestrator probes.
+2. **Client-Side PIN Hashing**: Passcodes are hashed with SHA-256 before persistence in IndexedDB or SQLite config stores.
+3. **WebAuthn Biometric Handshake**: Platform authenticator (`attachment: "platform"`) challenges generate ECDSA credential pairs stored securely in device hardware enclaves.
+4. **Containerized Process Isolation**: Multi-stage Docker image runs under a dedicated unprivileged non-root user (`nodejs:nodejs`, UID 10001) with persistent data mounted to `/app/data`.
 
 ---
 
 ## 6. Testing & Quality Assurance Architecture
 
 CartSync enforces a rigorous 3-tier testing strategy via **Vitest**:
-1. **Unit Tests**: NLP categorization, duplicate detection, plural normalization, modifier distinction, contributor stacking and LIFO decrements, unit regex parser, device detector heuristics, biometrics fallbacks.
-2. **Integration Tests**: SQLite CRUD, contributor serialization, foreign key cascades, REST `/api/sync` merge algorithms, WebSocket peer broadcasts.
-3. **Component & Hook Tests**: Modal back navigation, list swipe gestures, glassmorphic event toasts and quantity suppression, undo toasts, and dark mode WCAG contrast ergonomics.
+1. **Unit Tests**: NLP categorization, duplicate detection, plural normalization, modifier distinction, contributor stacking and LIFO decrements, unit regex parser, device detector heuristics, biometrics fallbacks, wake lock timers, haptics, pull-to-dismiss gesture calculations.
+2. **Integration Tests**: SQLite CRUD, contributor serialization, foreign key cascades, REST `/api/sync` merge algorithms, PSK Bearer auth, WebSocket upgrade authentication and peer broadcasts.
+3. **Component & Hook Tests**: Modal back navigation, pull-down dismiss gestures, list swipe gestures, Shop Mode OLED view, service worker update notifications, glassmorphic event toasts and quantity suppression, undo toasts, and dark mode WCAG contrast ergonomics.
 - **Current Test Coverage**: **293 automated tests across 29 test suites (100% passing)**.

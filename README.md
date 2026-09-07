@@ -55,15 +55,24 @@ Built with **Vite, React 18, TypeScript, Tailwind CSS, Lucide Icons, IndexedDB, 
   - Emits when a brand-new item is created (locally or incoming from another device via WebSocket) or when an item is deleted (with an "Undo" action).
   - Strict Suppression Rule: Quantity adjustments (`+`/`-` clicks, inline edits, and duplicate auto-increments) are completely silent. Auto-dismisses in 3 seconds without vertical stacking.
 
-- **Multiple List Management & In-Place Editing**:
-  - Out of the box: *Supermarket*, *Costco*, *Pharmacy*, and *Farmers Market*.
-  - Create and manage custom lists with distinct icons and color accents.
-  - In-place list editing (`EditListModal`) to rename, re-theme icons, and update descriptions without losing item associations or history.
-  - Safeguarded destructive list deletion with slide-to-confirm interaction (`SlideToConfirm`).
+- **Distraction-Free Dedicated Shop Mode**:
+  - Full-screen high-contrast OLED true-black interface (`ShopModeView`) optimized for aisle walking.
+  - Screen Wake Lock API integration (`useShopModeWakeLock`) with 4-minute inactivity auto-release to prevent battery drain.
+  - Category / aisle grouped active items with progress meter and collapsed "In Cart" accordion.
+  - Tactile haptic feedback (`triggerHaptic`) on item checkoff.
 
-- **Progressive Web App (PWA)**:
+- **Mobile Pull-to-Dismiss Gestures**:
+  - Universal pull-down-to-dismiss hook (`usePullDownDismiss`) and visual grab handle (`PullDownHandle`) across modals and bottom sheets.
+  - Rubber-band elasticity, velocity flick detection, and non-interfering nested scroll handling.
+
+- **Household Pre-Shared Key (PSK) / Token Authentication**:
+  - Optional `HOUSEHOLD_SECRET` token protection across REST `/api/*` endpoints and WebSocket handshakes (`cartsync-auth` protocol or `?token=`).
+  - Secure token configuration in `AdminModal` and auto-prompting in `LockScreen`.
+
+- **Progressive Web App (PWA) & Seamless Update Banner**:
   - Installable web app with standalone mode, clean icons, and `manifest.json`.
   - Service worker caching static assets for immediate offline loading.
+  - Non-intrusive update banner (`AppUpdateBanner`) and lifecycle hook (`useServiceWorkerUpdate`) prompting users when a new version is ready.
 
 ---
 
@@ -123,7 +132,11 @@ docker run -d \
 ---
 
 ## Test Coverage
-- **290+ Automated Tests** across 29 test suites covering:
+- **293 Automated Tests** across 29 test suites (100% passing) covering:
+  - Distraction-free Shop Mode OLED view, wake lock inactivity timer, and haptic feedback
+  - Universal pull-to-dismiss bottom sheet gestures, velocity flick, and nested scrolling
+  - Pre-Shared Key (PSK) token auth across REST API and WebSocket handshakes
+  - PWA service worker lifecycle update detection and notification banner
   - Intelligent duplicate detection, plural normalization, and modifier distinction
   - Multi-device contributor badge stacking and LIFO decrement reversal
   - Glassmorphic event toasts and strict quantity adjustment suppression

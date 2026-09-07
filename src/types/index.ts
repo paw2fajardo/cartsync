@@ -54,6 +54,20 @@ export interface GroceryItem {
   createdAt: number;
   updatedAt: number;
   contentUpdatedAt?: number;
+  status?: 'active' | 'unavailable';
+  isUnavailableRevert?: boolean;
+  unavailableBy?: string | null;
+  unavailableAt?: number | null;
+}
+
+export interface DeviceItemHistory {
+  id: string;
+  deviceName: string;
+  cleanName: string;
+  category: ItemCategory;
+  lastUnit?: string;
+  lastCompletedAt: number;
+  purchaseCount: number;
 }
 
 export interface EventToastMessage {
@@ -100,7 +114,8 @@ export interface SyncMessage {
     | 'BATCH_UPDATE'
     | 'DEVICE_PING'
     | 'DEVICE_LIST'
-    | 'DEVICE_DELETE';
+    | 'DEVICE_DELETE'
+    | 'FINISH_SHOPPING_BATCH';
   deviceId: string;
   timestamp: number;
   payload?: any;
@@ -114,5 +129,7 @@ export interface HouseholdState {
   items: GroceryItem[];
   devices: DeviceProfile[];
   autoListRules?: AutoListRule[];
+  deviceItemHistory?: DeviceItemHistory[];
   lastSyncedAt: number;
 }
+

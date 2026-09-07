@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Check,
+  CheckCircle2,
   X,
   Sun,
   Moon,
@@ -22,7 +23,7 @@ interface ShopModeViewProps {
 }
 
 export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) => {
-  const { items, activeList, toggleItem } = useGrocery();
+  const { items, activeList, toggleItem, openFinishShoppingModal } = useGrocery();
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isInCartCollapsed, setIsInCartCollapsed] = useState(true);
 
@@ -37,9 +38,9 @@ export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) =
     enabled: isOpen,
   });
 
-  // Filter items specifically for the active list
+  // Filter items specifically for the active list (excluding unavailable items from Shop Mode)
   const currentListItems = useMemo(() => {
-    return items.filter((i) => i.listId === activeList?.id);
+    return items.filter((i) => i.listId === activeList?.id && i.status !== 'unavailable');
   }, [items, activeList?.id]);
 
   const activeShopItems = useMemo(() => {
@@ -195,6 +196,18 @@ export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) =
               )}
             </button>
 
+            {/* Finish Shopping Button */}
+            <button
+              type="button"
+              onClick={() => openFinishShoppingModal()}
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition-none shadow-xs active:scale-95"
+              title="Finish Shopping Trip"
+              aria-label="Finish Shopping Trip"
+            >
+              <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
+              <span className="hidden xs:inline">Finish</span>
+            </button>
+
             {/* Exit Shop Mode Button */}
             <button
               type="button"
@@ -232,10 +245,11 @@ export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) =
             </p>
             <button
               type="button"
-              onClick={handleConfirmExit}
-              className="mt-4 px-6 py-3 rounded-2xl bg-emerald-600 text-white font-bold text-sm cursor-pointer shadow-lg active:scale-98"
+              onClick={() => openFinishShoppingModal()}
+              className="mt-4 px-6 py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-sm cursor-pointer shadow-lg active:scale-98 transition-all inline-flex items-center gap-2"
             >
-              Finish Shopping
+              <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
+              <span>Finish Shopping</span>
             </button>
           </div>
         ) : (

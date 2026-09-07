@@ -1,8 +1,9 @@
-import React, { useState, useRef } from 'react';
-import { Plus, SlidersHorizontal, X, ArrowRight, Sparkles } from 'lucide-react';
+import React, { useState, useRef, useMemo } from 'react';
+import { Plus, SlidersHorizontal, X, ArrowRight, Sparkles, History } from 'lucide-react';
 import { useGrocery } from '../context/GroceryContext';
+import { useDevice } from '../context/DeviceContext';
 import { parseItemInput, CATEGORY_COLORS } from '../utils/smartCategorizer';
-import { ItemCategory } from '../types';
+import { ItemCategory, DeviceItemHistory } from '../types';
 
 const ALL_CATEGORIES: ItemCategory[] = [
   'Produce',
@@ -27,16 +28,54 @@ export const QuickAddBar: React.FC = () => {
     activeList,
     lists,
     autoListRules,
+    deviceItemHistory,
+    openReplenishmentDrawer,
     openCategoryModal,
     openAutoListRulesModal,
     isQuickAddOptionsOpen,
     setIsQuickAddOptionsOpen,
   } = useGrocery();
+  const { device } = useDevice();
   const [inputText, setInputText] = useState('');
   const [category, setCategory] = useState<ItemCategory>('Produce');
   const [isCategoryCustomized, setIsCategoryCustomized] = useState(false);
   const [note, setNote] = useState('');
+  const [isInputFocused, setIsInputFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Scoped history strictly by friendly deviceName
+  const scopedHistory = useMemo(() => {
+    return (deviceItemHistory || []).filter(
+      (h) => h.deviceName.toLowerCase() === device.name.toLowerCase()
+    );
+  }, [deviceItemHistory, device.name]);
+
+  const hasZeroHistory = scopedHistory.length === 0;
+
+  // Matching typeahead pills based on typed input text
+  const typeaheadMatches = useMemo(() => {
+    const query = inputText.trim().toLowerCase();
+    if (!query) return [];
+    return scopedHistory
+      .filter((h) => h.cleanName.toLowerCase().includes(query))
+      .slice(0, 6);
+  }, [scopedHistory, inputText]);
+
+  const handleSelectTypeaheadPill = async (pill: DeviceItemHistory) => {
+    await addItem(
+      pill.cleanName,
+      1,
+      pill.lastUnit,
+      pill.category || 'Other',
+      undefined,
+      activeList?.id
+    );
+    setInputText('');
+    setNote('');
+    setIsQuickAddOptionsOpen(false);
+    setIsCategoryCustomized(false);
+    inputRef.current?.focus();
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -82,6 +121,35 @@ export const QuickAddBar: React.FC = () => {
   return (
     <div className="fixed bottom-0 inset-x-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800/80 px-4 py-3 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-8px_32px_rgba(0,0,0,0.45)] transition-colors">
       <div className="max-w-2xl mx-auto space-y-2">
+        {/* Inline Typeahead Shelf: Activates when typing in the QuickAdd input bar */}
+        {isInputFocused && typeaheadMatches.length > 0 && (
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 animate-in fade-in slide-in-from-bottom-2 duration-150">
+            <span className="text-[10px] uppercase font-bold text-slate-400 shrink-0 pl-0.5">
+              Past Staples:
+            </span>
+            {typeaheadMatches.map((pill) => (
+              <button
+                key={pill.id}
+                type="button"
+                onMouseDown={(e) => {
+                  // Prevent blur before click executes
+                  e.preventDefault();
+                  handleSelectTypeaheadPill(pill);
+                }}
+                className="px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-200 text-xs font-semibold flex items-center gap-1 shrink-0 active:scale-95 transition-all cursor-pointer shadow-2xs"
+              >
+                <Plus className="w-3 h-3 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
+                <span>{pill.cleanName}</span>
+                {pill.lastUnit && (
+                  <span className="text-[10px] text-emerald-600/70 dark:text-emerald-300/70 font-normal">
+                    {pill.lastUnit}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Optional Expanded Tray for Note / Custom Category */}
         {isQuickAddOptionsOpen && (
           <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-700/70 animate-in fade-in slide-in-from-bottom-2 duration-150 text-xs shadow-xs space-y-2.5">
@@ -131,8 +199,24 @@ export const QuickAddBar: React.FC = () => {
 
         {/* Main Floating Quick-Add Input & Bottom Thumb Controls */}
         <form onSubmit={handleAdd} className="flex items-center gap-2">
-          {/* Bottom Thumb Buttons: Category Manager & Auto-Route */}
+          {/* Bottom Thumb Buttons: Replenishment History, Category Manager & Auto-Route */}
           <div className="flex items-center gap-1 shrink-0">
+            {/* History Clock Button: Opens Replenishment Drawer (disabled if zero history) */}
+            <button
+              type="button"
+              onClick={openReplenishmentDrawer}
+              disabled={hasZeroHistory}
+              className={`p-2.5 rounded-2xl border transition-all cursor-pointer shadow-2xs ${
+                hasZeroHistory
+                  ? 'opacity-30 pointer-events-none bg-slate-100 dark:bg-slate-800 border-slate-200/80 dark:border-slate-700/70 text-slate-400'
+                  : 'bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-emerald-950/60 border-slate-200/80 dark:border-slate-700/70 text-slate-600 hover:text-emerald-600 dark:text-slate-300 dark:hover:text-emerald-400 active:scale-95'
+              }`}
+              title={hasZeroHistory ? 'No past purchase history for this device' : 'Past Bought Items (Quick Replenish)'}
+              aria-label="Past Bought Items"
+            >
+              <History className="w-4 h-4" />
+            </button>
+
             <button
               type="button"
               onClick={openCategoryModal}
@@ -162,9 +246,15 @@ export const QuickAddBar: React.FC = () => {
               type="text"
               value={inputText}
               onChange={handleInputChange}
+              onFocus={() => setIsInputFocused(true)}
+              onBlur={() => {
+                // Short timeout to allow clicking pill before hiding
+                setTimeout(() => setIsInputFocused(false), 200);
+              }}
               placeholder={`Add to ${activeList?.name || 'list'} (e.g. "Milk", "Bread")...`}
               className="flex-1 bg-slate-100 dark:bg-slate-800 text-[14px] font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden pr-2"
             />
+
 
             {/* Live NLP Category / Quantity Badges & Auto-List Target Badge */}
             {parsedPreview && (

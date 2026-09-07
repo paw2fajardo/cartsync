@@ -15,6 +15,7 @@ import {
   Home,
   Layers,
   Download,
+  Upload,
   AlertTriangle,
   Eye,
   EyeOff,
@@ -57,6 +58,7 @@ export const AdminModal: React.FC = () => {
   const {
     lists,
     items,
+    deviceItemHistory,
     autoListRules,
     openCategoryModal,
     openAutoListRulesModal,
@@ -182,15 +184,19 @@ export const AdminModal: React.FC = () => {
     }
   };
 
+  const [isRestoring, setIsRestoring] = useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
   const handleExportBackup = () => {
     const backupData = {
       app: 'CartSync',
-      version: 2,
+      version: 3,
       exportedAt: new Date().toISOString(),
       householdName,
       lists,
       items,
       autoListRules,
+      deviceItemHistory,
     };
 
     const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
@@ -201,6 +207,48 @@ export const AdminModal: React.FC = () => {
     a.click();
     URL.revokeObjectURL(url);
     setFeedbackMsg({ type: 'success', text: 'Database backup downloaded successfully.' });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsRestoring(true);
+    setFeedbackMsg(null);
+    try {
+      const text = await file.text();
+      const parsed = JSON.parse(text);
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (householdKey) {
+        headers['Authorization'] = `Bearer ${householdKey}`;
+      }
+
+      const res = await fetch('/api/backup/restore', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(parsed),
+      });
+
+      if (res.ok) {
+        setFeedbackMsg({ type: 'success', text: 'Backup restored successfully! Reloading...' });
+        setTimeout(() => {
+          window.location.reload();
+        }, 1000);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setFeedbackMsg({ type: 'error', text: data.error || 'Failed to restore backup file.' });
+      }
+    } catch (err: any) {
+      setFeedbackMsg({ type: 'error', text: 'Invalid JSON backup file.' });
+    } finally {
+      setIsRestoring(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   const handleExecuteReset = async () => {
@@ -798,7 +846,7 @@ export const AdminModal: React.FC = () => {
                         Export JSON Backup
                       </span>
                       <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                        Download full copy of lists, items, and rules
+                        Download full copy of lists, items, rules, and history
                       </span>
                     </div>
                     <button
@@ -809,6 +857,36 @@ export const AdminModal: React.FC = () => {
                       <Download className="w-3.5 h-3.5" />
                       <span>Export</span>
                     </button>
+                  </div>
+
+                  {/* Backup Restore */}
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-850 border border-slate-200/80 dark:border-slate-800 flex items-center justify-between">
+                    <div>
+                      <span className="text-xs font-bold text-slate-900 dark:text-white block">
+                        Restore JSON Backup
+                      </span>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        Upload and restore database from a saved JSON file
+                      </span>
+                    </div>
+                    <div>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept=".json,application/json"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isRestoring}
+                        className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 flex items-center gap-1.5 transition-all cursor-pointer"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{isRestoring ? 'Restoring...' : 'Restore'}</span>
+                      </button>
+                    </div>
                   </div>
 
                   {/* Danger Zone: Database Reset */}
