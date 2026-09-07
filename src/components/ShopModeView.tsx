@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   Check,
   CheckCircle2,
+  PackageX,
   X,
   Sun,
   Moon,
@@ -23,7 +24,7 @@ interface ShopModeViewProps {
 }
 
 export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) => {
-  const { items, activeList, toggleItem, openFinishShoppingModal } = useGrocery();
+  const { items, activeList, toggleItem, markItemUnavailable, openFinishShoppingModal } = useGrocery();
   const [showExitConfirm, setShowExitConfirm] = useState(false);
   const [isInCartCollapsed, setIsInCartCollapsed] = useState(true);
 
@@ -272,27 +273,28 @@ export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) =
                 {group.items.map((item) => (
                   <div
                     key={item.id}
-                    onClick={() => handleItemRowTap(item)}
-                    className="min-h-[58px] px-3.5 py-3 flex items-center justify-between gap-3 cursor-pointer active:bg-neutral-900/80 transition-none"
-                    role="checkbox"
-                    aria-checked={item.completed}
-                    tabIndex={0}
+                    className="min-h-[58px] px-3.5 py-3 flex items-center justify-between gap-3 select-none"
                   >
-                    {/* Checkbox Target (48px+ touch area) */}
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div
-                        className="w-12 h-12 -ml-2 rounded-xl flex items-center justify-center shrink-0 cursor-pointer"
-                        aria-hidden="true"
+                    {/* Left: Dedicated Checkbox Button (48px+ touch area) & Item Details */}
+                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                      <button
+                        type="button"
+                        onClick={() => handleItemRowTap(item)}
+                        className="w-12 h-12 -ml-2 rounded-xl flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all group"
+                        title={item.completed ? 'Mark uncompleted' : 'Mark completed'}
+                        aria-label={`Mark ${item.name} completed`}
+                        role="checkbox"
+                        aria-checked={item.completed}
                       >
-                        <div className="w-6 h-6 rounded-lg border-2 border-neutral-600 flex items-center justify-center bg-black">
+                        <div className="w-6 h-6 rounded-lg border-2 border-neutral-600 group-hover:border-emerald-500 group-active:border-emerald-400 flex items-center justify-center bg-black transition-colors">
                           {item.completed && (
                             <Check className="w-4 h-4 text-emerald-400 stroke-[3]" />
                           )}
                         </div>
-                      </div>
+                      </button>
 
                       {/* Item Details */}
-                      <div className="flex flex-col min-w-0">
+                      <div className="flex flex-col min-w-0 flex-1">
                         <span className="text-base sm:text-lg font-bold text-white leading-snug tracking-tight truncate">
                           {item.name}
                         </span>
@@ -304,14 +306,33 @@ export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) =
                       </div>
                     </div>
 
-                    {/* Quantity Badge */}
-                    <div className="shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white font-bold text-sm">
-                      <span>{item.quantity}</span>
-                      {item.unit && (
-                        <span className="text-xs text-neutral-400 font-medium">
-                          {item.unit}
-                        </span>
-                      )}
+                    {/* Right Column: Quantity Badge + Dedicated Out of Stock Button */}
+                    <div className="shrink-0 flex items-center gap-2">
+                      {/* Quantity Badge */}
+                      <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white font-bold text-sm">
+                        <span>{item.quantity}</span>
+                        {item.unit && (
+                          <span className="text-xs text-neutral-400 font-medium">
+                            {item.unit}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Dedicated Out of Stock Button */}
+                      <button
+                        type="button"
+                        onClick={async (e) => {
+                          e.stopPropagation();
+                          triggerHaptic(20);
+                          resetInactivityTimer();
+                          await markItemUnavailable(item.id);
+                        }}
+                        className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 hover:bg-amber-500/20 active:bg-amber-500/30 text-amber-400 border border-amber-500/30 active:scale-95 transition-all cursor-pointer"
+                        title="Mark Out of Stock / Unavailable"
+                        aria-label={`Mark ${item.name} out of stock`}
+                      >
+                        <PackageX className="w-4 h-4 stroke-[2.2]" />
+                      </button>
                     </div>
                   </div>
                 ))}
@@ -348,22 +369,23 @@ export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) =
                 {completedShopItems.map((item) => (
                   <div
                     key={item.id}
-                    onClick={() => handleItemRowTap(item)}
-                    className="min-h-[56px] px-3.5 py-3 flex items-center justify-between gap-3 cursor-pointer opacity-60 active:opacity-100 transition-none"
-                    role="checkbox"
-                    aria-checked="true"
-                    tabIndex={0}
+                    className="min-h-[56px] px-3.5 py-3 flex items-center justify-between gap-3 opacity-70 select-none"
                   >
-                    <div className="flex items-center gap-3.5 min-w-0">
-                      <div
-                        className="w-12 h-12 -ml-2 rounded-xl flex items-center justify-center shrink-0"
-                        aria-hidden="true"
+                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                      <button
+                        type="button"
+                        onClick={() => handleItemRowTap(item)}
+                        className="w-12 h-12 -ml-2 rounded-xl flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all group"
+                        title="Unmark item"
+                        aria-label={`Unmark ${item.name}`}
+                        role="checkbox"
+                        aria-checked="true"
                       >
-                        <div className="w-6 h-6 rounded-lg bg-emerald-600 border-2 border-emerald-500 flex items-center justify-center">
+                        <div className="w-6 h-6 rounded-lg bg-emerald-600 border-2 border-emerald-500 flex items-center justify-center group-hover:bg-emerald-500 transition-colors">
                           <Check className="w-4 h-4 text-white stroke-[3]" />
                         </div>
-                      </div>
-                      <div className="flex flex-col min-w-0">
+                      </button>
+                      <div className="flex flex-col min-w-0 flex-1">
                         <span className="text-base font-medium line-through text-neutral-400 truncate">
                           {item.name}
                         </span>
