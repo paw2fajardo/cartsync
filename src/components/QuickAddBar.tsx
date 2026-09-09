@@ -1,8 +1,9 @@
-import React, { useState, useRef, useMemo } from 'react';
-import { Plus, SlidersHorizontal, X, ArrowRight, Sparkles, History } from 'lucide-react';
+import React, { useState, useRef, useMemo, useEffect } from 'react';
+import { Plus, SlidersHorizontal, X, ArrowRight, History } from 'lucide-react';
 import { useGrocery } from '../context/GroceryContext';
 import { useDevice } from '../context/DeviceContext';
 import { parseItemInput, CATEGORY_COLORS } from '../utils/smartCategorizer';
+import { normalizeCleanName } from '../utils/nameNormalization';
 import { ItemCategory, DeviceItemHistory } from '../types';
 
 const ALL_CATEGORIES: ItemCategory[] = [
@@ -25,13 +26,13 @@ const ALL_CATEGORIES: ItemCategory[] = [
 export const QuickAddBar: React.FC = () => {
   const {
     addItem,
+    items,
     activeList,
     lists,
     autoListRules,
     deviceItemHistory,
+    removeDeviceHistoryItem,
     openReplenishmentDrawer,
-    openCategoryModal,
-    openAutoListRulesModal,
     isQuickAddOptionsOpen,
     setIsQuickAddOptionsOpen,
   } = useGrocery();
@@ -41,32 +42,86 @@ export const QuickAddBar: React.FC = () => {
   const [isCategoryCustomized, setIsCategoryCustomized] = useState(false);
   const [note, setNote] = useState('');
   const [isInputFocused, setIsInputFocused] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+  const [dismissedNames, setDismissedNames] = useState<Set<string>>(new Set());
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Scoped history strictly by friendly deviceName
+  // Scoped history strictly by friendly deviceName, combining deviceItemHistory + items already added by this device
   const scopedHistory = useMemo(() => {
-    return (deviceItemHistory || []).filter(
-      (h) => h.deviceName.toLowerCase() === device.name.toLowerCase()
-    );
-  }, [deviceItemHistory, device.name]);
+    const list: DeviceItemHistory[] = [];
+    const seen = new Set<string>();
+
+    // 1. Prioritize explicit device purchase history
+    for (const h of deviceItemHistory || []) {
+      if (h.deviceName.toLowerCase() === device.name.toLowerCase()) {
+        const clean = normalizeCleanName(h.cleanName);
+        const lower = clean.toLowerCase();
+        if (clean && !seen.has(lower) && !dismissedNames.has(lower)) {
+          seen.add(lower);
+          list.push({ ...h, cleanName: clean });
+        }
+      }
+    }
+
+    // 2. Also include items previously added by this device to any list
+    for (const item of items || []) {
+      const isAddedByThisDevice =
+        item.addedBy?.deviceId === device.id ||
+        item.addedBy?.deviceName?.toLowerCase() === device.name.toLowerCase();
+
+      if (isAddedByThisDevice) {
+        const clean = normalizeCleanName(item.name);
+        const lower = clean.toLowerCase();
+        if (clean && !seen.has(lower) && !dismissedNames.has(lower)) {
+          seen.add(lower);
+          list.push({
+            id: `item_hist_${item.id}`,
+            deviceName: device.name,
+            cleanName: clean,
+            category: item.category || 'Other',
+            lastUnit: item.unit,
+            lastCompletedAt: item.createdAt,
+            purchaseCount: 1,
+          });
+        }
+      }
+    }
+
+    return list;
+  }, [deviceItemHistory, items, device.name, device.id, dismissedNames]);
 
   const hasZeroHistory = scopedHistory.length === 0;
 
-  // Matching typeahead pills based on typed input text
+  // Matching typeahead items based on typed input text (deduplicated by cleanName)
   const typeaheadMatches = useMemo(() => {
     const query = inputText.trim().toLowerCase();
     if (!query) return [];
-    return scopedHistory
-      .filter((h) => h.cleanName.toLowerCase().includes(query))
-      .slice(0, 6);
+    
+    const seen = new Set<string>();
+    const matches: DeviceItemHistory[] = [];
+
+    for (const h of scopedHistory) {
+      const lower = h.cleanName.toLowerCase();
+      if (lower.includes(query) && !seen.has(lower)) {
+        seen.add(lower);
+        matches.push(h);
+        if (matches.length >= 6) break;
+      }
+    }
+    return matches;
   }, [scopedHistory, inputText]);
 
-  const handleSelectTypeaheadPill = async (pill: DeviceItemHistory) => {
+  // Reset selected keyboard index when matches change
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [typeaheadMatches]);
+
+  const handleSelectTypeaheadItem = async (item: DeviceItemHistory) => {
     await addItem(
-      pill.cleanName,
+      item.cleanName,
       1,
-      pill.lastUnit,
-      pill.category || 'Other',
+      item.lastUnit,
+      item.category || 'Other',
       undefined,
       activeList?.id
     );
@@ -74,7 +129,36 @@ export const QuickAddBar: React.FC = () => {
     setNote('');
     setIsQuickAddOptionsOpen(false);
     setIsCategoryCustomized(false);
+    setSelectedIndex(-1);
     inputRef.current?.focus();
+  };
+
+  const handleRemoveTypeaheadItem = async (e: React.MouseEvent, item: DeviceItemHistory) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDismissedNames((prev) => new Set(prev).add(item.cleanName.toLowerCase()));
+    if (!item.id.startsWith('item_hist_')) {
+      await removeDeviceHistoryItem(item.id);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!isInputFocused || typeaheadMatches.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev < typeaheadMatches.length - 1 ? prev + 1 : 0));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : typeaheadMatches.length - 1));
+    } else if (e.key === 'Enter' && selectedIndex >= 0 && selectedIndex < typeaheadMatches.length) {
+      e.preventDefault();
+      handleSelectTypeaheadItem(typeaheadMatches[selectedIndex]);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setIsInputFocused(false);
+      setSelectedIndex(-1);
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,38 +199,90 @@ export const QuickAddBar: React.FC = () => {
     setNote('');
     setIsQuickAddOptionsOpen(false);
     setIsCategoryCustomized(false);
+    setSelectedIndex(-1);
     inputRef.current?.focus();
   };
 
   return (
     <div className="fixed bottom-0 inset-x-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-t border-slate-200/80 dark:border-slate-800/80 px-4 py-3 pb-safe shadow-[0_-4px_24px_rgba(0,0,0,0.04)] dark:shadow-[0_-8px_32px_rgba(0,0,0,0.45)] transition-colors">
       <div className="max-w-2xl mx-auto space-y-2">
-        {/* Inline Typeahead Shelf: Activates when typing in the QuickAdd input bar */}
+        {/* Chrome URL-Style Vertical Auto-Complete Dropdown */}
         {isInputFocused && typeaheadMatches.length > 0 && (
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1 animate-in fade-in slide-in-from-bottom-2 duration-150">
-            <span className="text-[10px] uppercase font-bold text-slate-400 shrink-0 pl-0.5">
-              Past Staples:
-            </span>
-            {typeaheadMatches.map((pill) => (
-              <button
-                key={pill.id}
-                type="button"
-                onMouseDown={(e) => {
-                  // Prevent blur before click executes
-                  e.preventDefault();
-                  handleSelectTypeaheadPill(pill);
-                }}
-                className="px-2.5 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/60 dark:hover:bg-emerald-900/60 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-200 text-xs font-semibold flex items-center gap-1 shrink-0 active:scale-95 transition-all cursor-pointer shadow-2xs"
-              >
-                <Plus className="w-3 h-3 text-emerald-600 dark:text-emerald-400 stroke-[2.5]" />
-                <span>{pill.cleanName}</span>
-                {pill.lastUnit && (
-                  <span className="text-[10px] text-emerald-600/70 dark:text-emerald-300/70 font-normal">
-                    {pill.lastUnit}
-                  </span>
-                )}
-              </button>
-            ))}
+          <div
+            className="overflow-hidden rounded-2xl bg-white/95 dark:bg-slate-850/95 backdrop-blur-xl border border-slate-200/90 dark:border-slate-700/80 shadow-xl shadow-slate-900/10 dark:shadow-black/40 animate-in fade-in slide-in-from-bottom-2 duration-150 divide-y divide-slate-100 dark:divide-slate-800/80"
+            role="listbox"
+            aria-label="Item suggestions"
+          >
+            <div className="px-3 py-1.5 bg-slate-50/80 dark:bg-slate-900/50 flex items-center justify-between text-[11px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+              <span>Suggestions ({device.name})</span>
+              <span className="text-[10px] font-normal lowercase tracking-normal text-slate-400">Press Esc to dismiss</span>
+            </div>
+            {typeaheadMatches.map((item, idx) => {
+              const itemCatColor = CATEGORY_COLORS[item.category] || CATEGORY_COLORS.Other;
+              const isSelected = selectedIndex === idx;
+
+              // Split text to highlight matching query part
+              const query = inputText.trim().toLowerCase();
+              const lowerName = item.cleanName.toLowerCase();
+              const matchIdx = lowerName.indexOf(query);
+              const beforeMatch = matchIdx >= 0 ? item.cleanName.slice(0, matchIdx) : '';
+              const matchedStr = matchIdx >= 0 ? item.cleanName.slice(matchIdx, matchIdx + query.length) : item.cleanName;
+              const afterMatch = matchIdx >= 0 ? item.cleanName.slice(matchIdx + query.length) : '';
+
+              return (
+                <div
+                  key={item.id}
+                  onMouseDown={(e) => {
+                    // Prevent blur so handleSelect executes
+                    e.preventDefault();
+                    handleSelectTypeaheadItem(item);
+                  }}
+                  onMouseEnter={() => setSelectedIndex(idx)}
+                  className={`group flex items-center justify-between px-3 py-2 text-sm transition-colors cursor-pointer ${
+                    isSelected
+                      ? 'bg-emerald-50/90 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-100'
+                      : 'hover:bg-slate-100/70 dark:hover:bg-slate-800/60 text-slate-800 dark:text-slate-200'
+                  }`}
+                  role="option"
+                  aria-selected={isSelected}
+                >
+                  <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                    <History className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover:text-emerald-500 shrink-0 transition-colors" />
+                    <div className="flex items-center gap-1.5 min-w-0 truncate">
+                      <span className="font-medium truncate">
+                        {beforeMatch}
+                        <strong className="text-emerald-600 dark:text-emerald-400 font-bold underline decoration-emerald-400/40">
+                          {matchedStr}
+                        </strong>
+                        {afterMatch}
+                      </span>
+                      {item.lastUnit && (
+                        <span className="text-xs text-slate-400 dark:text-slate-500 shrink-0">
+                          ({item.lastUnit})
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className={`text-[10px] font-medium px-2 py-0.5 rounded-md border shrink-0 hidden sm:inline-flex ${itemCatColor.bg} ${itemCatColor.text} ${itemCatColor.border}`}
+                    >
+                      {item.category}
+                    </span>
+                  </div>
+
+                  {/* Chrome-style right-side 'x' button to remove suggestion */}
+                  <button
+                    type="button"
+                    onMouseDown={(e) => handleRemoveTypeaheadItem(e, item)}
+                    onClick={(e) => handleRemoveTypeaheadItem(e, item)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-all shrink-0 ml-2 cursor-pointer active:scale-95"
+                    title={`Remove "${item.cleanName}" from suggestions`}
+                    aria-label={`Remove "${item.cleanName}" from suggestions`}
+                  >
+                    <X className="w-3.5 h-3.5 stroke-[2.2]" />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
 
@@ -199,46 +335,21 @@ export const QuickAddBar: React.FC = () => {
 
         {/* Main Floating Quick-Add Input & Bottom Thumb Controls */}
         <form onSubmit={handleAdd} className="flex items-center gap-2">
-          {/* Bottom Thumb Buttons: Replenishment History, Category Manager & Auto-Route */}
-          <div className="flex items-center gap-1 shrink-0">
-            {/* History Clock Button: Opens Replenishment Drawer (disabled if zero history) */}
-            <button
-              type="button"
-              onClick={openReplenishmentDrawer}
-              disabled={hasZeroHistory}
-              className={`p-2.5 rounded-2xl border transition-all cursor-pointer shadow-2xs ${
-                hasZeroHistory
-                  ? 'opacity-30 pointer-events-none bg-slate-100 dark:bg-slate-800 border-slate-200/80 dark:border-slate-700/70 text-slate-400'
-                  : 'bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-emerald-950/60 border-slate-200/80 dark:border-slate-700/70 text-slate-600 hover:text-emerald-600 dark:text-slate-300 dark:hover:text-emerald-400 active:scale-95'
-              }`}
-              title={hasZeroHistory ? 'No past purchase history for this device' : 'Past Bought Items (Quick Replenish)'}
-              aria-label="Past Bought Items"
-            >
-              <History className="w-4 h-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={openCategoryModal}
-              className="p-2.5 rounded-2xl bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-emerald-950/60 border border-slate-200/80 dark:border-slate-700/70 text-slate-600 hover:text-emerald-600 dark:text-slate-300 dark:hover:text-emerald-400 active:scale-95 transition-all cursor-pointer shadow-2xs"
-              title="Category Manager"
-              aria-label="Category Manager"
-            >
-              <div className="w-4 h-4 flex items-center justify-center">
-                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-xs" />
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={openAutoListRulesModal}
-              className="p-2.5 rounded-2xl bg-slate-100 hover:bg-amber-50 dark:bg-slate-800 dark:hover:bg-amber-950/60 border border-slate-200/80 dark:border-slate-700/70 text-slate-600 hover:text-amber-600 dark:text-slate-300 dark:hover:text-amber-400 active:scale-95 transition-all cursor-pointer shadow-2xs"
-              title="Auto-Route Rules"
-              aria-label="Auto-Route Rules"
-            >
-              <Sparkles className="w-4 h-4 text-amber-500" />
-            </button>
-          </div>
+          {/* History Clock Button: Opens Replenishment Drawer (disabled if zero history) */}
+          <button
+            type="button"
+            onClick={openReplenishmentDrawer}
+            disabled={hasZeroHistory}
+            className={`p-2.5 rounded-2xl border transition-all cursor-pointer shadow-2xs shrink-0 ${
+              hasZeroHistory
+                ? 'opacity-30 pointer-events-none bg-slate-100 dark:bg-slate-800 border-slate-200/80 dark:border-slate-700/70 text-slate-400'
+                : 'bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-emerald-950/60 border-slate-200/80 dark:border-slate-700/70 text-slate-600 hover:text-emerald-600 dark:text-slate-300 dark:hover:text-emerald-400 active:scale-95'
+            }`}
+            title={hasZeroHistory ? 'No past purchase history for this device' : 'Past Bought Items (Quick Replenish)'}
+            aria-label="Past Bought Items"
+          >
+            <History className="w-4 h-4" />
+          </button>
 
           <div className="relative flex-1 flex items-center bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200/70 dark:border-slate-700/70 focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-500/20 transition-all px-3.5 py-1.5 h-11">
             <input
@@ -246,6 +357,7 @@ export const QuickAddBar: React.FC = () => {
               type="text"
               value={inputText}
               onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
               onFocus={() => setIsInputFocused(true)}
               onBlur={() => {
                 // Short timeout to allow clicking pill before hiding

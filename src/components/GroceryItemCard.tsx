@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Check, Trash2, Plus, Minus, Edit3, StickyNote, X, ArrowRight, FolderSync, PackageX } from 'lucide-react';
+import { Check, Trash2, Plus, Minus, Edit3, StickyNote, X, ArrowRight, FolderSync } from 'lucide-react';
 import { GroceryItem, ItemCategory } from '../types';
 import { useGrocery } from '../context/GroceryContext';
 import { CATEGORY_COLORS, categorizeItem } from '../utils/smartCategorizer';
@@ -38,7 +38,6 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
   const {
     toggleItem,
     updateItem,
-    markItemUnavailable,
     deleteItem,
     incrementItem,
     decrementItem,
@@ -458,17 +457,6 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                         <Plus className="w-2.5 h-2.5 stroke-[2.5]" />
                       </button>
                     </div>
-
-                    {/* Dedicated Out of Stock button */}
-                    <button
-                      type="button"
-                      onClick={() => markItemUnavailable(item.id)}
-                      className="w-6 h-6 flex items-center justify-center rounded-md text-amber-500/80 hover:text-amber-600 dark:text-amber-400/80 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 active:scale-90 transition-all cursor-pointer"
-                      title="Out of stock - Move to Not Available drawer"
-                      aria-label="Mark Out of Stock"
-                    >
-                      <PackageX className="w-3.5 h-3.5" />
-                    </button>
                   </>
                 )}
 

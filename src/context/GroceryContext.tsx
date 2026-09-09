@@ -14,7 +14,9 @@ import {
   saveItem as idbSaveItem,
   saveList as idbSaveList,
   saveAutoListRule as idbSaveAutoListRule,
+  saveDeviceHistoryItem,
   saveDeviceHistoryBatch,
+  deleteDeviceHistoryItem,
   deleteAutoListRuleFromStorage,
   deleteItemFromStorage,
   deleteListFromStorage,
@@ -61,6 +63,7 @@ interface GroceryContextType {
   uncheckAll: (listId?: string) => Promise<void>;
   finishShoppingTrip: (moveRemainingToUnavailable: boolean, listId?: string) => Promise<void>;
   addFromHistory: (historyItem: DeviceItemHistory) => Promise<GroceryItem>;
+  removeDeviceHistoryItem: (id: string) => Promise<void>;
   createList: (name: string, icon?: string, color?: string, description?: string) => Promise<GroceryList>;
   updateList: (id: string, updates: Partial<GroceryList>) => Promise<void>;
   deleteList: (id: string) => Promise<void>;
@@ -249,10 +252,15 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setAutoListRules(storedRules);
         setActiveListIdState((prev) => (storedLists.some((l) => l.id === prev) ? prev : storedLists[0].id));
       }
+
+      const storedHist = await getDeviceHistoryFromStorage(device.name);
+      if (storedHist.length > 0) {
+        setDeviceItemHistory(storedHist);
+      }
     }
 
     initStorage();
-  }, []);
+  }, [device.name]);
 
   // Sync client subscription
   useEffect(() => {
@@ -267,11 +275,23 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (remoteState.autoListRules) {
           setAutoListRules(remoteState.autoListRules);
         }
+        if (remoteState.deviceItemHistory) {
+          setDeviceItemHistory((prev) => {
+            const map = new Map<string, DeviceItemHistory>();
+            prev.forEach((h) => map.set(`${h.deviceName.toLowerCase()}:::${h.cleanName.toLowerCase()}`, h));
+            remoteState.deviceItemHistory?.forEach((h) =>
+              map.set(`${h.deviceName.toLowerCase()}:::${h.cleanName.toLowerCase()}`, h)
+            );
+            const merged = Array.from(map.values());
+            saveDeviceHistoryBatch(merged).catch(() => {});
+            return merged;
+          });
+        }
         setLastSyncedAt(remoteState.lastSyncedAt || Date.now());
 
         setItems((prev) => {
           const resolved = resolveItemListConflict(prev, remoteState.items || []);
-          bulkSaveData(remoteState.lists || [], resolved, remoteState.autoListRules);
+          bulkSaveData(remoteState.lists || [], resolved, remoteState.autoListRules, remoteState.deviceItemHistory);
           return resolved;
         });
       } else if (event.type === 'ITEM_UPSERT' && event.item) {
@@ -443,6 +463,32 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
       syncClient.broadcastItemUpsert(updatedItem);
 
+      // Record to device item history so it appears in auto-complete
+      const clean = normalizeCleanName(name);
+      if (clean) {
+        const histItem: DeviceItemHistory = {
+          id: `hist_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+          deviceName: device.name,
+          cleanName: clean,
+          category: updatedItem.category || 'Other',
+          lastUnit: updatedItem.unit,
+          lastCompletedAt: Date.now(),
+          purchaseCount: 1,
+        };
+        saveDeviceHistoryItem(histItem).catch(() => {});
+        setDeviceItemHistory((prev) => {
+          const idx = prev.findIndex(
+            (h) => h.deviceName.toLowerCase() === device.name.toLowerCase() && h.cleanName.toLowerCase() === clean.toLowerCase()
+          );
+          if (idx >= 0) {
+            const next = [...prev];
+            next[idx] = { ...next[idx], lastCompletedAt: Date.now(), category: updatedItem.category || next[idx].category };
+            return next;
+          }
+          return [histItem, ...prev];
+        });
+      }
+
       // STRICT SUPPRESSION RULE: Do NOT trigger toast notifications for duplicate auto-increments
       return updatedItem;
     }
@@ -484,6 +530,32 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
     // Broadcast to household sync
     syncClient.broadcastItemUpsert(newItem);
 
+    // Record to device item history for auto-complete
+    const clean = normalizeCleanName(name);
+    if (clean) {
+      const histItem: DeviceItemHistory = {
+        id: `hist_${now}_${Math.random().toString(36).substring(2, 7)}`,
+        deviceName: device.name,
+        cleanName: clean,
+        category: newItem.category || 'Other',
+        lastUnit: newItem.unit,
+        lastCompletedAt: now,
+        purchaseCount: 1,
+      };
+      saveDeviceHistoryItem(histItem).catch(() => {});
+      setDeviceItemHistory((prev) => {
+        const idx = prev.findIndex(
+          (h) => h.deviceName.toLowerCase() === device.name.toLowerCase() && h.cleanName.toLowerCase() === clean.toLowerCase()
+        );
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = { ...next[idx], lastCompletedAt: now, category: newItem.category || next[idx].category };
+          return next;
+        }
+        return [histItem, ...prev];
+      });
+    }
+
     // Trigger glassmorphic creation toast for brand-new item
     showToast({
       id: `toast_${Date.now()}_${Math.random().toString(36).substring(2, 5)}`,
@@ -505,6 +577,11 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       undefined,
       activeListId
     );
+  };
+
+  const removeDeviceHistoryItem = async (id: string): Promise<void> => {
+    setDeviceItemHistory((prev) => prev.filter((h) => h.id !== id));
+    await deleteDeviceHistoryItem(id);
   };
 
   const incrementItem = async (id: string, qty: number = 1) => {
@@ -939,6 +1016,7 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         uncheckAll,
         finishShoppingTrip,
         addFromHistory,
+        removeDeviceHistoryItem,
         createList,
         updateList,
         deleteList,

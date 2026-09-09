@@ -401,6 +401,27 @@ export async function saveDeviceHistoryBatch(items: DeviceItemHistory[]): Promis
   } catch (_) {}
 }
 
+export async function deleteDeviceHistoryItem(id: string): Promise<void> {
+  try {
+    const db = await openDB();
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction('device_item_history', 'readwrite');
+      const store = tx.objectStore('device_item_history');
+      const request = store.delete(id);
+      request.onsuccess = () => resolve();
+      request.onerror = () => reject(request.error);
+    });
+  } catch (err) {
+    console.warn('IDB fallback to localStorage for deleteDeviceHistoryItem:', err);
+  }
+
+  try {
+    const all = getCachedHistory();
+    const filtered = all.filter((h) => h.id !== id);
+    localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(filtered));
+  } catch (_) {}
+}
+
 export async function bulkSaveData(
   lists: GroceryList[],
   items: GroceryItem[],
