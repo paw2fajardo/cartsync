@@ -15,3 +15,4 @@ server/household-data.json
 *.db
 *.db-shm
 *.db-wal
+.venv

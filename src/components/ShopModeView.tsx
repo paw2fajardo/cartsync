@@ -256,63 +256,63 @@ export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) =
         ) : (
           /* Active Items Arranged Strictly by Aisle / Category Sequence */
           groupedActiveItems.map((group) => (
-            <section key={group.category} className="space-y-2">
+            <section key={group.category} className="space-y-1.5">
               {/* Category / Aisle Header */}
-              <div className="flex items-center gap-2 px-1 pt-1">
-                <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-400">
+              <div className="flex items-center gap-2 px-1 pt-0.5">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-emerald-400">
                   {group.category}
                 </span>
-                <span className="text-[11px] font-bold text-neutral-500">
+                <span className="text-[10px] font-bold text-neutral-500">
                   ({group.items.length})
                 </span>
                 <div className="flex-1 border-t border-neutral-900 ml-2" />
               </div>
 
-              {/* 56px+ Touch Target Item Rows */}
-              <div className="divide-y divide-neutral-900 border border-neutral-900 rounded-2xl bg-black overflow-hidden">
+              {/* Compact High-Density Item Rows (~42px height) */}
+              <div className="divide-y divide-neutral-900 border border-neutral-900 rounded-xl bg-black overflow-hidden">
                 {group.items.map((item) => (
                   <div
                     key={item.id}
-                    className="min-h-[58px] px-3.5 py-3 flex items-center justify-between gap-3 select-none"
+                    className="min-h-[42px] px-2.5 py-1.5 flex items-center justify-between gap-2.5 select-none"
                   >
-                    {/* Left: Dedicated Checkbox Button (48px+ touch area) & Item Details */}
-                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                    {/* Left: Dedicated Checkbox Button & Item Details */}
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       <button
                         type="button"
                         onClick={() => handleItemRowTap(item)}
-                        className="w-12 h-12 -ml-2 rounded-xl flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all group"
+                        className="w-8 h-8 -ml-1 rounded-lg flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all group"
                         title={item.completed ? 'Mark uncompleted' : 'Mark completed'}
                         aria-label={`Mark ${item.name} completed`}
                         role="checkbox"
                         aria-checked={item.completed}
                       >
-                        <div className="w-6 h-6 rounded-lg border-2 border-neutral-600 group-hover:border-emerald-500 group-active:border-emerald-400 flex items-center justify-center bg-black transition-colors">
+                        <div className="w-5 h-5 rounded-md border-2 border-neutral-600 group-hover:border-emerald-500 group-active:border-emerald-400 flex items-center justify-center bg-black transition-colors">
                           {item.completed && (
-                            <Check className="w-4 h-4 text-emerald-400 stroke-[3]" />
+                            <Check className="w-3.5 h-3.5 text-emerald-400 stroke-[3]" />
                           )}
                         </div>
                       </button>
 
                       {/* Item Details */}
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span className="text-base sm:text-lg font-bold text-white leading-snug tracking-tight truncate">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="text-sm sm:text-base font-semibold text-white leading-tight tracking-tight truncate">
                           {item.name}
                         </span>
                         {item.note && (
-                          <span className="text-xs text-neutral-400 truncate mt-0.5">
-                            {item.note}
+                          <span className="text-[11px] text-neutral-400 truncate italic">
+                            ({item.note})
                           </span>
                         )}
                       </div>
                     </div>
 
                     {/* Right Column: Quantity Badge + Dedicated Out of Stock Button */}
-                    <div className="shrink-0 flex items-center gap-2">
+                    <div className="shrink-0 flex items-center gap-1.5">
                       {/* Quantity Badge */}
-                      <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-neutral-900 border border-neutral-800 text-white font-bold text-sm">
+                      <div className="flex items-center gap-0.5 px-2 py-0.5 rounded-lg bg-neutral-900 border border-neutral-800 text-white font-bold text-xs">
                         <span>{item.quantity}</span>
                         {item.unit && (
-                          <span className="text-xs text-neutral-400 font-medium">
+                          <span className="text-[10px] text-neutral-400 font-medium">
                             {item.unit}
                           </span>
                         )}
@@ -327,11 +327,11 @@ export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) =
                           resetInactivityTimer();
                           await markItemUnavailable(item.id);
                         }}
-                        className="w-10 h-10 rounded-xl flex items-center justify-center bg-amber-500/10 hover:bg-amber-500/20 active:bg-amber-500/30 text-amber-400 border border-amber-500/30 active:scale-95 transition-all cursor-pointer"
+                        className="w-7 h-7 rounded-lg flex items-center justify-center bg-amber-500/10 hover:bg-amber-500/20 active:bg-amber-500/30 text-amber-400 border border-amber-500/30 active:scale-95 transition-all cursor-pointer"
                         title="Mark Out of Stock / Unavailable"
                         aria-label={`Mark ${item.name} out of stock`}
                       >
-                        <PackageX className="w-4 h-4 stroke-[2.2]" />
+                        <PackageX className="w-3.5 h-3.5 stroke-[2.2]" />
                       </button>
                     </div>
                   </div>
@@ -343,17 +343,17 @@ export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) =
 
         {/* 3. Collapsible "In Cart" Accordion at the Bottom */}
         {completedShopItems.length > 0 && (
-          <div className="pt-4 border-t border-neutral-900">
+          <div className="pt-3 border-t border-neutral-900">
             <button
               type="button"
               onClick={() => setIsInCartCollapsed(!isInCartCollapsed)}
-              className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-neutral-950 border border-neutral-900 text-neutral-300 font-bold text-sm cursor-pointer"
+              className="w-full flex items-center justify-between py-2.5 px-3 rounded-xl bg-neutral-950 border border-neutral-900 text-neutral-300 font-bold text-xs sm:text-sm cursor-pointer"
               aria-expanded={!isInCartCollapsed}
             >
               <div className="flex items-center gap-2">
-                <ShoppingBag className="w-4 h-4 text-emerald-500 stroke-[2.2]" />
+                <ShoppingBag className="w-3.5 h-3.5 text-emerald-500 stroke-[2.2]" />
                 <span>In Cart</span>
-                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-neutral-900 text-emerald-400 border border-neutral-800">
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-neutral-900 text-emerald-400 border border-neutral-800">
                   {completedShopItems.length}
                 </span>
               </div>
@@ -365,39 +365,39 @@ export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) =
             </button>
 
             {!isInCartCollapsed && (
-              <div className="mt-2 divide-y divide-neutral-900 border border-neutral-900 rounded-2xl bg-black overflow-hidden">
+              <div className="mt-1.5 divide-y divide-neutral-900 border border-neutral-900 rounded-xl bg-black overflow-hidden">
                 {completedShopItems.map((item) => (
                   <div
                     key={item.id}
-                    className="min-h-[56px] px-3.5 py-3 flex items-center justify-between gap-3 opacity-70 select-none"
+                    className="min-h-[38px] px-2.5 py-1.5 flex items-center justify-between gap-2.5 opacity-70 select-none"
                   >
-                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
                       <button
                         type="button"
                         onClick={() => handleItemRowTap(item)}
-                        className="w-12 h-12 -ml-2 rounded-xl flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all group"
+                        className="w-8 h-8 -ml-1 rounded-lg flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all group"
                         title="Unmark item"
                         aria-label={`Unmark ${item.name}`}
                         role="checkbox"
                         aria-checked="true"
                       >
-                        <div className="w-6 h-6 rounded-lg bg-emerald-600 border-2 border-emerald-500 flex items-center justify-center group-hover:bg-emerald-500 transition-colors">
-                          <Check className="w-4 h-4 text-white stroke-[3]" />
+                        <div className="w-5 h-5 rounded-md bg-emerald-600 border-2 border-emerald-500 flex items-center justify-center group-hover:bg-emerald-500 transition-colors">
+                          <Check className="w-3.5 h-3.5 text-white stroke-[3]" />
                         </div>
                       </button>
-                      <div className="flex flex-col min-w-0 flex-1">
-                        <span className="text-base font-medium line-through text-neutral-400 truncate">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="text-sm font-medium line-through text-neutral-400 truncate">
                           {item.name}
                         </span>
                         {item.note && (
-                          <span className="text-xs text-neutral-600 line-through truncate">
-                            {item.note}
+                          <span className="text-[11px] text-neutral-600 line-through truncate italic">
+                            ({item.note})
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <span className="text-xs font-bold text-neutral-500 px-2.5 py-1 rounded-lg bg-neutral-950 border border-neutral-900">
+                    <span className="text-[11px] font-bold text-neutral-500 px-2 py-0.5 rounded-md bg-neutral-950 border border-neutral-900">
                       {item.quantity} {item.unit || ''}
                     </span>
                   </div>

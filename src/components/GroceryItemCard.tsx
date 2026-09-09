@@ -224,28 +224,28 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
     <div className="relative group">
       {/* Foreground Card Surface */}
       <div
-        className={`relative z-10 rounded-2xl sm:rounded-3xl border transition-all duration-200 ${
+        className={`relative z-10 rounded-xl sm:rounded-2xl border transition-all duration-150 ${
           item.completed
             ? 'bg-slate-100/70 dark:bg-slate-900/60 border-slate-200/60 dark:border-slate-800/60 opacity-60'
-            : 'bg-white dark:bg-slate-800 border-slate-200/90 dark:border-slate-700/80 hover:border-emerald-500/50 dark:hover:border-slate-600 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.05),0_1px_3px_rgba(0,0,0,0.03)] dark:shadow-[0_4px_16px_-4px_rgba(0,0,0,0.4)] hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_8px_24px_-4px_rgba(0,0,0,0.55)]'
+            : 'bg-white dark:bg-slate-800 border-slate-200/90 dark:border-slate-700/80 hover:border-emerald-500/50 dark:hover:border-slate-600 shadow-[0_1px_4px_-1px_rgba(0,0,0,0.04)] dark:shadow-[0_2px_8px_-2px_rgba(0,0,0,0.35)] hover:shadow-[0_4px_14px_-2px_rgba(0,0,0,0.06)] dark:hover:shadow-[0_4px_16px_-2px_rgba(0,0,0,0.45)]'
         }`}
       >
-        <div className="py-2.5 px-3 sm:py-3 sm:px-4 flex items-center gap-3">
-          {/* Dedicated Left Checkbox: 40px+ round touch target strictly dedicated to toggling completion */}
+        <div className="py-1.5 px-2.5 sm:py-2 sm:px-3 flex items-center gap-2 sm:gap-2.5">
+          {/* Dedicated Left Checkbox: 20px circle inside 32px touch zone */}
           <button
             type="button"
             onClick={(e) => {
               e.stopPropagation();
               toggleItem(item.id);
             }}
-            className="w-8 h-8 min-w-[40px] min-h-[40px] -my-1 -ml-1 flex items-center justify-center shrink-0 cursor-pointer group/cb"
+            className="w-8 h-8 min-w-[32px] min-h-[32px] -my-1 -ml-1 flex items-center justify-center shrink-0 cursor-pointer group/cb"
             title={item.completed ? 'Mark as active' : 'Mark as completed'}
             aria-label={item.completed ? 'Mark as active' : 'Mark as completed'}
           >
             <span
-              className={`w-[20px] h-[20px] rounded-full flex items-center justify-center border transition-all duration-200 group-active/cb:scale-90 ${
+              className={`w-[20px] h-[20px] rounded-full flex items-center justify-center border transition-all duration-150 group-active/cb:scale-90 ${
                 item.completed
-                  ? 'bg-emerald-500 border-emerald-500 text-white shadow-xs'
+                  ? 'bg-emerald-500 border-emerald-500 text-white shadow-2xs'
                   : 'border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 group-hover/cb:border-emerald-500 group-hover/cb:bg-emerald-50/50 dark:group-hover/cb:bg-emerald-950/30 text-transparent'
               }`}
             >
@@ -259,65 +259,32 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
 
           {/* Content Area: Tap to open Edit Bottom Sheet / Modal */}
           <div
-            className="flex-1 min-w-0 cursor-pointer select-none"
+            className="flex-1 min-w-0 cursor-pointer select-none py-0.5"
             onClick={openEditModal}
           >
-            <div className="flex items-center justify-between gap-2 min-w-0">
+            <div className="flex items-center justify-between gap-1.5 min-w-0">
               {/* Left Column: Name + Badges + Note + Sub-attribution */}
               <div className="min-w-0 flex-1 pr-1">
-                {/* Main line: Item Name + Quantity Badge + Category Pill + Restored Unavailable Pill */}
-                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                  <span
-                    className={`text-[14px] sm:text-[15px] font-semibold tracking-tight transition-colors truncate max-w-[200px] sm:max-w-none ${
-                      item.completed
-                        ? 'line-through text-slate-400 dark:text-slate-500'
-                        : 'text-slate-900 dark:text-slate-100 hover:text-emerald-700 dark:hover:text-emerald-400'
-                    }`}
-                  >
-                    {item.name}
-                  </span>
-
-                  {/* Persistent Amber "Unavailable" Pill Badge on Restored Items */}
-                  {item.isUnavailableRevert && !item.completed && (
-                    <span
-                      className="text-[9.5px] font-bold px-1.5 py-0.2 rounded-md bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300/80 dark:border-amber-700/80 shrink-0 animate-in fade-in"
-                      title="Item was out of stock on a previous trip and restored to your aisle"
-                    >
-                      Unavailable
-                    </span>
-                  )}
-
-                  {/* Quantity Badge */}
-                  {(item.quantity > 1 || item.unit) && (
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
-                        item.completed
-                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200/50 dark:border-slate-700/50'
-                          : 'bg-slate-100/90 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700'
-                      }`}
-                    >
-                      {item.quantity} {item.unit || ''}
-                    </span>
-                  )}
-
-
-                  {/* Clickable Category Pill */}
+                {/* Main line: Category Dot + Item Name + Quantity Badge + Restored Unavailable Pill */}
+                <div className="flex items-center gap-1.5 min-w-0">
+                  {/* Category Accent Indicator: Dot with quick switcher (Option 1A) */}
                   <div
-                    className="relative shrink-0"
+                    className="relative shrink-0 flex items-center"
                     onClick={(e) => {
-                      // Prevent triggering the edit modal when tapping category pill
                       e.stopPropagation();
                     }}
                   >
                     <button
                       type="button"
                       onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-                      className={`text-[9.5px] font-medium px-1.5 py-0.2 rounded border transition-all cursor-pointer hover:scale-105 active:scale-95 ${
-                        item.completed ? 'opacity-40' : 'opacity-85 hover:opacity-100 shadow-2xs'
+                      className={`group/cat inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[9.5px] font-semibold transition-all cursor-pointer hover:scale-105 active:scale-95 ${
+                        item.completed ? 'opacity-40' : 'opacity-90 hover:opacity-100 shadow-2xs'
                       } ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}
-                      title="Click to change category"
+                      title={`Category: ${item.category} (Click to change)`}
+                      aria-label={`Category ${item.category}`}
                     >
-                      {item.category}
+                      <span className={`w-1.5 h-1.5 rounded-full ${catStyle.dot} shrink-0`} />
+                      <span className="hidden xs:inline max-w-[80px] truncate">{item.category}</span>
                     </button>
 
                     {/* Category Quick Switcher Bottom Sheet / Modal */}
@@ -403,24 +370,59 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                         document.body
                       )}
                   </div>
+
+                  <span
+                    className={`text-[13px] sm:text-[14px] font-semibold tracking-tight transition-colors truncate ${
+                      item.completed
+                        ? 'line-through text-slate-400 dark:text-slate-500'
+                        : 'text-slate-900 dark:text-slate-100 hover:text-emerald-700 dark:hover:text-emerald-400'
+                    }`}
+                  >
+                    {item.name}
+                  </span>
+
+                  {/* Persistent Amber "Unavailable" Pill Badge on Restored Items */}
+                  {item.isUnavailableRevert && !item.completed && (
+                    <span
+                      className="text-[9px] font-bold px-1.5 py-0.2 rounded-md bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 border border-amber-300/80 dark:border-amber-700/80 shrink-0 animate-in fade-in"
+                      title="Item was out of stock on a previous trip and restored to your aisle"
+                    >
+                      Unavailable
+                    </span>
+                  )}
+
+                  {/* Quantity Badge (shown when unit or > 1) */}
+                  {(item.quantity > 1 || item.unit) && (
+                    <span
+                      className={`text-[9.5px] font-bold px-1.5 py-0.2 rounded-md border shrink-0 ${
+                        item.completed
+                          ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 border-slate-200/50 dark:border-slate-700/50'
+                          : 'bg-slate-100/90 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700'
+                      }`}
+                    >
+                      {item.quantity} {item.unit || ''}
+                    </span>
+                  )}
                 </div>
 
                 {/* Sub-line: Note (if any) + multi-device contributor badge */}
-                <div className="flex items-center gap-2 mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
-                  {/* Note if available */}
-                  {item.note && (
-                    <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 max-w-[130px] sm:max-w-[200px] truncate">
-                      <StickyNote className="w-2.5 h-2.5 text-amber-500 shrink-0" />
-                      <span className="italic truncate">{item.note}</span>
-                    </div>
-                  )}
+                {(item.note || item.addedBy || item.completedBy) && (
+                  <div className="flex items-center gap-2 mt-0.5 text-[9.5px] text-slate-500 dark:text-slate-400">
+                    {/* Note if available */}
+                    {item.note && (
+                      <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 max-w-[140px] sm:max-w-[220px] truncate">
+                        <StickyNote className="w-2.5 h-2.5 text-amber-500 shrink-0" />
+                        <span className="italic truncate">{item.note}</span>
+                      </div>
+                    )}
 
-                  {/* Multi-Device Contributor Badge with stack breakdown popover */}
-                  <ContributorBadge item={item} />
-                </div>
+                    {/* Multi-Device Contributor Badge with stack breakdown popover */}
+                    <ContributorBadge item={item} />
+                  </div>
+                )}
               </div>
 
-              {/* Right Column: Fast Stepper, Out of Stock, & Desktop Hover Delete */}
+              {/* Right Column: Mini Stepper, Out of Stock, & Desktop Hover Delete */}
               <div
                 className="flex items-center gap-1 shrink-0"
                 onClick={(e) => {
@@ -430,37 +432,38 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
               >
                 {!item.completed && (
                   <>
-                    <div className="flex items-center gap-0.5 bg-slate-100 dark:bg-slate-850 p-0.5 rounded-xl border border-slate-200/90 dark:border-slate-700/80 shadow-2xs">
+                    {/* Compact Stepper Capsule (Option 2A) */}
+                    <div className="flex items-center bg-slate-100 dark:bg-slate-850 p-0.5 rounded-lg border border-slate-200/90 dark:border-slate-700/80 shadow-2xs">
                       <button
                         type="button"
                         onClick={() => decrementItem(item.id)}
-                        className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:bg-white dark:hover:bg-slate-750 active:scale-90 transition-all cursor-pointer"
+                        className="w-5 h-5 flex items-center justify-center rounded-md text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:bg-white dark:hover:bg-slate-750 active:scale-90 transition-all cursor-pointer"
                         title="Decrease quantity"
                         aria-label="Decrease quantity"
                       >
-                        <Minus className="w-3 h-3 stroke-[2.5]" />
+                        <Minus className="w-2.5 h-2.5 stroke-[2.5]" />
                       </button>
                       {item.quantity > 1 && (
-                        <span className="text-[11px] font-bold text-slate-800 dark:text-slate-100 px-1 select-none">
+                        <span className="text-[10px] font-bold text-slate-800 dark:text-slate-100 px-1 select-none">
                           {item.quantity}
                         </span>
                       )}
                       <button
                         type="button"
                         onClick={() => incrementItem(item.id)}
-                        className="w-6 h-6 flex items-center justify-center rounded-lg text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:bg-white dark:hover:bg-slate-750 active:scale-90 transition-all cursor-pointer"
+                        className="w-5 h-5 flex items-center justify-center rounded-md text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:bg-white dark:hover:bg-slate-750 active:scale-90 transition-all cursor-pointer"
                         title="Increase quantity"
                         aria-label="Increase quantity"
                       >
-                        <Plus className="w-3 h-3 stroke-[2.5]" />
+                        <Plus className="w-2.5 h-2.5 stroke-[2.5]" />
                       </button>
                     </div>
 
-                    {/* Dedicated Out of Stock button - moves item immediately to Not Available drawer */}
+                    {/* Dedicated Out of Stock button */}
                     <button
                       type="button"
                       onClick={() => markItemUnavailable(item.id)}
-                      className="w-7 h-7 flex items-center justify-center rounded-lg text-amber-500/80 hover:text-amber-600 dark:text-amber-400/80 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 active:scale-90 transition-all cursor-pointer"
+                      className="w-6 h-6 flex items-center justify-center rounded-md text-amber-500/80 hover:text-amber-600 dark:text-amber-400/80 dark:hover:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 active:scale-90 transition-all cursor-pointer"
                       title="Out of stock - Move to Not Available drawer"
                       aria-label="Mark Out of Stock"
                     >
@@ -473,14 +476,13 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                 <button
                   type="button"
                   onClick={() => deleteItem(item.id)}
-                  className="hidden sm:flex opacity-0 group-hover:opacity-100 w-7 h-7 ml-0.5 items-center justify-center rounded-lg text-slate-400 hover:text-rose-600 dark:text-slate-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 active:scale-90 transition-all cursor-pointer"
+                  className="hidden sm:flex opacity-0 group-hover:opacity-100 w-6 h-6 ml-0.5 items-center justify-center rounded-md text-slate-400 hover:text-rose-600 dark:text-slate-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 active:scale-90 transition-all cursor-pointer"
                   title="Delete item"
                   aria-label="Delete item"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
-
             </div>
           </div>
         </div>

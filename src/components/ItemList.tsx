@@ -248,8 +248,8 @@ export const ItemList: React.FC = () => {
             const deviceDotColor = !isCategoryMode ? (groupMeta[groupKey]?.color || '#10b981') : null;
 
             return (
-              <div key={groupKey} className="space-y-1.5">
-                <div className="flex items-center gap-1.5 px-1 pt-1">
+              <div key={groupKey} className="space-y-1">
+                <div className="flex items-center gap-1.5 px-1 pt-0.5">
                   {isCategoryMode ? (
                     <span className={`w-1.5 h-1.5 rounded-full ${catStyle?.dot}`} />
                   ) : (
@@ -265,7 +265,7 @@ export const ItemList: React.FC = () => {
                     ({groupItemList.length})
                   </span>
                 </div>
-                <div className="space-y-1.5">
+                <div className="space-y-1">
                   {groupItemList.map((item) => (
                     <GroceryItemCard key={item.id} item={item} />
                   ))}
