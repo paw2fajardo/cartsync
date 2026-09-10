@@ -323,7 +323,8 @@ export function getCachedHistory(deviceName?: string): DeviceItemHistory[] {
     const raw = typeof window !== 'undefined' ? localStorage.getItem(LS_HISTORY_KEY) : null;
     const all: DeviceItemHistory[] = raw ? JSON.parse(raw) : [];
     if (!deviceName) return all;
-    return all.filter((h) => h.deviceName === deviceName);
+    const target = deviceName.trim().toLowerCase();
+    return all.filter((h) => (h.deviceName || '').trim().toLowerCase() === target);
   } catch {
     return [];
   }
@@ -331,15 +332,16 @@ export function getCachedHistory(deviceName?: string): DeviceItemHistory[] {
 
 export async function getDeviceHistoryFromStorage(deviceName: string): Promise<DeviceItemHistory[]> {
   if (!deviceName) return [];
+  const target = deviceName.trim().toLowerCase();
   try {
     const db = await openDB();
     return new Promise((resolve, reject) => {
       const tx = db.transaction('device_item_history', 'readonly');
       const store = tx.objectStore('device_item_history');
-      const index = store.index('deviceName');
-      const request = index.getAll(deviceName);
+      const request = store.getAll();
       request.onsuccess = () => {
-        const records: DeviceItemHistory[] = request.result || [];
+        const all: DeviceItemHistory[] = request.result || [];
+        const records = all.filter((h) => (h.deviceName || '').trim().toLowerCase() === target);
         records.sort((a, b) => b.lastCompletedAt - a.lastCompletedAt);
         resolve(records);
       };

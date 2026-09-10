@@ -36,7 +36,7 @@ export const QuickAddBar: React.FC = () => {
     isQuickAddOptionsOpen,
     setIsQuickAddOptionsOpen,
   } = useGrocery();
-  const { device } = useDevice();
+  const { device, activeHouseholdDevices } = useDevice();
   const [inputText, setInputText] = useState('');
   const [category, setCategory] = useState<ItemCategory>('Produce');
   const [isCategoryCustomized, setIsCategoryCustomized] = useState(false);
@@ -50,10 +50,12 @@ export const QuickAddBar: React.FC = () => {
   const scopedHistory = useMemo(() => {
     const list: DeviceItemHistory[] = [];
     const seen = new Set<string>();
+    const currentName = device.name.trim().toLowerCase();
 
     // 1. Prioritize explicit device purchase history
     for (const h of deviceItemHistory || []) {
-      if (h.deviceName.toLowerCase() === device.name.toLowerCase()) {
+      const hName = (h.deviceName || '').trim().toLowerCase();
+      if (hName === currentName) {
         const clean = normalizeCleanName(h.cleanName);
         const lower = clean.toLowerCase();
         if (clean && !seen.has(lower) && !dismissedNames.has(lower)) {
@@ -63,13 +65,32 @@ export const QuickAddBar: React.FC = () => {
       }
     }
 
-    // 2. Also include items previously added by this device to any list
+    // 2. Also include all items previously added (or contributed to) by any device sharing this deviceName
     for (const item of items || []) {
-      const isAddedByThisDevice =
-        item.addedBy?.deviceId === device.id ||
-        item.addedBy?.deviceName?.toLowerCase() === device.name.toLowerCase();
+      // Check author/creator
+      const authorDev = item.addedBy;
+      const directAuthorDevName = (authorDev?.deviceName || '').trim().toLowerCase();
+      const matchedAuthorProfile = authorDev?.deviceId
+        ? activeHouseholdDevices.find((d) => d.id === authorDev.deviceId)
+        : null;
+      const matchedAuthorDevName = (matchedAuthorProfile?.name || '').trim().toLowerCase();
 
-      if (isAddedByThisDevice) {
+      // Check contributors if any
+      const isContributor = (item.contributors || []).some((c) => {
+        const directCName = (c.deviceName || '').trim().toLowerCase();
+        const matchedContrProfile = c.deviceId
+          ? activeHouseholdDevices.find((d) => d.id === c.deviceId)
+          : null;
+        const matchedCName = (matchedContrProfile?.name || '').trim().toLowerCase();
+        return directCName === currentName || matchedCName === currentName;
+      });
+
+      const isAddedByThisDeviceName =
+        directAuthorDevName === currentName ||
+        matchedAuthorDevName === currentName ||
+        isContributor;
+
+      if (isAddedByThisDeviceName) {
         const clean = normalizeCleanName(item.name);
         const lower = clean.toLowerCase();
         if (clean && !seen.has(lower) && !dismissedNames.has(lower)) {
@@ -88,7 +109,7 @@ export const QuickAddBar: React.FC = () => {
     }
 
     return list;
-  }, [deviceItemHistory, items, device.name, device.id, dismissedNames]);
+  }, [deviceItemHistory, items, device.name, activeHouseholdDevices, dismissedNames]);
 
   const hasZeroHistory = scopedHistory.length === 0;
 

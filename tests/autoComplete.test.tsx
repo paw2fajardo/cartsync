@@ -137,6 +137,75 @@ describe('Auto-Complete Suggestions & Chrome-Style Deletion Verification', () =>
       expect(deduped.length).toBe(1);
       expect(deduped[0].id).toBe('hist_1');
     });
+
+    it('should aggregate items added across multiple devices sharing the exact or case-insensitive deviceName "Daddy"', () => {
+      // Desktop device (id: dev_desktop_1) named "Daddy"
+      // Mobile device (id: dev_mobile_2) named "daddy"
+      const items = [
+        {
+          id: 'item_desktop_1',
+          listId: 'list_1',
+          name: 'Ribeye Steak',
+          quantity: 2,
+          category: 'Meat & Seafood',
+          completed: false,
+          completedAt: null,
+          completedBy: null,
+          addedBy: {
+            deviceId: 'dev_desktop_1',
+            deviceName: 'Daddy',
+            color: '#3b82f6',
+          },
+          createdAt: 1000,
+          updatedAt: 1000,
+        },
+        {
+          id: 'item_mobile_1',
+          listId: 'list_1',
+          name: 'Greek Yogurt',
+          quantity: 1,
+          category: 'Dairy & Eggs',
+          completed: false,
+          completedAt: null,
+          completedBy: null,
+          addedBy: {
+            deviceId: 'dev_mobile_2',
+            deviceName: 'daddy',
+            color: '#10b981',
+          },
+          createdAt: 1100,
+          updatedAt: 1100,
+        },
+        {
+          id: 'item_kids_1',
+          listId: 'list_1',
+          name: 'Apple Juice',
+          quantity: 1,
+          category: 'Beverages',
+          completed: false,
+          completedAt: null,
+          completedBy: null,
+          addedBy: {
+            deviceId: 'dev_kids_3',
+            deviceName: 'Kids iPad',
+            color: '#f59e0b',
+          },
+          createdAt: 1200,
+          updatedAt: 1200,
+        },
+      ];
+
+      const currentName = 'Daddy'.trim().toLowerCase();
+
+      // Simulate QuickAddBar matching logic
+      const matched = items.filter((item) => {
+        const directDevName = (item.addedBy?.deviceName || '').trim().toLowerCase();
+        return directDevName === currentName;
+      });
+
+      expect(matched.length).toBe(2);
+      expect(matched.map((m) => m.name)).toEqual(['Ribeye Steak', 'Greek Yogurt']);
+    });
   });
 
   describe('Component & UI Verification', () => {

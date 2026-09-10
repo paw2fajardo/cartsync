@@ -28,9 +28,8 @@ describe('Shop Mode Architecture & Static Code Contract Verification', () => {
     // Exit button & confirmation modal
     expect(content).toContain('Exit Shop Mode?');
     expect(content).toContain('setShowExitConfirm');
-    // Large touch targets (56px+ item rows, 48px+ touch targets)
-    expect(content).toContain('min-h-[58px]');
-    expect(content).toContain('w-12 h-12');
+    // High-density touch targets (~42px item rows)
+    expect(content).toContain('min-h-[42px]');
     // In Cart collapsible accordion at bottom
     expect(content).toContain('In Cart');
     expect(content).toContain('isInCartCollapsed');

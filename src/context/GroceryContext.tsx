@@ -318,6 +318,37 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
             });
           }
 
+          // If the item was added or contributed by any device sharing this deviceName, record to local deviceItemHistory
+          const clean = normalizeCleanName(resolvedItem.name);
+          const authorDevName = (resolvedItem.addedBy?.deviceName || '').trim().toLowerCase();
+          const curDevName = (device.name || '').trim().toLowerCase();
+          const isContributor = (resolvedItem.contributors || []).some(
+            (c) => (c.deviceName || '').trim().toLowerCase() === curDevName
+          );
+          if (clean && (authorDevName === curDevName || isContributor)) {
+            const histItem: DeviceItemHistory = {
+              id: `hist_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+              deviceName: device.name,
+              cleanName: clean,
+              category: resolvedItem.category || 'Other',
+              lastUnit: resolvedItem.unit,
+              lastCompletedAt: resolvedItem.createdAt || Date.now(),
+              purchaseCount: 1,
+            };
+            saveDeviceHistoryItem(histItem).catch(() => {});
+            setDeviceItemHistory((prev) => {
+              const idx = prev.findIndex(
+                (h) => h.deviceName.toLowerCase() === curDevName && h.cleanName.toLowerCase() === clean.toLowerCase()
+              );
+              if (idx >= 0) {
+                const next = [...prev];
+                next[idx] = { ...next[idx], lastCompletedAt: histItem.lastCompletedAt, category: resolvedItem.category || next[idx].category };
+                return next;
+              }
+              return [histItem, ...prev];
+            });
+          }
+
           return next;
         });
         setLastSyncedAt(Date.now());

@@ -483,11 +483,12 @@ export class CartSyncDatabase {
 
   getDeviceHistory(deviceName) {
     if (!deviceName) return [];
+    const trimmed = String(deviceName).trim();
     const rows = this.db.prepare(`
       SELECT * FROM device_item_history
-      WHERE device_name = ?
+      WHERE LOWER(device_name) = LOWER(?)
       ORDER BY last_completed_at DESC
-    `).all(deviceName);
+    `).all(trimmed);
 
     return rows.map((r) => ({
       id: r.id,
@@ -511,11 +512,15 @@ export class CartSyncDatabase {
           lastCompletedAt,
         };
 
+    const trimmedDevName = String(item.deviceName || '').trim();
+    const clean = String(item.cleanName || '').trim();
+    if (!trimmedDevName || !clean) return;
+
     const now = Date.now();
     const existing = this.db.prepare(`
       SELECT * FROM device_item_history
-      WHERE device_name = ? AND clean_name = ?
-    `).get(item.deviceName, item.cleanName);
+      WHERE LOWER(device_name) = LOWER(?) AND LOWER(clean_name) = LOWER(?)
+    `).get(trimmedDevName, clean);
 
     const count = existing ? (Number(existing.purchase_count) + (item.purchaseCountIncrement || 1)) : (item.purchaseCount || 1);
     const id = existing ? existing.id : (item.id || `hist_${now}_${Math.random().toString(36).substring(2, 7)}`);
