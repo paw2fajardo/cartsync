@@ -218,6 +218,28 @@ server.on('upgrade', (req, socket, head) => {
   });
 });
 
+// Periodic ping/pong heartbeat to detect dead or background-frozen connections
+const HEARTBEAT_INTERVAL_MS = 30000;
+const heartbeatInterval = setInterval(() => {
+  wss.clients.forEach((ws) => {
+    if (ws.isAlive === false) {
+      console.log('[WS] Terminating unresponsive zombie connection');
+      return ws.terminate();
+    }
+    ws.isAlive = false;
+    ws.ping();
+  });
+}, HEARTBEAT_INTERVAL_MS);
+
+// Ensure timer does not prevent process termination in tests or shutdown
+if (heartbeatInterval.unref) {
+  heartbeatInterval.unref();
+}
+
+wss.on('close', () => {
+  clearInterval(heartbeatInterval);
+});
+
 function broadcast(message, senderWs = null) {
   const payloadStr = JSON.stringify(message);
   wss.clients.forEach((client) => {
@@ -232,6 +254,16 @@ const clientDeviceMap = new Map();
 
 wss.on('connection', (ws, req) => {
   console.log(`[WS] Client connected from ${req.socket.remoteAddress}`);
+  ws.isAlive = true;
+
+  ws.on('pong', () => {
+    ws.isAlive = true;
+  });
+
+  // Also support custom application-level heartbeat if needed
+  ws.on('ping', () => {
+    ws.isAlive = true;
+  });
 
   // Send current state from SQLite immediately on connection
   const currentState = cartSyncDb.getState();

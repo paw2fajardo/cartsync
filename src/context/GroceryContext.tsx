@@ -172,6 +172,7 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isQuickAddOptionsOpen, setIsQuickAddOptionsOpenState] = useState(false);
   const [activeToast, setActiveToast] = useState<EventToastMessage | null>(null);
   const toastTimeoutRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+  const locallyDeletedItemIdsRef = React.useRef<Set<string>>(new Set());
 
   const openFinishShoppingModal = useCallback(() => setIsFinishShoppingModalOpen(true), []);
   const closeFinishShoppingModal = useCallback(() => setIsFinishShoppingModalOpen(false), []);
@@ -291,8 +292,12 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
         setItems((prev) => {
           const resolved = resolveItemListConflict(prev, remoteState.items || []);
-          bulkSaveData(remoteState.lists || [], resolved, remoteState.autoListRules, remoteState.deviceItemHistory);
-          return resolved;
+          // Exclude any items that were deleted on this client locally so they do not resurrect
+          const filtered = locallyDeletedItemIdsRef.current.size > 0
+            ? resolved.filter((i) => !locallyDeletedItemIdsRef.current.has(i.id))
+            : resolved;
+          bulkSaveData(remoteState.lists || [], filtered, remoteState.autoListRules, remoteState.deviceItemHistory);
+          return filtered;
         });
       } else if (event.type === 'ITEM_UPSERT' && event.item) {
         const incomingItem = event.item;
@@ -404,11 +409,22 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }
     });
 
+    const unsubReconnect = syncClient.onReconnect(() => {
+      // Upon reconnect, if device has items, trigger a quick background sync check
+      syncClient.send({
+        type: 'DEVICE_PING',
+        deviceId: device.id,
+        timestamp: Date.now(),
+        payload: device,
+      });
+    });
+
     return () => {
       unsubStatus();
       unsubSync();
+      unsubReconnect();
     };
-  }, []);
+  }, [device]);
 
   const triggerManualSync = useCallback(async () => {
     setSyncStatus('connecting');
@@ -850,6 +866,7 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, []);
 
   const deleteItem = async (id: string) => {
+    locallyDeletedItemIdsRef.current.add(id);
     const itemToDelete = items.find((i) => i.id === id);
     if (itemToDelete) {
       // Set for undo toast and schedule auto-dismiss in 3s
@@ -878,6 +895,7 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const undoLastDelete = async () => {
     if (!lastDeletedItem) return;
+    locallyDeletedItemIdsRef.current.delete(lastDeletedItem.id);
     const restored = { ...lastDeletedItem, updatedAt: Date.now() };
     dismissUndoToast();
     dismissToast();
@@ -892,6 +910,9 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
   const clearCompleted = async (listId: string = activeListId) => {
     const toDelete = items.filter((i) => i.listId === listId && i.completed);
+    for (const item of toDelete) {
+      locallyDeletedItemIdsRef.current.add(item.id);
+    }
     setItems((prev) => prev.filter((i) => !(i.listId === listId && i.completed)));
 
     for (const item of toDelete) {

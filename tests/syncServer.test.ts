@@ -433,5 +433,23 @@ describe.sequential('WebSocket & Express Household Sync Server Verification', ()
       wsSender.close();
       wsReceiver.close();
     });
+
+    it('should answer client pings and maintain socket connectivity', async () => {
+      const ws = new WebSocket(WS_URL);
+      await new Promise((r) => ws.on('open', r));
+
+      const pongPromise = new Promise<boolean>((resolve) => {
+        ws.on('pong', () => resolve(true));
+      });
+
+      ws.ping();
+      const receivedPong = await Promise.race([
+        pongPromise,
+        new Promise<boolean>((_, reject) => setTimeout(() => reject(new Error('Pong timeout')), 3000)),
+      ]);
+
+      expect(receivedPong).toBe(true);
+      ws.close();
+    });
   });
 });

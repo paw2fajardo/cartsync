@@ -34,6 +34,8 @@ class SyncClient {
   private currentDevice: DeviceProfile | null = null;
   private isExplicitlyOffline = false;
   private authToken: string = typeof window !== 'undefined' ? localStorage.getItem('cartsync_auth_token') || '' : '';
+  private pendingQueue: SyncMessage[] = [];
+  private onReconnectCallbacks: Set<() => void> = new Set();
 
   public getAuthToken(): string {
     return this.authToken;
@@ -61,11 +63,16 @@ class SyncClient {
     }
   }
 
+  public onReconnect(cb: () => void): () => void {
+    this.onReconnectCallbacks.add(cb);
+    return () => this.onReconnectCallbacks.delete(cb);
+  }
+
   public init(device: DeviceProfile): void {
     this.currentDevice = device;
     this.connect();
 
-    // Listen to browser online/offline events
+    // Listen to browser online/offline and visibilitychange events
     if (typeof window !== 'undefined') {
       window.addEventListener('online', () => {
         this.isExplicitlyOffline = false;
@@ -76,6 +83,15 @@ class SyncClient {
         if (this.ws) {
           this.ws.close();
           this.ws = null;
+        }
+      });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+          // If connection was dropped or stalled while tab was backgrounded/sleeping
+          if (!this.ws || this.ws.readyState === WebSocket.CLOSED || this.ws.readyState === WebSocket.CLOSING) {
+            this.reconnectAttempts = 0;
+            this.connect();
+          }
         }
       });
     }
@@ -161,6 +177,24 @@ class SyncClient {
             payload: this.currentDevice,
           });
         }
+
+        // Flush any queued messages that were buffered while offline/disconnected
+        if (this.pendingQueue.length > 0) {
+          const queue = [...this.pendingQueue];
+          this.pendingQueue = [];
+          for (const msg of queue) {
+            this.send(msg);
+          }
+        }
+
+        // Notify reconnect listeners
+        this.onReconnectCallbacks.forEach((cb) => {
+          try {
+            cb();
+          } catch (e) {
+            console.warn('[SyncClient] Reconnect callback error:', e);
+          }
+        });
       };
 
       socket.onmessage = (event) => {
@@ -339,6 +373,15 @@ class SyncClient {
   public send(msg: SyncMessage): void {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(msg));
+    } else {
+      // Buffer outgoing mutation messages to send as soon as connection is re-established
+      if (msg.type !== 'DEVICE_PING') {
+        // Prevent unbounded queue growth (cap at 100 most recent mutations)
+        if (this.pendingQueue.length > 100) {
+          this.pendingQueue.shift();
+        }
+        this.pendingQueue.push(msg);
+      }
     }
   }
 
