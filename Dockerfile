@@ -9,6 +9,12 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
+# Accept build-time version arguments
+ARG GIT_COMMIT=""
+ARG APP_VERSION=""
+ENV VITE_GIT_COMMIT=${GIT_COMMIT} \
+    VITE_APP_VERSION=${APP_VERSION}
+
 # Copy full source and build production Vite bundle
 COPY . .
 RUN npm run build
@@ -20,10 +26,16 @@ FROM node:22-alpine AS runner
 
 WORKDIR /app
 
+# Accept and persist version metadata into runner environment
+ARG GIT_COMMIT=""
+ARG APP_VERSION=""
+
 # Production environment defaults
 ENV NODE_ENV=production \
     PORT=3001 \
-    CART_SYNC_DB_PATH=/app/data/cartsync.db
+    CART_SYNC_DB_PATH=/app/data/cartsync.db \
+    APP_VERSION=${APP_VERSION} \
+    GIT_COMMIT=${GIT_COMMIT}
 
 # Install non-root security user & runtime essentials
 RUN addgroup -S cartsync && adduser -S cartsync -G cartsync

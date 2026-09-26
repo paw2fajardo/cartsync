@@ -449,6 +449,12 @@ export const SyncStatusModal: React.FC = () => {
           </p>
         </div>
 
+        {/* Release Version & Commit Footer */}
+        <div className="flex items-center justify-between px-1 text-[11px] text-slate-400 dark:text-slate-500 font-mono select-none">
+          <span>CartSync v{typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : '1.0.0'}</span>
+          <span>commit: {typeof __GIT_COMMIT__ !== 'undefined' ? __GIT_COMMIT__ : 'dev'}</span>
+        </div>
+
         <div className="pt-1">
           <button
             type="button"
