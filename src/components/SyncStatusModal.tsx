@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Wifi, WifiOff, RefreshCw, Smartphone, Tablet, Laptop, Monitor, Home, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { X, Wifi, WifiOff, RefreshCw, Smartphone, Tablet, Laptop, Monitor, Home, ShieldCheck, CheckCircle2, CloudDownload, AlertCircle } from 'lucide-react';
 import { useGrocery } from '../context/GroceryContext';
 import { useDevice } from '../context/DeviceContext';
 import { useAuth } from '../context/AuthContext';
@@ -18,10 +18,12 @@ const DEVICE_ICONS: Record<DeviceIcon, React.FC<{ className?: string }>> = {
 };
 
 export const SyncStatusModal: React.FC = () => {
-  const { isSyncModalOpen, closeSyncModal, syncStatus, lastSyncedAt, triggerManualSync } = useGrocery();
+  const { isSyncModalOpen, closeSyncModal, syncStatus, lastSyncedAt, triggerManualSync, pullServerDatabase } = useGrocery();
   const { activeHouseholdDevices } = useDevice();
   const { householdKey, setHouseholdKey } = useAuth();
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isPulling, setIsPulling] = useState(false);
+  const [pullMessage, setPullMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [isEditingKey, setIsEditingKey] = useState(false);
   const [keyVal, setKeyVal] = useState(householdKey);
 
@@ -45,10 +47,38 @@ export const SyncStatusModal: React.FC = () => {
 
   const handleManualSync = async () => {
     setIsSyncing(true);
+    setPullMessage(null);
     try {
       await triggerManualSync();
     } finally {
       setTimeout(() => setIsSyncing(false), 500);
+    }
+  };
+
+  const handlePullDatabase = async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      setPullMessage({
+        type: 'error',
+        text: 'Device is offline. An active internet connection is required to pull from the server database.',
+      });
+      return;
+    }
+
+    setIsPulling(true);
+    setPullMessage(null);
+    try {
+      await pullServerDatabase();
+      setPullMessage({
+        type: 'success',
+        text: 'Local storage purged and freshly synchronized with server database!',
+      });
+    } catch (err: any) {
+      setPullMessage({
+        type: 'error',
+        text: err?.message || 'Failed to pull server database. Check network connection.',
+      });
+    } finally {
+      setIsPulling(false);
     }
   };
 
@@ -178,12 +208,39 @@ export const SyncStatusModal: React.FC = () => {
           <button
             type="button"
             onClick={handleManualSync}
-            disabled={isSyncing}
+            disabled={isSyncing || isPulling}
             className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700/70 active:scale-95 text-xs font-semibold text-slate-800 dark:text-slate-200 transition-all shadow-xs cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
             <span>{isSyncing ? 'Synchronizing...' : 'Force Household Sync Now'}</span>
           </button>
+
+          <button
+            type="button"
+            onClick={handlePullDatabase}
+            disabled={isSyncing || isPulling}
+            className="w-full flex items-center justify-center gap-2 py-2.5 px-3 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200/80 dark:border-sky-800/80 hover:bg-sky-100 dark:hover:bg-sky-900/50 active:scale-95 text-xs font-semibold text-sky-700 dark:text-sky-300 transition-all shadow-xs cursor-pointer disabled:opacity-50"
+          >
+            <CloudDownload className={`w-3.5 h-3.5 ${isPulling ? 'animate-bounce' : ''}`} />
+            <span>{isPulling ? 'Purging local DB & Pulling...' : 'Purge Local Cache & Pull Server DB'}</span>
+          </button>
+
+          {pullMessage && (
+            <div
+              className={`p-2.5 rounded-xl text-xs flex items-start gap-2 border animate-in fade-in duration-150 ${
+                pullMessage.type === 'success'
+                  ? 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300'
+                  : 'bg-rose-50 dark:bg-rose-950/50 border-rose-200 dark:border-rose-800/60 text-rose-800 dark:text-rose-300'
+              }`}
+            >
+              {pullMessage.type === 'success' ? (
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" />
+              )}
+              <span className="leading-tight">{pullMessage.text}</span>
+            </div>
+          )}
         </div>
 
         {/* Household Device Roster */}

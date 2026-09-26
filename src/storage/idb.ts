@@ -473,3 +473,115 @@ export async function bulkSaveData(
   } catch (_) {}
 }
 
+/**
+ * Completely purges existing local lists, items, and autoListRules, then replaces
+ * them cleanly with the authoritative server state.
+ */
+export async function purgeAndReplaceLocalData(
+  lists: GroceryList[],
+  items: GroceryItem[],
+  autoListRules?: AutoListRule[],
+  deviceItemHistory?: DeviceItemHistory[]
+): Promise<void> {
+  try {
+    const db = await openDB();
+    const storeNames: string[] = ['lists', 'items'];
+    if (autoListRules) storeNames.push('autoListRules');
+    if (deviceItemHistory) storeNames.push('device_item_history');
+
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(storeNames, 'readwrite');
+      const listStore = tx.objectStore('lists');
+      const itemStore = tx.objectStore('items');
+
+      // Purge current contents completely
+      listStore.clear();
+      itemStore.clear();
+      if (autoListRules) {
+        const ruleStore = tx.objectStore('autoListRules');
+        ruleStore.clear();
+        autoListRules.forEach((rule) => ruleStore.put(rule));
+      }
+
+      lists.forEach((list) => listStore.put(list));
+      items.forEach((item) => itemStore.put(item));
+
+      if (deviceItemHistory) {
+        const histStore = tx.objectStore('device_item_history');
+        histStore.clear();
+        deviceItemHistory.forEach((h) => histStore.put(h));
+      }
+
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (err) {
+    console.warn('IDB purgeAndReplaceLocalData fallback:', err);
+  }
+
+  try {
+    localStorage.setItem(LS_LISTS_KEY, JSON.stringify(lists));
+    localStorage.setItem(LS_ITEMS_KEY, JSON.stringify(items));
+    if (autoListRules) {
+      localStorage.setItem(LS_RULES_KEY, JSON.stringify(autoListRules));
+    }
+    if (deviceItemHistory) {
+      localStorage.setItem(LS_HISTORY_KEY, JSON.stringify(deviceItemHistory));
+    }
+  } catch (_) {}
+}
+
+// ==========================================
+// Persistent Offline Outbox Queue
+// ==========================================
+export const LS_OUTBOX_KEY = 'cartsync_offline_outbox_v1';
+
+export interface OutboxItem {
+  id: string; // unique outbox task id
+  type: 'ITEM_UPSERT' | 'ITEM_DELETE' | 'LIST_UPSERT' | 'LIST_DELETE' | 'FINISH_SHOPPING_BATCH';
+  payload: any;
+  createdAt: number;
+}
+
+export function getOutbox(): OutboxItem[] {
+  try {
+    const raw = typeof window !== 'undefined' ? localStorage.getItem(LS_OUTBOX_KEY) : null;
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function addToOutbox(item: Omit<OutboxItem, 'id' | 'createdAt'>): OutboxItem {
+  const fullItem: OutboxItem = {
+    ...item,
+    id: `outbox_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+    createdAt: Date.now(),
+  };
+  try {
+    const queue = getOutbox();
+    // Cap outbox at 200 actions to avoid unbounded storage
+    if (queue.length > 200) {
+      queue.shift();
+    }
+    queue.push(fullItem);
+    localStorage.setItem(LS_OUTBOX_KEY, JSON.stringify(queue));
+  } catch (_) {}
+  return fullItem;
+}
+
+export function removeFromOutbox(outboxId: string): void {
+  try {
+    const queue = getOutbox();
+    const filtered = queue.filter((o) => o.id !== outboxId);
+    localStorage.setItem(LS_OUTBOX_KEY, JSON.stringify(filtered));
+  } catch (_) {}
+}
+
+export function clearOutbox(): void {
+  try {
+    localStorage.removeItem(LS_OUTBOX_KEY);
+  } catch (_) {}
+}
+
+

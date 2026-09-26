@@ -265,5 +265,52 @@ describe('CartSync Client & Mobile UI Experience Verification', () => {
       });
       expect(callCount).toBe(1);
     });
+
+    it('should buffer mutations in outbox when socket is disconnected', async () => {
+      const { getOutbox, clearOutbox } = await import('../src/storage/idb');
+      clearOutbox();
+
+      // Ensure socket is not open
+      (syncClient as any).ws = null;
+
+      syncClient.broadcastItemUpsert({
+        id: 'outbox_test_item',
+        listId: 'l1',
+        name: 'Organic Avocados',
+        quantity: 3,
+        category: 'Produce',
+        completed: false,
+        completedAt: null,
+        completedBy: null,
+        addedBy: { deviceId: 'dev_local', deviceName: 'Local Dev' },
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+
+      const outbox = getOutbox();
+      expect(outbox.length).toBeGreaterThan(0);
+      expect(outbox.some((o) => o.type === 'ITEM_UPSERT' && o.payload?.id === 'outbox_test_item')).toBe(true);
+
+      clearOutbox();
+    });
+
+    it('should reject fetchServerState if device is offline (non-negotiable online check)', async () => {
+      // Mock navigator.onLine as false
+      const originalOnLine = navigator.onLine;
+      Object.defineProperty(navigator, 'onLine', { value: false, configurable: true });
+
+      let errorThrown: any = null;
+      try {
+        await syncClient.fetchServerState();
+      } catch (err: any) {
+        errorThrown = err;
+      }
+
+      expect(errorThrown).toBeDefined();
+      expect(errorThrown.message).toMatch(/offline/i);
+
+      // Restore navigator.onLine
+      Object.defineProperty(navigator, 'onLine', { value: originalOnLine, configurable: true });
+    });
   });
 });

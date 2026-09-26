@@ -7,6 +7,12 @@ import {
   SyncStatus,
   AutoListRule,
 } from '../types';
+import {
+  getOutbox,
+  addToOutbox,
+  removeFromOutbox,
+  OutboxItem,
+} from '../storage/idb';
 
 type SyncListener = (event: {
   type: string;
@@ -178,7 +184,7 @@ class SyncClient {
           });
         }
 
-        // Flush any queued messages that were buffered while offline/disconnected
+        // Flush in-memory queued messages
         if (this.pendingQueue.length > 0) {
           const queue = [...this.pendingQueue];
           this.pendingQueue = [];
@@ -186,6 +192,9 @@ class SyncClient {
             this.send(msg);
           }
         }
+
+        // Flush persistent offline outbox actions
+        this.flushOutbox();
 
         // Notify reconnect listeners
         this.onReconnectCallbacks.forEach((cb) => {
@@ -381,6 +390,20 @@ class SyncClient {
           this.pendingQueue.shift();
         }
         this.pendingQueue.push(msg);
+
+        // Also persist to outbox storage so mutations survive page reloads or tab closures
+        if (
+          msg.type === 'ITEM_UPSERT' ||
+          msg.type === 'ITEM_DELETE' ||
+          msg.type === 'LIST_UPSERT' ||
+          msg.type === 'LIST_DELETE' ||
+          msg.type === 'FINISH_SHOPPING_BATCH'
+        ) {
+          addToOutbox({
+            type: msg.type,
+            payload: msg.payload,
+          });
+        }
       }
     }
   }
@@ -454,6 +477,48 @@ class SyncClient {
     });
   }
 
+
+  public flushOutbox(): void {
+    const queue = getOutbox();
+    if (queue.length === 0) return;
+
+    for (const item of queue) {
+      this.send({
+        type: item.type,
+        deviceId: this.currentDevice ? this.currentDevice.id : 'unknown',
+        timestamp: item.createdAt || Date.now(),
+        payload: item.payload,
+      });
+      removeFromOutbox(item.id);
+    }
+  }
+
+  public recordToOutbox(type: OutboxItem['type'], payload: any): void {
+    addToOutbox({ type, payload });
+  }
+
+  // Pull fresh state directly from the server database
+  public async fetchServerState(): Promise<HouseholdState> {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      throw new Error('Device is offline. An active internet connection is required to pull from the server database.');
+    }
+
+    const headers: Record<string, string> = {};
+    if (this.authToken) {
+      headers['Authorization'] = `Bearer ${this.authToken}`;
+    }
+
+    const res = await fetch('/api/state', {
+      method: 'GET',
+      headers,
+    });
+
+    if (!res.ok) {
+      throw new Error(`Failed to fetch server database: ${res.status} ${res.statusText}`);
+    }
+
+    return await res.json();
+  }
 
   // Authenticated HTTP Fetch Client helper
   public async fetchWithAuth(url: string, init: RequestInit = {}): Promise<Response> {

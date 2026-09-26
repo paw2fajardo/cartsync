@@ -21,6 +21,8 @@ import {
   deleteItemFromStorage,
   deleteListFromStorage,
   bulkSaveData,
+  purgeAndReplaceLocalData,
+  getOutbox,
   LS_INITIALIZED_KEY,
 } from '../storage/idb';
 import { INITIAL_LISTS, INITIAL_ITEMS, INITIAL_AUTO_LIST_RULES } from '../storage/seedData';
@@ -73,6 +75,7 @@ interface GroceryContextType {
   syncStatus: SyncStatus;
   lastSyncedAt: number | null;
   triggerManualSync: () => Promise<void>;
+  pullServerDatabase: () => Promise<void>;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   selectedCategory: ItemCategory | 'All';
@@ -291,11 +294,27 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setLastSyncedAt(remoteState.lastSyncedAt || Date.now());
 
         setItems((prev) => {
+          // Identify any items created locally in the offline outbox
+          const outbox = getOutbox();
+          const pendingNewItems = outbox
+            .filter((o) => o.type === 'ITEM_UPSERT' && o.payload && o.payload.id)
+            .map((o) => o.payload as GroceryItem);
+
           const resolved = resolveItemListConflict(prev, remoteState.items || []);
           // Exclude any items that were deleted on this client locally so they do not resurrect
-          const filtered = locallyDeletedItemIdsRef.current.size > 0
+          let filtered = locallyDeletedItemIdsRef.current.size > 0
             ? resolved.filter((i) => !locallyDeletedItemIdsRef.current.has(i.id))
             : resolved;
+
+          // Merge any pending outbox items so offline adds are never lost
+          if (pendingNewItems.length > 0) {
+            const currentIds = new Set(filtered.map((i) => i.id));
+            const toAdd = pendingNewItems.filter((i) => !currentIds.has(i.id));
+            if (toAdd.length > 0) {
+              filtered = [...toAdd, ...filtered];
+            }
+          }
+
           bulkSaveData(remoteState.lists || [], filtered, remoteState.autoListRules, remoteState.deviceItemHistory);
           return filtered;
         });
@@ -440,6 +459,64 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       await bulkSaveData(result.lists, resolved, result.autoListRules);
     }
   }, [lists, items, autoListRules]);
+
+  /**
+   * Manual Pull of the Server Database:
+   * Non-negotiable requirement: Device must be online.
+   * 1. Verifies internet connection.
+   * 2. Purges current local IndexedDB and localStorage cache completely.
+   * 3. Fetches fresh server database state via HTTP GET /api/state.
+   * 4. Populates local storage cleanly with authoritative server state.
+   * 5. Replays any pending offline outbox items to both local state and server.
+   */
+  const pullServerDatabase = useCallback(async () => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      throw new Error('Device is offline. An active internet connection is required to pull the server database.');
+    }
+
+    setSyncStatus('connecting');
+
+    try {
+      // 1. Fetch fresh authoritative state from server
+      const serverState = await syncClient.fetchServerState();
+
+      // 2. Identify any pending offline actions in the persistent outbox
+      const outbox = getOutbox();
+      const pendingNewItems = outbox
+        .filter((o) => o.type === 'ITEM_UPSERT' && o.payload && o.payload.id)
+        .map((o) => o.payload as GroceryItem);
+
+      // 3. Purge local storage and replace with fresh server state
+      let mergedItems = serverState.items || [];
+      if (pendingNewItems.length > 0) {
+        const serverIds = new Set(mergedItems.map((i) => i.id));
+        const toAdd = pendingNewItems.filter((i) => !serverIds.has(i.id));
+        mergedItems = [...toAdd, ...mergedItems];
+      }
+
+      await purgeAndReplaceLocalData(
+        serverState.lists || [],
+        mergedItems,
+        serverState.autoListRules || [],
+        serverState.deviceItemHistory || []
+      );
+
+      // 4. Update React state cleanly
+      setLists(serverState.lists || []);
+      setItems(mergedItems);
+      if (serverState.autoListRules) setAutoListRules(serverState.autoListRules);
+      if (serverState.deviceItemHistory) setDeviceItemHistory(serverState.deviceItemHistory);
+      setLastSyncedAt(serverState.lastSyncedAt || Date.now());
+      setSyncStatus('connected');
+
+      // 5. Connect WebSocket and replay outbox actions to the server
+      syncClient.connect();
+      syncClient.flushOutbox();
+    } catch (err) {
+      setSyncStatus(navigator.onLine ? 'disconnected' : 'offline');
+      throw err;
+    }
+  }, []);
 
   const activeList = lists.find((l) => l.id === activeListId) || lists[0];
 
@@ -1078,6 +1155,7 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         syncStatus,
         lastSyncedAt,
         triggerManualSync,
+        pullServerDatabase,
         searchQuery,
         setSearchQuery,
         selectedCategory,

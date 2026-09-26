@@ -352,6 +352,23 @@ describe.sequential('WebSocket & Express Household Sync Server Verification', ()
         updatedAt: baseTime,
       };
 
+      // Helper to wait for specific ITEM_UPSERT on wsReceiver
+      const waitForItemUpsert = (predicate: (item: any) => boolean) => {
+        return new Promise<any>((resolve, reject) => {
+          const timeout = setTimeout(() => reject(new Error('Timeout waiting for broadcast')), 4000);
+          const onMsg = (raw: any) => {
+            const msg = JSON.parse(raw.toString());
+            if (msg.type === 'ITEM_UPSERT' && msg.payload?.id === itemId && predicate(msg.payload)) {
+              clearTimeout(timeout);
+              wsReceiver.off('message', onMsg);
+              resolve(msg.payload);
+            }
+          };
+          wsReceiver.on('message', onMsg);
+        });
+      };
+
+      const step1Promise = waitForItemUpsert((i) => i.quantity === 2);
       wsSender.send(
         JSON.stringify({
           type: 'ITEM_UPSERT',
@@ -360,8 +377,7 @@ describe.sequential('WebSocket & Express Household Sync Server Verification', ()
           payload: initialItem,
         })
       );
-
-      await new Promise((r) => setTimeout(r, 100));
+      await step1Promise;
 
       // Step 2: User A edits content (quantity + note)
       const contentEdit = {
@@ -372,6 +388,7 @@ describe.sequential('WebSocket & Express Household Sync Server Verification', ()
         updatedAt: baseTime + 1000,
       };
 
+      const step2Promise = waitForItemUpsert((i) => i.quantity === 6);
       wsSender.send(
         JSON.stringify({
           type: 'ITEM_UPSERT',
@@ -380,8 +397,7 @@ describe.sequential('WebSocket & Express Household Sync Server Verification', ()
           payload: contentEdit,
         })
       );
-
-      await new Promise((r) => setTimeout(r, 100));
+      await step2Promise;
 
       // Step 3: User B completes the item (from their stale version)
       const completionMsg = {
@@ -393,16 +409,7 @@ describe.sequential('WebSocket & Express Household Sync Server Verification', ()
       };
 
       // Listen for the broadcast of the merged item
-      const mergedPromise = new Promise<any>((resolve, reject) => {
-        const timeout = setTimeout(() => reject(new Error('Timeout waiting for CP-LWW merged broadcast')), 4000);
-        wsReceiver.on('message', (raw) => {
-          const msg = JSON.parse(raw.toString());
-          if (msg.type === 'ITEM_UPSERT' && msg.payload?.id === itemId) {
-            clearTimeout(timeout);
-            resolve(msg.payload);
-          }
-        });
-      });
+      const mergedPromise = waitForItemUpsert((i) => i.completed === true);
 
       wsSender.send(
         JSON.stringify({

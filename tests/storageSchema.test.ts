@@ -165,4 +165,68 @@ describe('Local-First Storage (IndexedDB & LocalStorage Fallback) Verification',
     expect(parsedLists.some((l) => l.id === sampleList.id)).toBe(true);
     expect(parsedItems.some((i) => i.id === sampleItem.id)).toBe(true);
   });
+
+  it('should purge existing local data completely and replace with new dataset', async () => {
+    await saveList(sampleList);
+    await saveItem(sampleItem);
+
+    const freshLists: GroceryList[] = [
+      { id: 'fresh_1', name: 'Fresh Market', icon: 'cart', color: 'cyan', createdAt: 2, updatedAt: 2 },
+    ];
+    const freshItems: GroceryItem[] = [
+      {
+        id: 'fresh_item_1',
+        listId: 'fresh_1',
+        name: 'Fresh Dragonfruit',
+        quantity: 1,
+        category: 'Produce',
+        completed: false,
+        completedAt: null,
+        completedBy: null,
+        addedBy: { deviceId: 'dev_fresh', deviceName: 'Fresh Dev' },
+        createdAt: 2,
+        updatedAt: 2,
+      },
+    ];
+
+    const { purgeAndReplaceLocalData } = await import('../src/storage/idb');
+    await purgeAndReplaceLocalData(freshLists, freshItems);
+
+    const lists = await getAllLists();
+    const items = await getAllItems();
+
+    expect(lists.length).toBe(1);
+    expect(lists[0].id).toBe('fresh_1');
+    expect(items.length).toBe(1);
+    expect(items[0].id).toBe('fresh_item_1');
+    expect(items.some((i) => i.id === sampleItem.id)).toBe(false);
+  });
+
+  it('should queue, retrieve, and clear actions in the persistent outbox', async () => {
+    const { addToOutbox, getOutbox, removeFromOutbox, clearOutbox } = await import('../src/storage/idb');
+    clearOutbox();
+
+    const task1 = addToOutbox({
+      type: 'ITEM_UPSERT',
+      payload: sampleItem,
+    });
+
+    const task2 = addToOutbox({
+      type: 'ITEM_DELETE',
+      payload: { itemId: 'item_123' },
+    });
+
+    let queue = getOutbox();
+    expect(queue.length).toBe(2);
+    expect(queue[0].type).toBe('ITEM_UPSERT');
+    expect(queue[1].type).toBe('ITEM_DELETE');
+
+    removeFromOutbox(task1.id);
+    queue = getOutbox();
+    expect(queue.length).toBe(1);
+    expect(queue[0].id).toBe(task2.id);
+
+    clearOutbox();
+    expect(getOutbox().length).toBe(0);
+  });
 });
