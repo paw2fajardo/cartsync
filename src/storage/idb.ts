@@ -543,6 +543,8 @@ export interface OutboxItem {
   createdAt: number;
 }
 
+export type OutboxEntry = OutboxItem;
+
 export function getOutbox(): OutboxItem[] {
   try {
     const raw = typeof window !== 'undefined' ? localStorage.getItem(LS_OUTBOX_KEY) : null;

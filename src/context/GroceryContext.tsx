@@ -33,6 +33,7 @@ import { findDuplicateItem } from '../utils/itemMatching';
 import { pushContributor, popContributor } from '../utils/contributorStack';
 import { normalizeCleanName } from '../utils/nameNormalization';
 import { EventToastMessage } from '../types';
+import { computeDatabaseDiff, DatabaseDiffResult } from '../utils/databaseDiff';
 
 
 interface GroceryContextType {
@@ -76,6 +77,7 @@ interface GroceryContextType {
   lastSyncedAt: number | null;
   triggerManualSync: () => Promise<void>;
   pullServerDatabase: () => Promise<void>;
+  checkDatabaseDiff: () => Promise<DatabaseDiffResult>;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   selectedCategory: ItemCategory | 'All';
@@ -517,6 +519,28 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       throw err;
     }
   }, []);
+
+  /**
+   * Deterministically compare local database state with server database state
+   */
+  const checkDatabaseDiff = useCallback(async (): Promise<DatabaseDiffResult> => {
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      throw new Error('Device is offline. An active connection is required to compare against the server database.');
+    }
+
+    const serverState = await syncClient.fetchServerState();
+    const outbox = getOutbox();
+
+    return computeDatabaseDiff(
+      {
+        lists,
+        items,
+        autoListRules,
+      },
+      serverState,
+      outbox
+    );
+  }, [lists, items, autoListRules]);
 
   const activeList = lists.find((l) => l.id === activeListId) || lists[0];
 
@@ -1156,6 +1180,7 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
         lastSyncedAt,
         triggerManualSync,
         pullServerDatabase,
+        checkDatabaseDiff,
         searchQuery,
         setSearchQuery,
         selectedCategory,
