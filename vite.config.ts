@@ -21,6 +21,13 @@ export default defineConfig({
     __BUILD_TIME__: JSON.stringify(buildTime),
   },
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        chunkFileNames: 'assets/split-[name]-[hash].js',
+      },
+    },
+  },
   test: {
     environment: 'happy-dom',
     globals: true,

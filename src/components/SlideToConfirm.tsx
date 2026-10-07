@@ -117,7 +117,7 @@ export const SlideToConfirm: React.FC<SlideToConfirmProps> = ({
         style={{ opacity: isConfirmed ? 0 : Math.max(0, 1 - progress * 1.5) }}
       >
         <span>{label}</span>
-        <ChevronRight className="w-3.5 h-3.5 animate-pulse" />
+        <ChevronRight className="w-3.5 h-3.5 animate-pulse motion-reduce:animate-none" />
       </div>
 
       {/* Confirmed Text */}
@@ -134,7 +134,7 @@ export const SlideToConfirm: React.FC<SlideToConfirmProps> = ({
         onTouchStart={(e) => {
           if (e.touches.length > 0) handleStart(e.touches[0].clientX);
         }}
-        className={`absolute left-1 top-1 bottom-1 w-12 rounded-xl flex items-center justify-center text-white shadow-md cursor-grab active:cursor-grabbing transition-transform ${
+        className={`absolute left-1 top-1 bottom-1 w-12 rounded-xl flex items-center justify-center text-white shadow-md cursor-grab active:cursor-grabbing transition-transform touch-manipulation ${
           isConfirmed ? 'bg-emerald-500' : 'bg-rose-600 hover:bg-rose-700'
         } ${!isDragging ? 'transition-all duration-200 ease-out' : ''}`}
         style={{

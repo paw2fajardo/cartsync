@@ -331,7 +331,8 @@ export const AdminModal: React.FC = () => {
           <button
             type="button"
             onClick={closeAdminModal}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] p-2.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer flex items-center justify-center touch-manipulation"
+            aria-label="Close admin modal"
           >
             <X className="w-5 h-5" />
           </button>
@@ -372,7 +373,7 @@ export const AdminModal: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-xs active:scale-95 transition-all cursor-pointer"
+                className="min-h-[44px] w-full py-3 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center touch-manipulation"
               >
                 Unlock Control Center
               </button>
@@ -385,7 +386,7 @@ export const AdminModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveTab('access')}
-                className={`flex items-center gap-1.5 px-3 py-2 border-b-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                className={`min-h-[44px] flex items-center gap-1.5 px-3.5 py-3 border-b-2 text-xs font-bold transition-all cursor-pointer shrink-0 touch-manipulation ${
                   activeTab === 'access'
                     ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
                     : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -398,7 +399,7 @@ export const AdminModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveTab('devices')}
-                className={`flex items-center gap-1.5 px-3 py-2 border-b-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                className={`min-h-[44px] flex items-center gap-1.5 px-3.5 py-3 border-b-2 text-xs font-bold transition-all cursor-pointer shrink-0 touch-manipulation ${
                   activeTab === 'devices'
                     ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
                     : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -411,7 +412,7 @@ export const AdminModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveTab('rules')}
-                className={`flex items-center gap-1.5 px-3 py-2 border-b-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                className={`min-h-[44px] flex items-center gap-1.5 px-3.5 py-3 border-b-2 text-xs font-bold transition-all cursor-pointer shrink-0 touch-manipulation ${
                   activeTab === 'rules'
                     ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
                     : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -424,7 +425,7 @@ export const AdminModal: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setActiveTab('database')}
-                className={`flex items-center gap-1.5 px-3 py-2 border-b-2 text-xs font-bold transition-all cursor-pointer shrink-0 ${
+                className={`min-h-[44px] flex items-center gap-1.5 px-3.5 py-3 border-b-2 text-xs font-bold transition-all cursor-pointer shrink-0 touch-manipulation ${
                   activeTab === 'database'
                     ? 'border-emerald-500 text-emerald-600 dark:text-emerald-400'
                     : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
@@ -513,7 +514,7 @@ export const AdminModal: React.FC = () => {
                           <button
                             type="button"
                             onClick={handleRemoveMasterPin}
-                            className="px-3 py-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 rounded-xl transition-all cursor-pointer"
+                            className="min-h-[44px] px-3.5 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 rounded-xl transition-all cursor-pointer flex items-center justify-center touch-manipulation"
                           >
                             Remove PIN Lock
                           </button>
@@ -521,7 +522,7 @@ export const AdminModal: React.FC = () => {
 
                         <button
                           type="submit"
-                          className="px-4 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all cursor-pointer"
+                          className="min-h-[44px] px-4 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all cursor-pointer flex items-center justify-center touch-manipulation"
                         >
                           {hasPinSet || adminPinConfigured ? 'Update PIN' : 'Activate PIN'}
                         </button>
@@ -558,12 +559,12 @@ export const AdminModal: React.FC = () => {
                             value={keyInput}
                             onChange={(e) => setKeyInput(e.target.value)}
                             placeholder="e.g. household-secret-token"
-                            className="w-full pl-3 pr-10 py-2 rounded-xl text-xs font-mono border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:font-sans"
+                            className="w-full pl-3 pr-11 py-2 rounded-xl text-xs font-mono border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:font-sans"
                           />
                           <button
                             type="button"
                             onClick={() => setIsKeyRevealed(!isKeyRevealed)}
-                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-1"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-2 rounded-xl touch-manipulation"
                             title={isKeyRevealed ? 'Hide secret key' : 'Show secret key'}
                           >
                             {isKeyRevealed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
@@ -583,7 +584,7 @@ export const AdminModal: React.FC = () => {
                                 text: 'Household secret key cleared. Reverted to open mode.',
                               });
                             }}
-                            className="px-3 py-1.5 text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 rounded-xl transition-all cursor-pointer"
+                            className="min-h-[44px] px-3.5 py-2 text-xs font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 rounded-xl transition-all cursor-pointer flex items-center justify-center touch-manipulation"
                           >
                             Clear Key
                           </button>
@@ -591,7 +592,7 @@ export const AdminModal: React.FC = () => {
 
                         <button
                           type="submit"
-                          className="px-4 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all cursor-pointer"
+                          className="min-h-[44px] px-4 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all cursor-pointer flex items-center justify-center touch-manipulation"
                         >
                           Save Key
                         </button>
@@ -726,12 +727,12 @@ export const AdminModal: React.FC = () => {
                                     {dev.name}
                                   </span>
                                   {isCurrent && (
-                                    <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded-md">
+                                    <span className="text-[9px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/10 px-1.5 py-0.2 rounded-md">
                                       This Device
                                     </span>
                                   )}
                                 </div>
-                                <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                                <span className="text-[10px] text-slate-500 dark:text-slate-400">
                                   ID: {dev.id.slice(0, 16)}... • {dev.icon || 'smartphone'}
                                 </span>
                               </div>
@@ -744,7 +745,7 @@ export const AdminModal: React.FC = () => {
                                   purgeDevice(dev.id);
                                   setFeedbackMsg({ type: 'success', text: `Removed device "${dev.name}".` });
                                 }}
-                                className="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
+                                className="p-1.5 rounded-xl text-rose-600/70 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                                 title="Remove device from roster"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -852,7 +853,7 @@ export const AdminModal: React.FC = () => {
                     <button
                       type="button"
                       onClick={handleExportBackup}
-                      className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 flex items-center gap-1.5 transition-all cursor-pointer"
+                      className="min-h-[44px] px-4 py-2.5 text-xs font-bold rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 flex items-center gap-1.5 transition-all cursor-pointer touch-manipulation"
                     >
                       <Download className="w-3.5 h-3.5" />
                       <span>Export</span>
@@ -881,7 +882,7 @@ export const AdminModal: React.FC = () => {
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={isRestoring}
-                        className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 flex items-center gap-1.5 transition-all cursor-pointer"
+                        className="min-h-[44px] px-4 py-2.5 text-xs font-bold rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 flex items-center gap-1.5 transition-all cursor-pointer touch-manipulation"
                       >
                         <Upload className="w-3.5 h-3.5" />
                         <span>{isRestoring ? 'Restoring...' : 'Restore'}</span>
@@ -903,7 +904,7 @@ export const AdminModal: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setIsResetConfirmOpen(true)}
-                        className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition-all cursor-pointer"
+                        className="min-h-[44px] px-4 py-2.5 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-xs transition-all cursor-pointer flex items-center justify-center touch-manipulation"
                       >
                         Reset Database...
                       </button>
@@ -916,7 +917,7 @@ export const AdminModal: React.FC = () => {
                           <button
                             type="button"
                             onClick={() => setIsResetConfirmOpen(false)}
-                            className="px-3 py-1 text-xs font-semibold rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer"
+                            className="min-h-[44px] px-4 py-2 text-xs font-semibold rounded-lg bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 cursor-pointer flex items-center justify-center touch-manipulation"
                           >
                             Cancel
                           </button>
@@ -924,7 +925,7 @@ export const AdminModal: React.FC = () => {
                             type="button"
                             onClick={handleExecuteReset}
                             disabled={isResetting}
-                            className="px-3 py-1 text-xs font-bold rounded-lg bg-rose-600 hover:bg-rose-700 text-white cursor-pointer"
+                            className="min-h-[44px] px-4 py-2 text-xs font-bold rounded-lg bg-rose-600 hover:bg-rose-700 text-white cursor-pointer flex items-center justify-center touch-manipulation"
                           >
                             {isResetting ? 'Resetting...' : 'Yes, Wipe & Reset'}
                           </button>
@@ -944,7 +945,7 @@ export const AdminModal: React.FC = () => {
                   revokeAdmin();
                   closeAdminModal();
                 }}
-                className="text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer"
+                className="min-h-[44px] px-3 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer inline-flex items-center touch-manipulation"
               >
                 Lock Admin Session
               </button>
@@ -952,7 +953,7 @@ export const AdminModal: React.FC = () => {
               <button
                 type="button"
                 onClick={closeAdminModal}
-                className="px-5 py-2 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs active:scale-95 transition-all cursor-pointer"
+                className="min-h-[44px] px-6 py-2.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center touch-manipulation"
               >
                 Done
               </button>
@@ -963,3 +964,5 @@ export const AdminModal: React.FC = () => {
     </div>
   );
 };
+
+export default AdminModal;

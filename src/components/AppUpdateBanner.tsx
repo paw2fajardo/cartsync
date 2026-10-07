@@ -38,9 +38,9 @@ export const AppUpdateBanner: React.FC<AppUpdateBannerProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:px-4 sm:py-3">
         <div className="flex items-center gap-3 min-w-0">
           <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 shrink-0 border border-emerald-400/30">
-            <RefreshCw className={`w-4 h-4 ${isUpdating ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 ${isUpdating ? 'animate-spin motion-reduce:animate-none' : ''}`} />
             <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="animate-ping motion-reduce:animate-none absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
             </span>
           </div>
@@ -61,10 +61,10 @@ export const AppUpdateBanner: React.FC<AppUpdateBannerProps> = ({
             data-testid="update-now-btn"
             onClick={handleUpdate}
             disabled={isUpdating}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 active:bg-emerald-600 text-slate-950 font-bold text-xs shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] rounded-xl bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-bold text-xs shadow-md active:scale-95 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed touch-manipulation"
           >
             {isUpdating ? (
-              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              <RefreshCw className="w-3.5 h-3.5 animate-spin motion-reduce:animate-none" />
             ) : (
               <Sparkles className="w-3.5 h-3.5 fill-current" />
             )}
@@ -75,7 +75,7 @@ export const AppUpdateBanner: React.FC<AppUpdateBannerProps> = ({
             type="button"
             data-testid="dismiss-update-btn"
             onClick={handleDismiss}
-            className="p-1.5 text-emerald-200/70 hover:text-white rounded-lg hover:bg-emerald-800/40 transition-colors cursor-pointer"
+            className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center text-emerald-200/70 hover:text-white rounded-lg hover:bg-emerald-800/40 transition-colors cursor-pointer touch-manipulation"
             title="Dismiss update banner"
             aria-label="Dismiss update notification"
           >

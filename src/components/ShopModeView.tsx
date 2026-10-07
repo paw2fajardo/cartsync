@@ -168,7 +168,7 @@ export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) =
               type="button"
               onClick={toggleKeepAwake}
               disabled={!isWakeLockSupported}
-              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-none cursor-pointer border ${
+              className={`flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-xl text-xs font-bold transition-none cursor-pointer border touch-manipulation ${
                 wakeLockActive
                   ? 'bg-amber-400/20 text-amber-300 border-amber-500/40'
                   : keepAwakeRequested
@@ -201,7 +201,7 @@ export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) =
             <button
               type="button"
               onClick={() => openFinishShoppingModal()}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition-none shadow-xs active:scale-95"
+              className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold cursor-pointer transition-none shadow-xs active:scale-95 touch-manipulation"
               title="Finish Shopping Trip"
               aria-label="Finish Shopping Trip"
             >
@@ -213,7 +213,7 @@ export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) =
             <button
               type="button"
               onClick={() => setShowExitConfirm(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-800 text-xs font-bold cursor-pointer transition-none"
+              className="flex items-center gap-1.5 px-3 py-2 min-h-[44px] rounded-xl bg-neutral-900 hover:bg-neutral-800 text-neutral-200 border border-neutral-800 text-xs font-bold cursor-pointer transition-none touch-manipulation"
               title="Exit Shop Mode"
               aria-label="Exit Shop Mode"
             >
@@ -268,19 +268,19 @@ export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) =
                 <div className="flex-1 border-t border-neutral-900 ml-2" />
               </div>
 
-              {/* Compact High-Density Item Rows (~42px height) */}
+              {/* Compact High-Density Item Rows (min-h-[44px]) */}
               <div className="divide-y divide-neutral-900 border border-neutral-900 rounded-xl bg-black overflow-hidden">
                 {group.items.map((item) => (
                   <div
                     key={item.id}
-                    className="min-h-[42px] px-2.5 py-1.5 flex items-center justify-between gap-2.5 select-none"
+                    className="min-h-[42px] sm:min-h-[44px] px-2.5 py-1 flex items-center justify-between gap-2.5 select-none"
                   >
                     {/* Left: Dedicated Checkbox Button & Item Details */}
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <button
                         type="button"
                         onClick={() => handleItemRowTap(item)}
-                        className="w-8 h-8 -ml-1 rounded-lg flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all group"
+                        className="w-11 h-11 min-w-[44px] min-h-[44px] -ml-2 rounded-lg flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all group touch-manipulation"
                         title={item.completed ? 'Mark uncompleted' : 'Mark completed'}
                         aria-label={`Mark ${item.name} completed`}
                         role="checkbox"
@@ -327,11 +327,11 @@ export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) =
                           resetInactivityTimer();
                           await markItemUnavailable(item.id);
                         }}
-                        className="w-7 h-7 rounded-lg flex items-center justify-center bg-amber-500/10 hover:bg-amber-500/20 active:bg-amber-500/30 text-amber-400 border border-amber-500/30 active:scale-95 transition-all cursor-pointer"
+                        className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-lg flex items-center justify-center bg-amber-500/10 hover:bg-amber-500/20 active:bg-amber-500/30 text-amber-400 border border-amber-500/30 active:scale-95 transition-all cursor-pointer relative before:absolute before:-inset-1 before:content-[''] touch-manipulation"
                         title="Mark Out of Stock / Unavailable"
                         aria-label={`Mark ${item.name} out of stock`}
                       >
-                        <PackageX className="w-3.5 h-3.5 stroke-[2.2]" />
+                        <PackageX className="w-4 h-4 stroke-[2.2]" />
                       </button>
                     </div>
                   </div>
@@ -347,7 +347,7 @@ export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) =
             <button
               type="button"
               onClick={() => setIsInCartCollapsed(!isInCartCollapsed)}
-              className="w-full flex items-center justify-between py-2.5 px-3 rounded-xl bg-neutral-950 border border-neutral-900 text-neutral-300 font-bold text-xs sm:text-sm cursor-pointer"
+              className="w-full min-h-[44px] flex items-center justify-between py-2.5 px-3 rounded-xl bg-neutral-950 border border-neutral-900 text-neutral-300 font-bold text-xs sm:text-sm cursor-pointer touch-manipulation"
               aria-expanded={!isInCartCollapsed}
             >
               <div className="flex items-center gap-2">
@@ -369,13 +369,13 @@ export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) =
                 {completedShopItems.map((item) => (
                   <div
                     key={item.id}
-                    className="min-h-[38px] px-2.5 py-1.5 flex items-center justify-between gap-2.5 opacity-70 select-none"
+                    className="min-h-[42px] sm:min-h-[44px] px-2.5 py-1 flex items-center justify-between gap-2.5 opacity-70 select-none"
                   >
                     <div className="flex items-center gap-2 min-w-0 flex-1">
                       <button
                         type="button"
                         onClick={() => handleItemRowTap(item)}
-                        className="w-8 h-8 -ml-1 rounded-lg flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all group"
+                        className="w-11 h-11 min-w-[44px] min-h-[44px] -ml-2 rounded-lg flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all group touch-manipulation"
                         title="Unmark item"
                         aria-label={`Unmark ${item.name}`}
                         role="checkbox"
@@ -427,14 +427,14 @@ export const ShopModeView: React.FC<ShopModeViewProps> = ({ isOpen, onClose }) =
               <button
                 type="button"
                 onClick={() => setShowExitConfirm(false)}
-                className="w-full py-3 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold border border-neutral-700 cursor-pointer"
+                className="w-full py-3 min-h-[44px] rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white text-xs font-bold border border-neutral-700 cursor-pointer touch-manipulation"
               >
                 Keep Shopping
               </button>
               <button
                 type="button"
                 onClick={handleConfirmExit}
-                className="w-full py-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold cursor-pointer"
+                className="w-full py-3 min-h-[44px] rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold cursor-pointer touch-manipulation"
               >
                 Exit Mode
               </button>

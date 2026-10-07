@@ -205,7 +205,8 @@ export const DeviceModal: React.FC = () => {
             <button
               type="button"
               onClick={closeRenameModal}
-              className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+              className="w-11 h-11 min-w-[44px] min-h-[44px] p-2.5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer touch-manipulation"
+              aria-label="Close dialog"
             >
               <X className="w-5 h-5" />
             </button>
@@ -216,7 +217,7 @@ export const DeviceModal: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('device')}
-              className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              className={`flex-1 py-2 min-h-[44px] rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation ${
                 activeTab === 'device'
                   ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs font-bold'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -228,7 +229,7 @@ export const DeviceModal: React.FC = () => {
             <button
               type="button"
               onClick={() => setActiveTab('security')}
-              className={`flex-1 py-1.5 rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+              className={`flex-1 py-2 min-h-[44px] rounded-lg flex items-center justify-center gap-1.5 transition-all cursor-pointer touch-manipulation ${
                 activeTab === 'security'
                   ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-xs font-bold'
                   : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -260,7 +261,7 @@ export const DeviceModal: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setShowAdminUnlock(true)}
-                    className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+                    className="flex items-center gap-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400 hover:underline cursor-pointer min-h-[44px] py-1 px-1 touch-manipulation"
                   >
                     <Lock className="w-3 h-3" />
                     <span>Unlock to edit</span>
@@ -274,11 +275,11 @@ export const DeviceModal: React.FC = () => {
                   value={hName}
                   onChange={(e) => setHName(e.target.value)}
                   placeholder="e.g. Our Home, Fajardo Family"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all font-semibold"
                   maxLength={30}
                 />
               ) : (
-                <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <div className="flex items-center justify-between px-3.5 py-2.5 min-h-[44px] rounded-xl bg-white dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 text-xs font-semibold text-slate-700 dark:text-slate-300">
                   <span>{householdName}</span>
                   <span className="text-[10px] text-slate-400 font-normal">Admin-only</span>
                 </div>
@@ -297,20 +298,20 @@ export const DeviceModal: React.FC = () => {
                       value={adminPinInput}
                       onChange={(e) => setAdminPinInput(e.target.value)}
                       placeholder="Admin PIN"
-                      className="flex-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
+                      className="flex-1 px-3 py-2 min-h-[44px] rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-900 dark:text-white"
                       maxLength={8}
                     />
                     <button
                       type="button"
                       onClick={handleAdminUnlock}
-                      className="px-3 py-1.5 bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-500 active:scale-95 cursor-pointer"
+                      className="px-3.5 py-2 min-h-[44px] bg-emerald-600 text-white rounded-lg text-xs font-semibold hover:bg-emerald-500 active:scale-95 cursor-pointer touch-manipulation"
                     >
                       Unlock
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowAdminUnlock(false)}
-                      className="px-2 py-1.5 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                      className="px-2.5 py-2 min-h-[44px] text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer touch-manipulation"
                     >
                       Cancel
                     </button>
@@ -332,7 +333,7 @@ export const DeviceModal: React.FC = () => {
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g., Kitchen iPad, Dad Phone"
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                className="w-full px-3.5 py-2.5 min-h-[44px] rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 maxLength={30}
                 required
               />
@@ -349,9 +350,9 @@ export const DeviceModal: React.FC = () => {
                   type="button"
                   key={preset}
                   onClick={() => setName(preset)}
-                  className={`px-2.5 py-1 text-xs rounded-lg transition-all cursor-pointer active:scale-95 ${
+                  className={`px-3 py-2 min-h-[38px] text-xs rounded-lg transition-all cursor-pointer active:scale-95 touch-manipulation relative before:absolute before:-inset-1 before:content-[''] ${
                     name === preset
-                      ? 'bg-emerald-500 text-white font-medium shadow-xs'
+                      ? 'bg-emerald-700 text-white font-medium shadow-xs'
                       : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
                   }`}
                 >
@@ -372,7 +373,7 @@ export const DeviceModal: React.FC = () => {
                   type="button"
                   key={type}
                   onClick={() => setIcon(type)}
-                  className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition-all cursor-pointer active:scale-95 ${
+                  className={`flex flex-col items-center justify-center min-h-[52px] p-2 rounded-xl border transition-all cursor-pointer active:scale-95 touch-manipulation ${
                     icon === type
                       ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 shadow-xs'
                       : 'border-slate-200 dark:border-slate-700/70 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -396,11 +397,11 @@ export const DeviceModal: React.FC = () => {
                   type="button"
                   key={c.hex}
                   onClick={() => setColor(c.hex)}
-                  className="w-7 h-7 rounded-full flex items-center justify-center transition-all cursor-pointer hover:scale-110 active:scale-95 shadow-xs"
+                  className="w-10 h-10 min-w-[40px] min-h-[40px] rounded-full flex items-center justify-center transition-all cursor-pointer hover:scale-110 active:scale-95 shadow-xs relative before:absolute before:-inset-1 before:content-[''] touch-manipulation"
                   style={{ backgroundColor: c.hex }}
                   title={c.name}
                 >
-                  {color === c.hex && <Check className="w-4 h-4 text-white stroke-[2.5]" />}
+                  {color === c.hex && <Check className="w-5 h-5 text-white stroke-[2.5]" />}
                 </button>
               ))}
             </div>
@@ -452,13 +453,13 @@ export const DeviceModal: React.FC = () => {
             <button
               type="button"
               onClick={closeRenameModal}
-              className="px-4 py-2 text-sm font-medium rounded-xl text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer"
+              className="px-4 py-2.5 min-h-[44px] text-sm font-medium rounded-xl text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer touch-manipulation"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="px-5 py-2 text-sm font-semibold rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer"
+              className="px-5 py-2.5 min-h-[44px] text-sm font-semibold rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm shadow-emerald-700/20 active:scale-95 transition-all cursor-pointer touch-manipulation"
             >
               Save Profile
             </button>
@@ -519,7 +520,7 @@ export const DeviceModal: React.FC = () => {
                   value={currentPin}
                   onChange={(e) => setCurrentPin(e.target.value)}
                   placeholder="Enter current 4-digit PIN"
-                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                  className="w-full px-3.5 py-2.5 min-h-[44px] rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                   maxLength={8}
                   required
                 />
@@ -536,7 +537,7 @@ export const DeviceModal: React.FC = () => {
                 value={newPin}
                 onChange={(e) => setNewPin(e.target.value)}
                 placeholder="e.g. 1234"
-                className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
+                className="w-full px-3.5 py-2.5 min-h-[44px] rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 text-xs sm:text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all"
                 maxLength={8}
                 required
               />
@@ -551,7 +552,7 @@ export const DeviceModal: React.FC = () => {
               <select
                 value={autoLockMinutes}
                 onChange={(e) => setAutoLockMinutes(parseInt(e.target.value, 10))}
-                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer"
+                className="w-full px-3 py-2.5 min-h-[44px] rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs focus:outline-hidden focus:ring-2 focus:ring-emerald-500/20 transition-all cursor-pointer touch-manipulation"
               >
                 <option value={0}>Manual Lock Only (Remember Session)</option>
                 <option value={1}>After 1 Minute of Inactivity</option>
@@ -566,7 +567,7 @@ export const DeviceModal: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleRemovePin}
-                  className="px-3.5 py-2 text-xs font-semibold rounded-xl text-rose-600 dark:text-rose-400 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 active:scale-95 transition-all cursor-pointer"
+                  className="px-3.5 py-2.5 min-h-[44px] text-xs font-semibold rounded-xl text-rose-600 dark:text-rose-400 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/50 active:scale-95 transition-all cursor-pointer touch-manipulation"
                 >
                   Remove PIN
                 </button>
@@ -576,7 +577,7 @@ export const DeviceModal: React.FC = () => {
 
               <button
                 type="submit"
-                className="px-5 py-2 text-sm font-semibold rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-500/20 active:scale-95 transition-all cursor-pointer"
+                className="px-5 py-2.5 min-h-[44px] text-sm font-semibold rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm shadow-emerald-700/20 active:scale-95 transition-all cursor-pointer touch-manipulation"
               >
                 {hasPinSet || adminPinConfigured ? 'Update Master PIN' : 'Set Master PIN'}
               </button>

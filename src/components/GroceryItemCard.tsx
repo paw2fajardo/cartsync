@@ -237,7 +237,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
               e.stopPropagation();
               toggleItem(item.id);
             }}
-            className="w-8 h-8 min-w-[32px] min-h-[32px] -my-1 -ml-1 flex items-center justify-center shrink-0 cursor-pointer group/cb"
+            className="w-8 h-8 min-w-[32px] min-h-[32px] -my-1 -ml-1 flex items-center justify-center shrink-0 cursor-pointer group/cb relative before:absolute before:-inset-1.5 before:content-[''] touch-manipulation"
             title={item.completed ? 'Mark as active' : 'Mark as completed'}
             aria-label={item.completed ? 'Mark as active' : 'Mark as completed'}
           >
@@ -276,7 +276,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                     <button
                       type="button"
                       onClick={() => setIsCategoryDropdownOpen(!isCategoryDropdownOpen)}
-                      className={`group/cat inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[9.5px] font-semibold transition-all cursor-pointer hover:scale-105 active:scale-95 ${
+                      className={`group/cat inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md border text-[9.5px] font-semibold transition-all cursor-pointer hover:scale-105 active:scale-95 relative before:absolute before:-inset-2.5 before:content-[''] touch-manipulation ${
                         item.completed ? 'opacity-40' : 'opacity-90 hover:opacity-100 shadow-2xs'
                       } ${catStyle.bg} ${catStyle.text} ${catStyle.border}`}
                       title={`Category: ${item.category} (Click to change)`}
@@ -329,7 +329,8 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                               <button
                                 type="button"
                                 onClick={() => setIsCategoryDropdownOpen(false)}
-                                className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                                className="w-11 h-11 min-w-[44px] min-h-[44px] p-2.5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer touch-manipulation"
+                                aria-label="Close category picker"
                               >
                                 <X className="w-4 h-4" />
                               </button>
@@ -436,7 +437,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                       <button
                         type="button"
                         onClick={() => decrementItem(item.id)}
-                        className="w-5 h-5 flex items-center justify-center rounded-md text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:bg-white dark:hover:bg-slate-750 active:scale-90 transition-all cursor-pointer"
+                        className="w-7 h-7 sm:w-6 sm:h-6 flex items-center justify-center rounded-md text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:bg-white dark:hover:bg-slate-750 active:scale-90 transition-all cursor-pointer relative before:absolute before:-inset-2 before:content-[''] touch-manipulation"
                         title="Decrease quantity"
                         aria-label="Decrease quantity"
                       >
@@ -450,7 +451,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                       <button
                         type="button"
                         onClick={() => incrementItem(item.id)}
-                        className="w-5 h-5 flex items-center justify-center rounded-md text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:bg-white dark:hover:bg-slate-750 active:scale-90 transition-all cursor-pointer"
+                        className="w-7 h-7 sm:w-6 sm:h-6 flex items-center justify-center rounded-md text-slate-700 hover:text-slate-950 dark:text-slate-200 dark:hover:text-white hover:bg-white dark:hover:bg-slate-750 active:scale-90 transition-all cursor-pointer relative before:absolute before:-inset-2 before:content-[''] touch-manipulation"
                         title="Increase quantity"
                         aria-label="Increase quantity"
                       >
@@ -464,7 +465,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                 <button
                   type="button"
                   onClick={() => deleteItem(item.id)}
-                  className="hidden sm:flex opacity-0 group-hover:opacity-100 w-6 h-6 ml-0.5 items-center justify-center rounded-md text-slate-400 hover:text-rose-600 dark:text-slate-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/50 active:scale-90 transition-all cursor-pointer"
+                  className="hidden sm:flex opacity-0 group-hover:opacity-100 w-8 h-8 ml-0.5 items-center justify-center rounded-md text-rose-600/70 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/50 active:scale-90 transition-all cursor-pointer touch-manipulation"
                   title="Delete item"
                   aria-label="Delete item"
                 >
@@ -532,7 +533,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                 <button
                   type="button"
                   onClick={() => setActiveEditingItemId(null)}
-                  className="p-2 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  className="w-11 h-11 min-w-[44px] min-h-[44px] p-2.5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer touch-manipulation"
                   title="Close edit modal"
                   aria-label="Close edit modal"
                 >
@@ -613,7 +614,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                       <button
                         type="button"
                         onClick={() => setEditQuantity((q) => Math.max(1, q - 1))}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-90 transition-all cursor-pointer shadow-2xs font-bold"
+                        className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-90 transition-all cursor-pointer shadow-2xs font-bold touch-manipulation"
                         title="Decrease quantity"
                       >
                         <Minus className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -629,7 +630,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                       <button
                         type="button"
                         onClick={() => setEditQuantity((q) => q + 1)}
-                        className="w-7 h-7 flex items-center justify-center rounded-lg bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-90 transition-all cursor-pointer shadow-2xs font-bold"
+                        className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-600 active:scale-90 transition-all cursor-pointer shadow-2xs font-bold touch-manipulation"
                         title="Increase quantity"
                       >
                         <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
@@ -677,7 +678,7 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                       deleteItem(item.id);
                       setActiveEditingItemId(null);
                     }}
-                    className="px-3.5 py-2.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+                    className="min-h-[44px] px-4 py-2.5 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 touch-manipulation"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                     <span>Delete</span>
@@ -686,13 +687,13 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                     <button
                       type="button"
                       onClick={() => setActiveEditingItemId(null)}
-                      className="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer"
+                      className="min-h-[44px] px-4 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer flex items-center justify-center touch-manipulation"
                     >
                       Cancel
                     </button>
                     <button
                       type="submit"
-                      className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-sm shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer"
+                      className="min-h-[44px] px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-semibold shadow-sm shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer flex items-center justify-center touch-manipulation"
                     >
                       Save Changes
                     </button>
@@ -769,14 +770,14 @@ export const GroceryItemCard: React.FC<GroceryItemCardProps> = ({ item }) => {
                 <button
                   type="button"
                   onClick={() => handleConfirmCategoryMove(false)}
-                  className="px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 active:scale-95 transition-all cursor-pointer text-center"
+                  className="min-h-[44px] px-4 py-2.5 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 active:scale-95 transition-all cursor-pointer text-center flex items-center justify-center touch-manipulation"
                 >
                   Keep as {item.category}
                 </button>
                 <button
                   type="button"
                   onClick={() => handleConfirmCategoryMove(true)}
-                  className="px-3.5 py-2.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer text-center"
+                  className="min-h-[44px] px-4 py-2.5 text-xs font-semibold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm shadow-emerald-600/20 active:scale-95 transition-all cursor-pointer text-center flex items-center justify-center touch-manipulation"
                 >
                   Move to {categorySuggestionPrompt.suggestedCategory}
                 </button>

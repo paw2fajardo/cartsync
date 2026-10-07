@@ -337,8 +337,9 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({ isOp
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] p-2.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer flex items-center justify-center touch-manipulation"
             title="Close"
+            aria-label="Close"
           >
             <X className="w-5 h-5" />
           </button>
@@ -363,7 +364,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({ isOp
             </div>
 
             {/* Category Selector List */}
-            <div className="flex md:flex-col overflow-x-auto md:overflow-x-hidden md:overflow-y-auto p-2 gap-1.5 md:gap-1 max-h-14 md:max-h-none shrink-0 md:flex-1 no-scrollbar touch-pan-x md:touch-pan-y">
+            <div className="flex md:flex-col overflow-x-auto md:overflow-x-hidden md:overflow-y-auto p-2 gap-1.5 md:gap-1 max-h-16 md:max-h-none shrink-0 md:flex-1 no-scrollbar touch-pan-x md:touch-pan-y">
               {filteredCategories.map((cat) => {
                 const style = CATEGORY_COLORS[cat.name] || CATEGORY_COLORS.Other;
                 const isSelected = selectedCategory === cat.name;
@@ -378,9 +379,9 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({ isOp
                     }}
                     type="button"
                     onClick={() => setSelectedCategory(cat.name)}
-                    className={`shrink-0 md:shrink md:w-full text-left px-3 py-1.5 md:py-2 rounded-xl text-xs flex items-center justify-between gap-2 transition-all cursor-pointer whitespace-nowrap md:whitespace-normal scroll-mx-6 ${
+                    className={`min-h-[44px] shrink-0 md:shrink md:w-full text-left px-3.5 py-2.5 rounded-xl text-xs flex items-center justify-between gap-2 transition-all cursor-pointer whitespace-nowrap md:whitespace-normal scroll-mx-6 touch-manipulation ${
                       isSelected
-                        ? 'bg-emerald-500 text-white md:bg-white md:dark:bg-slate-800 md:text-slate-900 md:dark:text-white font-bold shadow-xs md:border md:border-slate-200/80 md:dark:border-slate-700'
+                        ? 'bg-emerald-700 text-white md:bg-emerald-50 md:dark:bg-emerald-950/50 md:text-emerald-800 md:dark:text-emerald-200 font-bold shadow-xs md:border md:border-emerald-200/80 md:dark:border-emerald-800/60'
                         : 'text-slate-600 dark:text-slate-400 bg-white/70 dark:bg-slate-800/50 md:bg-transparent md:dark:bg-transparent hover:bg-slate-100 dark:hover:bg-slate-800/60'
                     }`}
                   >
@@ -396,7 +397,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({ isOp
                       <span
                         className={`text-[10px] px-1.5 py-0.2 md:py-0.5 rounded-md font-semibold ${
                           isSelected
-                            ? 'bg-emerald-600 text-white md:bg-slate-200/60 md:dark:bg-slate-700 md:text-slate-600 md:dark:text-slate-300'
+                            ? 'bg-emerald-800 text-white md:bg-emerald-200/80 md:dark:bg-emerald-900 md:text-emerald-900 md:dark:text-emerald-100'
                             : 'bg-slate-200/60 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                         }`}
                       >
@@ -476,7 +477,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({ isOp
                     <button
                       type="button"
                       onClick={handleSaveDescription}
-                      className="px-3 py-1 rounded-lg text-[11px] font-semibold bg-emerald-600 text-white hover:bg-emerald-500 cursor-pointer"
+                      className="px-3 py-1 rounded-lg text-[11px] font-semibold bg-emerald-700 text-white hover:bg-emerald-800 cursor-pointer"
                     >
                       Save
                     </button>
@@ -522,7 +523,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({ isOp
                   <button
                     type="submit"
                     disabled={!newKeywordInput.trim()}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95 shrink-0"
+                    className="min-h-[44px] px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 disabled:opacity-50 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-all cursor-pointer active:scale-95 shrink-0 touch-manipulation"
                   >
                     <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
                     <span>Add</span>
@@ -550,7 +551,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({ isOp
                     <button
                       type="button"
                       onClick={() => handleDeleteKeyword(kw)}
-                      className="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 p-0.5 rounded transition-colors cursor-pointer"
+                      className="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 relative p-1.5 -mr-1 rounded-md before:absolute before:-inset-2.5 before:content-[''] transition-colors cursor-pointer touch-manipulation"
                       title={`Remove "${kw}"`}
                     >
                       <X className="w-3 h-3" />
@@ -612,7 +613,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({ isOp
                               <button
                                 type="button"
                                 onClick={() => handleSaveEditRule(rule.id)}
-                                className="p-1.5 bg-emerald-600 text-white rounded-lg hover:bg-emerald-500 cursor-pointer"
+                                className="w-10 h-10 min-w-[40px] min-h-[40px] p-2 bg-emerald-700 text-white rounded-xl hover:bg-emerald-800 cursor-pointer flex items-center justify-center touch-manipulation"
                                 title="Save rule"
                               >
                                 <Check className="w-3.5 h-3.5" />
@@ -620,7 +621,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({ isOp
                               <button
                                 type="button"
                                 onClick={() => setEditingRuleId(null)}
-                                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg cursor-pointer"
+                                className="w-10 h-10 min-w-[40px] min-h-[40px] p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl cursor-pointer flex items-center justify-center touch-manipulation"
                                 title="Cancel"
                               >
                                 <X className="w-3.5 h-3.5" />
@@ -647,7 +648,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({ isOp
                                   setEditRuleKeyword(rule.keyword);
                                   setEditRuleListId(rule.targetListId);
                                 }}
-                                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 rounded-lg transition-colors cursor-pointer"
+                                className="w-10 h-10 min-w-[40px] min-h-[40px] p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-slate-700/60 rounded-xl transition-colors cursor-pointer flex items-center justify-center touch-manipulation"
                                 title="Edit rule"
                               >
                                 <Pencil className="w-3.5 h-3.5" />
@@ -655,7 +656,7 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({ isOp
                               <button
                                 type="button"
                                 onClick={() => deleteAutoListRule(rule.id)}
-                                className="p-1.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors cursor-pointer"
+                                className="w-10 h-10 min-w-[40px] min-h-[40px] p-2 text-rose-600/70 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl transition-colors cursor-pointer flex items-center justify-center touch-manipulation"
                                 title="Delete rule"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
@@ -675,3 +676,5 @@ export const CategoryManagerModal: React.FC<CategoryManagerModalProps> = ({ isOp
     </div>
   );
 };
+
+export default CategoryManagerModal;

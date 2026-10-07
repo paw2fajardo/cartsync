@@ -123,11 +123,11 @@ export const ItemList: React.FC = () => {
             <button
               type="button"
               onClick={openShopMode}
-              className="p-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center"
+              className="w-11 h-11 min-w-[44px] min-h-[44px] p-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs active:scale-95 transition-all cursor-pointer flex items-center justify-center touch-manipulation"
               title="Enter In-Store Shop Mode (Focus view, high contrast & keep awake)"
               aria-label="Enter Shop Mode"
             >
-              <Zap className="w-3.5 h-3.5 fill-white stroke-none" />
+              <Zap className="w-4 h-4 fill-white stroke-none" />
             </button>
 
 
@@ -135,23 +135,23 @@ export const ItemList: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setSortBy('category')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-2 min-h-[38px] rounded-lg transition-all cursor-pointer touch-manipulation ${
                   sortBy === 'category'
-                    ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 font-bold shadow-2xs'
+                    ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 font-bold shadow-2xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
                 title="Sort by Category (A–Z)"
               >
-                <Layers className="w-3 h-3" />
+                <Layers className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Category</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setSortBy('device')}
-                className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg transition-all cursor-pointer ${
+                className={`flex items-center gap-1.5 px-3 py-2 min-h-[38px] rounded-lg transition-all cursor-pointer touch-manipulation ${
                   sortBy === 'device'
-                    ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 font-bold shadow-2xs'
+                    ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 font-bold shadow-2xs'
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
                 title="Sort by Device Name"
@@ -172,21 +172,25 @@ export const ItemList: React.FC = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder={`Search ${activeList?.name || 'groceries'} (names, notes)...`}
-              className="w-full pl-9 pr-8 py-2 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
+              className="w-full pl-9 pr-9 py-2 min-h-[44px] rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20 transition-all"
             />
             {searchQuery ? (
               <button
+                type="button"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 cursor-pointer"
+                className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 cursor-pointer touch-manipulation"
+                aria-label="Clear search"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             ) : (
               <button
+                type="button"
                 onClick={() => setShowSearch(false)}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center absolute right-1 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-2 cursor-pointer touch-manipulation"
+                aria-label="Close search"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             )}
           </div>
@@ -247,7 +251,7 @@ export const ItemList: React.FC = () => {
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
                     {groupKey}
                   </span>
-                  <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                  <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400">
                     ({groupItemList.length})
                   </span>
                 </div>

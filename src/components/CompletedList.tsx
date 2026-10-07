@@ -16,13 +16,13 @@ export const CompletedList: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center gap-1.5 py-1 px-1.5 -ml-1 rounded-xl text-xs font-semibold tracking-tight text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 transition-colors cursor-pointer"
+          className="flex items-center gap-1.5 py-2 px-2.5 -ml-1 min-h-[44px] rounded-xl text-xs font-semibold tracking-tight text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100/70 dark:hover:bg-slate-800/60 transition-colors cursor-pointer touch-manipulation"
         >
           {isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
           <div className="flex items-center gap-1.5">
             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
             <span>Completed</span>
-            <span className="text-[11px] font-normal text-slate-400 dark:text-slate-500">
+            <span className="text-[11px] font-normal text-slate-600 dark:text-slate-400">
               ({completedItems.length})
             </span>
           </div>
@@ -32,19 +32,19 @@ export const CompletedList: React.FC = () => {
           <button
             type="button"
             onClick={() => uncheckAll(activeList?.id)}
-            className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 active:scale-95 transition-all cursor-pointer"
+            className="flex items-center gap-1 px-3 py-2 min-h-[38px] text-[11px] font-medium rounded-xl text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 active:scale-95 transition-all cursor-pointer relative before:absolute before:-inset-1 before:content-[''] touch-manipulation"
             title="Move all completed back to active list"
           >
-            <RotateCcw className="w-3 h-3" />
+            <RotateCcw className="w-3.5 h-3.5" />
             <span>Uncheck all</span>
           </button>
           <button
             type="button"
             onClick={() => clearCompleted(activeList?.id)}
-            className="flex items-center gap-1 px-2.5 py-1 text-[11px] font-medium rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-95 transition-all cursor-pointer"
+            className="flex items-center gap-1 px-3 py-2 min-h-[38px] text-[11px] font-medium rounded-xl text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-95 transition-all cursor-pointer relative before:absolute before:-inset-1 before:content-[''] touch-manipulation"
             title="Permanently remove completed items"
           >
-            <Trash2 className="w-3 h-3" />
+            <Trash2 className="w-3.5 h-3.5" />
             <span>Clear</span>
           </button>
         </div>

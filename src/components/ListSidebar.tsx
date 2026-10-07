@@ -79,7 +79,8 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
               <button
                 type="button"
                 onClick={onClose}
-                className="p-1.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] p-2.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer flex items-center justify-center touch-manipulation"
+                aria-label="Close menu"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -92,7 +93,7 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
                 openRenameModal();
                 onClose();
               }}
-              className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-slate-100/90 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-750 border border-slate-200/80 dark:border-slate-700/80 transition-all text-xs font-medium cursor-pointer group shadow-2xs"
+              className="min-h-[44px] w-full flex items-center justify-between p-2.5 rounded-2xl bg-slate-100/90 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-750 border border-slate-200/80 dark:border-slate-700/80 transition-all text-xs font-medium cursor-pointer group shadow-2xs touch-manipulation"
             >
               <div className="flex items-center gap-2 min-w-0">
                 <div
@@ -155,7 +156,7 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
                         <div
                           className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${
                             isActive
-                              ? 'bg-emerald-500 text-white shadow-xs'
+                              ? 'bg-emerald-700 text-white shadow-xs'
                               : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                           }`}
                         >
@@ -202,7 +203,7 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
                             e.stopPropagation();
                             setEditingList(list);
                           }}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 transition-all cursor-pointer pr-2"
+                          className="w-10 h-10 min-w-[40px] min-h-[40px] p-2 rounded-xl text-emerald-700/80 hover:text-emerald-800 dark:text-emerald-400/80 dark:hover:text-emerald-300 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 active:scale-95 transition-all cursor-pointer flex items-center justify-center touch-manipulation"
                           title={`Edit list "${list.name}"`}
                           aria-label={`Edit list ${list.name}`}
                         >
@@ -217,7 +218,7 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
                               e.stopPropagation();
                               setDeletingList(list);
                             }}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-95 transition-all cursor-pointer"
+                            className="w-10 h-10 min-w-[40px] min-h-[40px] p-2 rounded-xl text-rose-600/70 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 active:scale-95 transition-all cursor-pointer flex items-center justify-center touch-manipulation"
                             title={`Delete list "${list.name}"`}
                             aria-label={`Delete list ${list.name}`}
                           >
@@ -253,7 +254,7 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
                 onClose();
                 openShopMode();
               }}
-              className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs mt-3"
+              className="min-h-[44px] w-full py-3 px-4 rounded-2xl bg-emerald-700 hover:bg-emerald-800 active:scale-95 text-white text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs mt-3 touch-manipulation"
             >
               <Zap className="w-4 h-4 fill-white stroke-none" />
               <span>Start Shopping Mode</span>
@@ -265,7 +266,7 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
                 onClose();
                 openNewListModal();
               }}
-              className="w-full py-2.5 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 active:scale-95 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-2"
+              className="min-h-[44px] w-full py-3 px-4 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 hover:border-emerald-500 text-slate-600 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 active:scale-95 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-2 touch-manipulation"
             >
               <Plus className="w-4 h-4" />
               <span>Create Custom List</span>
@@ -277,7 +278,9 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
                 onClose();
                 openCategoryModal();
               }}
-              className="w-full py-2.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100/80 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 active:scale-95 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-2"
+              title="Manage Categories"
+              aria-label="Manage Categories"
+              className="min-h-[44px] w-full py-3 px-4 rounded-2xl bg-emerald-50 hover:bg-emerald-100/80 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 border border-emerald-200/80 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 active:scale-95 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-2 touch-manipulation"
             >
               <Layers className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Category Manager</span>
@@ -289,7 +292,7 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
                 onClose();
                 openAutoListRulesModal();
               }}
-              className="w-full py-2.5 rounded-2xl bg-amber-50 hover:bg-amber-100/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 border border-amber-200/80 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 active:scale-95 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-2"
+              className="min-h-[44px] w-full py-3 px-4 rounded-2xl bg-amber-50 hover:bg-amber-100/80 dark:bg-amber-950/50 dark:hover:bg-amber-900/60 border border-amber-200/80 dark:border-amber-800/60 text-amber-800 dark:text-amber-300 active:scale-95 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-2 touch-manipulation"
             >
               <Sparkles className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               <span>Auto-Route Keyword Rules</span>
@@ -301,7 +304,7 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
                 onClose();
                 openAdminModal();
               }}
-              className="w-full py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-750 border border-slate-200/80 dark:border-slate-700 text-slate-800 dark:text-slate-200 active:scale-95 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-2"
+              className="min-h-[44px] w-full py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-750 border border-slate-200/80 dark:border-slate-700 text-slate-800 dark:text-slate-200 active:scale-95 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer mt-2 touch-manipulation"
             >
               <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               <span>Admin Control Center</span>
@@ -318,7 +321,7 @@ export const ListSidebar: React.FC<ListSidebarProps> = ({ isOpen, onClose }) => 
               <button
                 type="button"
                 onClick={openRenameModal}
-                className="text-[11px] text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                className="min-h-[44px] px-2 py-2 inline-flex items-center text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer touch-manipulation"
               >
                 Configure
               </button>

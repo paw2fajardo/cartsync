@@ -58,7 +58,7 @@ export const EventToast: React.FC = () => {
             <button
               type="button"
               onClick={undoLastDelete}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow-xs active:scale-95 transition-all cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 min-h-[44px] rounded-xl bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white font-bold text-xs shadow-xs active:scale-95 transition-all cursor-pointer touch-manipulation"
             >
               <RotateCcw className="w-3.5 h-3.5 stroke-[2.5]" />
               <span>Undo</span>
@@ -68,11 +68,11 @@ export const EventToast: React.FC = () => {
           <button
             type="button"
             onClick={dismissToast}
-            className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
+            className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer touch-manipulation"
             title="Dismiss"
             aria-label="Dismiss notification"
           >
-            <X className="w-3.5 h-3.5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
       </div>

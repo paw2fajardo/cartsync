@@ -75,7 +75,7 @@ export const ContributorBadge: React.FC<ContributorBadgeProps> = ({ item }) => {
       <button
         type="button"
         onClick={() => setIsPopoverOpen(!isPopoverOpen)}
-        className="inline-flex items-center gap-1.5 px-1.5 py-0.5 -mx-1 rounded-lg hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors cursor-pointer group"
+        className="inline-flex items-center gap-1.5 px-2 py-1 -mx-1 rounded-lg hover:bg-slate-200/60 dark:hover:bg-slate-700/60 transition-colors cursor-pointer group relative before:absolute before:-inset-2 before:content-[''] touch-manipulation"
         title="View contributor breakdown"
         aria-label="View contributor breakdown"
       >
@@ -116,7 +116,8 @@ export const ContributorBadge: React.FC<ContributorBadgeProps> = ({ item }) => {
             <button
               type="button"
               onClick={() => setIsPopoverOpen(false)}
-              className="p-0.5 text-slate-400 hover:text-white rounded-md hover:bg-slate-800 transition-colors cursor-pointer"
+              className="min-w-[36px] min-h-[36px] p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors cursor-pointer flex items-center justify-center touch-manipulation"
+              aria-label="Close contributor breakdown"
             >
               <X className="w-3.5 h-3.5" />
             </button>

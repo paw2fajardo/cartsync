@@ -40,7 +40,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
               <button
                 type="button"
                 onClick={openRenameModal}
-                className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline truncate cursor-pointer"
+                className="min-h-[44px] inline-flex items-center px-1 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline truncate cursor-pointer touch-manipulation"
                 title="Household Name (Tap to edit/unlock)"
               >
                 {householdName}
@@ -55,24 +55,24 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           <button
             type="button"
             onClick={openSyncModal}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700/70 transition-colors cursor-pointer"
+            className="min-h-[44px] flex items-center gap-1.5 px-3 py-2 rounded-full text-[11px] font-medium bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700/70 transition-colors cursor-pointer touch-manipulation"
             title="Sync Status (Click for details)"
             aria-label="Sync Status"
           >
             {syncStatus === 'connected' ? (
               <>
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">Live</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse motion-reduce:animate-none"></span>
+                <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold">Live</span>
               </>
             ) : syncStatus === 'connecting' ? (
               <>
-                <RefreshCw className="w-2.5 h-2.5 animate-spin text-amber-500" />
-                <span className="text-[10px] text-amber-600 dark:text-amber-400">Syncing</span>
+                <RefreshCw className="w-2.5 h-2.5 animate-spin motion-reduce:animate-none text-amber-500" />
+                <span className="text-[10px] text-amber-700 dark:text-amber-300 font-semibold">Syncing</span>
               </>
             ) : (
               <>
                 <WifiOff className="w-2.5 h-2.5 text-slate-400" />
-                <span className="text-[10px] text-slate-500">Offline</span>
+                <span className="text-[10px] text-slate-600 dark:text-slate-300 font-medium">Offline</span>
               </>
             )}
           </button>
@@ -82,7 +82,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
             <button
               type="button"
               onClick={lock}
-              className="p-2 rounded-full text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 border border-slate-200/60 dark:border-slate-700/60 transition-all duration-200 active:scale-90 cursor-pointer"
+              className="w-11 h-11 min-w-[44px] min-h-[44px] p-2.5 rounded-full flex items-center justify-center text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800/80 dark:hover:bg-slate-700/80 border border-slate-200/60 dark:border-slate-700/60 transition-all duration-200 active:scale-90 cursor-pointer touch-manipulation"
               title="Lock CartSync"
               aria-label="Lock App"
             >
@@ -97,7 +97,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleSidebar }) => {
           <button
             type="button"
             onClick={onToggleSidebar}
-            className="p-2 rounded-2xl bg-emerald-50 hover:bg-emerald-100/80 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center gap-1.5 shadow-2xs active:scale-95 transition-all cursor-pointer group"
+            className="min-h-[44px] min-w-[44px] px-3 py-2 rounded-2xl bg-emerald-50 hover:bg-emerald-100/80 dark:bg-emerald-950/50 dark:hover:bg-emerald-900/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center gap-2 shadow-2xs active:scale-95 transition-all cursor-pointer group touch-manipulation"
             title="Open Menu & Household Lists"
             aria-label="Open Navigation Menu"
           >

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ThemeProvider } from './context/ThemeContext';
 import { DeviceProvider } from './context/DeviceContext';
 import { GroceryProvider } from './context/GroceryContext';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { LockScreen } from './components/LockScreen';
 import { Header } from './components/Header';
 import { ListSelector } from './components/ListSelector';
@@ -14,8 +14,7 @@ import { SyncStatusModal } from './components/SyncStatusModal';
 import { NewListModal } from './components/NewListModal';
 import { ListSidebar } from './components/ListSidebar';
 import { AutoListRulesModal } from './components/AutoListRulesModal';
-import { CategoryManagerModal } from './components/CategoryManagerModal';
-import { AdminModal } from './components/AdminModal';
+import { ModalLoadingFallback, ModalErrorBoundary } from './components/ModalLoadingFallback';
 import { UndoToast } from './components/UndoToast';
 import { ScrollToTopButton } from './components/ScrollToTopButton';
 import { AppUpdateBanner } from './components/AppUpdateBanner';
@@ -26,11 +25,35 @@ import { ReplenishmentDrawer } from './components/ReplenishmentDrawer';
 import { useGrocery } from './context/GroceryContext';
 import { Download, Sparkles, X } from 'lucide-react';
 
+const AdminModal = React.lazy(() =>
+  import('./components/AdminModal').then(m => ({ default: m.default || m.AdminModal }))
+);
+const CategoryManagerModal = React.lazy(() =>
+  import('./components/CategoryManagerModal').then(m => ({ default: m.default || m.CategoryManagerModal }))
+);
+
 const GroceryApp: React.FC = () => {
   const { isCategoryModalOpen, closeCategoryModal, isShopModeOpen, closeShopMode } = useGrocery();
+  const { isAdminModalOpen, closeAdminModal } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [installPrompt, setInstallPrompt] = useState<any>(null);
   const [dismissInstall, setDismissInstall] = useState(false);
+
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'test') return;
+    const prefetchModals = () => {
+      import('./components/AdminModal');
+      import('./components/CategoryManagerModal');
+    };
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const id = (window as any).requestIdleCallback(prefetchModals, { timeout: 3000 });
+      return () => (window as any).cancelIdleCallback(id);
+    } else if (typeof window !== 'undefined') {
+      const id = setTimeout(prefetchModals, 2500);
+      return () => clearTimeout(id);
+    }
+  }, []);
 
   useEffect(() => {
     const handleBeforeInstall = (e: Event) => {
@@ -51,7 +74,7 @@ const GroceryApp: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 selection:bg-emerald-500 selection:text-white transition-colors duration-200">
+    <div className="min-h-screen flex flex-col bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
       {/* Global Household Lock Screen */}
       <LockScreen />
 
@@ -72,7 +95,7 @@ const GroceryApp: React.FC = () => {
               <button
                 type="button"
                 onClick={handleInstallApp}
-                className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-500 dark:hover:bg-emerald-600 text-white font-semibold flex items-center gap-1 shadow-xs active:scale-95 transition-all cursor-pointer"
+                className="px-3 py-1 rounded-xl bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-700 dark:hover:bg-emerald-800 text-white font-semibold flex items-center gap-1 shadow-xs active:scale-95 transition-all cursor-pointer"
               >
                 <Download className="w-3 h-3" />
                 <span>Install</span>
@@ -112,12 +135,24 @@ const GroceryApp: React.FC = () => {
       <UndoToast />
 
       {/* Modals & Slide-up Drawers */}
-      <AdminModal />
+      {isAdminModalOpen && (
+        <ModalErrorBoundary onClose={closeAdminModal}>
+          <React.Suspense fallback={<ModalLoadingFallback label="Loading Admin Center..." />}>
+            <AdminModal />
+          </React.Suspense>
+        </ModalErrorBoundary>
+      )}
       <DeviceModal />
       <SyncStatusModal />
       <NewListModal />
       <AutoListRulesModal />
-      <CategoryManagerModal isOpen={isCategoryModalOpen} onClose={closeCategoryModal} />
+      {isCategoryModalOpen && (
+        <ModalErrorBoundary onClose={closeCategoryModal}>
+          <React.Suspense fallback={<ModalLoadingFallback label="Loading Categories..." />}>
+            <CategoryManagerModal isOpen={isCategoryModalOpen} onClose={closeCategoryModal} />
+          </React.Suspense>
+        </ModalErrorBoundary>
+      )}
       <ListSidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <FinishShoppingModal />
       <ReplenishmentDrawer />

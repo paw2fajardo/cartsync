@@ -800,12 +800,18 @@ export const GroceryProvider: React.FC<{ children: React.ReactNode }> = ({ child
       );
       if (remainingUncompleted.length === 0) {
         try {
-          confetti({
-            particleCount: 80,
-            spread: 60,
-            origin: { y: 0.8 },
-            colors: ['#10b981', '#34d399', '#6ee7b7', '#059669'],
-          });
+          const prefersReducedMotion =
+            typeof window !== 'undefined' &&
+            window.matchMedia &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+          if (!prefersReducedMotion) {
+            confetti({
+              particleCount: 80,
+              spread: 60,
+              origin: { y: 0.8 },
+              colors: ['#10b981', '#34d399', '#6ee7b7', '#059669'],
+            });
+          }
         } catch (_) {}
       }
     }

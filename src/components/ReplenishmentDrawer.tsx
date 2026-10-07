@@ -109,9 +109,10 @@ export const ReplenishmentDrawer: React.FC = () => {
           <button
             type="button"
             onClick={closeReplenishmentDrawer}
-            className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] p-2.5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer touch-manipulation"
+            aria-label="Close"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -152,10 +153,12 @@ export const ReplenishmentDrawer: React.FC = () => {
                           key={hItem.id}
                           type="button"
                           onClick={() => handleTapItem(hItem)}
-                          className={`px-3 py-2 rounded-xl text-xs font-medium border flex items-center gap-1.5 transition-all duration-200 active:scale-95 cursor-pointer select-none ${
+                          className={`group px-3.5 py-2.5 min-h-[44px] rounded-xl text-xs font-medium border flex items-center gap-1.5 transition-all duration-200 active:scale-95 cursor-pointer select-none touch-manipulation ${
                             isAdded
-                              ? 'bg-emerald-500 text-white border-emerald-600 shadow-xs'
-                              : 'bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200/80 dark:border-slate-700 hover:border-emerald-500 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/30'
+                              ? 'bg-emerald-700 text-white border-emerald-800 shadow-xs'
+                              : 'bg-slate-50 dark:bg-slate-800 border-slate-200/80 dark:border-slate-700 hover:border-emerald-600 hover:bg-emerald-50/40 dark:hover:bg-emerald-950/30'
+                          } ${
+                            !isAdded ? 'text-slate-800 dark:text-slate-200 hover:text-emerald-800 dark:hover:text-emerald-200' : ''
                           }`}
                         >
                           {isAdded ? (
@@ -165,7 +168,7 @@ export const ReplenishmentDrawer: React.FC = () => {
                             </>
                           ) : (
                             <>
-                              <Plus className="w-3 h-3 text-slate-400 dark:text-slate-500" />
+                              <Plus className="w-3 h-3 text-slate-400 dark:text-slate-500 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors" />
                               <span>{hItem.cleanName}</span>
                               {hItem.lastUnit && (
                                 <span className="text-[10px] opacity-70">
