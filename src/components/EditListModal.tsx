@@ -128,7 +128,7 @@ export const EditListModal: React.FC<EditListModalProps> = ({ list, isOpen, onCl
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] p-2.5 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer flex items-center justify-center touch-manipulation"
             aria-label="Close dialog"
           >
             <X className="w-5 h-5" />
@@ -144,7 +144,7 @@ export const EditListModal: React.FC<EditListModalProps> = ({ list, isOpen, onCl
 
           <div className="flex items-center gap-3">
             {/* Active Pill Simulation */}
-            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-semibold bg-emerald-600 dark:bg-emerald-500 text-white shadow-sm shadow-emerald-600/20">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-semibold bg-emerald-700 dark:bg-emerald-700 text-white shadow-sm shadow-emerald-700/20">
               <SelectedIconComp className="w-3.5 h-3.5 stroke-[2.2] text-white" />
               <span className="tracking-tight font-bold">
                 {trimmedName || <span className="opacity-60 italic">Untitled List</span>}
@@ -236,7 +236,7 @@ export const EditListModal: React.FC<EditListModalProps> = ({ list, isOpen, onCl
                     type="button"
                     key={iconName}
                     onClick={() => setSelectedIcon(iconName)}
-                    className={`flex flex-col items-center justify-center p-2.5 rounded-xl border transition-all cursor-pointer active:scale-95 ${
+                    className={`min-h-[44px] flex flex-col items-center justify-center p-2.5 rounded-xl border transition-all cursor-pointer active:scale-95 touch-manipulation ${
                       isSelected
                         ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 shadow-xs'
                         : 'border-slate-200 dark:border-slate-700/70 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800'
@@ -263,7 +263,7 @@ export const EditListModal: React.FC<EditListModalProps> = ({ list, isOpen, onCl
                     type="button"
                     key={c.id}
                     onClick={() => setSelectedColor(c.id)}
-                    className={`w-8 h-8 rounded-full ${c.bg} flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer ${
+                    className={`w-10 h-10 min-w-[40px] min-h-[40px] rounded-full ${c.bg} flex items-center justify-center transition-transform hover:scale-110 active:scale-95 cursor-pointer touch-manipulation relative before:absolute before:-inset-1 before:content-[''] ${
                       isSelected ? 'ring-2 ring-offset-2 ring-emerald-500 dark:ring-offset-slate-900 scale-110 shadow-xs' : 'opacity-80 hover:opacity-100'
                     }`}
                     title={c.name}
@@ -281,16 +281,16 @@ export const EditListModal: React.FC<EditListModalProps> = ({ list, isOpen, onCl
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium rounded-xl text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer"
+              className="min-h-[44px] px-5 py-2.5 text-sm font-semibold rounded-xl text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 active:scale-95 transition-all cursor-pointer flex items-center justify-center touch-manipulation"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={!isValid || !isDirty}
-              className={`px-5 py-2 text-sm font-semibold rounded-xl transition-all cursor-pointer ${
+              className={`min-h-[44px] px-5 py-2.5 text-sm font-semibold rounded-xl transition-all cursor-pointer flex items-center justify-center touch-manipulation ${
                 isValid && isDirty
-                  ? 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-sm shadow-emerald-500/20 active:scale-95'
+                  ? 'bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm shadow-emerald-700/20 active:scale-95'
                   : 'bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed opacity-60'
               }`}
             >

@@ -108,9 +108,10 @@ export const FinishShoppingModal: React.FC = () => {
             <button
               type="button"
               onClick={closeFinishShoppingModal}
-              className="p-1.5 rounded-full text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              className="w-11 h-11 min-w-[44px] min-h-[44px] p-2.5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all cursor-pointer touch-manipulation"
+              aria-label="Close"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
@@ -126,7 +127,7 @@ export const FinishShoppingModal: React.FC = () => {
                   type="button"
                   onClick={handleFinishAndClear}
                   disabled={isSubmitting}
-                  className="w-full py-3 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2"
+                  className="w-full py-3 min-h-[44px] px-4 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold shadow-md shadow-emerald-700/20 active:scale-98 transition-all cursor-pointer flex items-center justify-center gap-2 touch-manipulation"
                 >
                   <CheckCircle2 className="w-4 h-4 stroke-[2.5]" />
                   <span>{isSubmitting ? 'Finishing...' : 'Finish & Clear'}</span>
@@ -135,7 +136,7 @@ export const FinishShoppingModal: React.FC = () => {
                   type="button"
                   onClick={closeFinishShoppingModal}
                   disabled={isSubmitting}
-                  className="w-full py-2.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold cursor-pointer transition-all"
+                  className="w-full py-3 min-h-[44px] px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-semibold cursor-pointer transition-all touch-manipulation"
                 >
                   Cancel / Keep Shopping
                 </button>
@@ -157,7 +158,7 @@ export const FinishShoppingModal: React.FC = () => {
                   type="button"
                   onClick={handleMoveRemainingToUnavailableAndFinish}
                   disabled={isSubmitting}
-                  className="w-full py-2.5 px-4 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md shadow-amber-600/20 active:scale-98 transition-all cursor-pointer"
+                  className="w-full py-3 min-h-[44px] px-4 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-md shadow-amber-600/20 active:scale-98 transition-all cursor-pointer touch-manipulation"
                 >
                   {isSubmitting ? 'Processing...' : 'Move Remaining to Unavailable & Finish'}
                 </button>
@@ -166,7 +167,7 @@ export const FinishShoppingModal: React.FC = () => {
                   type="button"
                   onClick={handleKeepRemainingActiveAndFinish}
                   disabled={isSubmitting}
-                  className="w-full py-2.5 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-slate-700 active:scale-98 transition-all cursor-pointer"
+                  className="w-full py-3 min-h-[44px] px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold border border-slate-200 dark:border-slate-700 active:scale-98 transition-all cursor-pointer touch-manipulation"
                 >
                   {isSubmitting ? 'Processing...' : 'Keep Remaining Active & Finish'}
                 </button>
@@ -175,7 +176,7 @@ export const FinishShoppingModal: React.FC = () => {
                   type="button"
                   onClick={closeFinishShoppingModal}
                   disabled={isSubmitting}
-                  className="w-full py-2 px-4 rounded-2xl text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 text-xs font-semibold cursor-pointer"
+                  className="w-full py-3 min-h-[44px] px-4 rounded-2xl text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 text-xs font-semibold cursor-pointer touch-manipulation"
                 >
                   Cancel / Keep Shopping
                 </button>

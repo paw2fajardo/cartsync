@@ -56,6 +56,7 @@ app.get('/api/health', (req, res) => {
     status: 'ok',
     app: 'CartSync Grocery Sync Server',
     database: 'sqlite3 (cartsync.db)',
+    version: state.version || 2,
     schemaVersion: state.version || 2,
     releaseVersion: process.env.APP_VERSION || '1.0.0',
     gitCommit: process.env.GIT_COMMIT || 'development',

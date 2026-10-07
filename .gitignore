@@ -16,3 +16,4 @@ server/household-data.json
 *.db-shm
 *.db-wal
 .venv
+.agents

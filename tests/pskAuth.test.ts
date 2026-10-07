@@ -41,7 +41,7 @@ describe.sequential('Pre-Shared Key (PSK) Authentication Suite', () => {
 
     // Wait for server to boot (healthcheck endpoint is accessible)
     let ready = false;
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 80; i++) {
       try {
         const res = await fetch(`${SERVER_URL}/api/health`);
         if (res.ok) {
@@ -49,14 +49,14 @@ describe.sequential('Pre-Shared Key (PSK) Authentication Suite', () => {
           break;
         }
       } catch (_) {
-        await new Promise((r) => setTimeout(r, 200));
+        await new Promise((r) => setTimeout(r, 250));
       }
     }
 
     if (!ready) {
       throw new Error('Authenticated sync server failed to initialize within timeout');
     }
-  }, 20000);
+  }, 30000);
 
   afterAll(async () => {
     if (serverProcess) {

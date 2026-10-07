@@ -259,7 +259,7 @@ export const QuickAddBar: React.FC = () => {
                     handleSelectTypeaheadItem(item);
                   }}
                   onMouseEnter={() => setSelectedIndex(idx)}
-                  className={`group flex items-center justify-between px-3 py-2 text-sm transition-colors cursor-pointer ${
+                  className={`min-h-[44px] group flex items-center justify-between px-3.5 py-2.5 text-sm transition-colors cursor-pointer touch-manipulation ${
                     isSelected
                       ? 'bg-emerald-50/90 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-100'
                       : 'hover:bg-slate-100/70 dark:hover:bg-slate-800/60 text-slate-800 dark:text-slate-200'
@@ -295,7 +295,7 @@ export const QuickAddBar: React.FC = () => {
                     type="button"
                     onMouseDown={(e) => handleRemoveTypeaheadItem(e, item)}
                     onClick={(e) => handleRemoveTypeaheadItem(e, item)}
-                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-all shrink-0 ml-2 cursor-pointer active:scale-95"
+                    className="min-w-[36px] min-h-[36px] p-2 rounded-xl text-rose-600/70 hover:text-rose-700 dark:text-rose-400 dark:hover:text-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/50 transition-all shrink-0 ml-2 cursor-pointer active:scale-95 flex items-center justify-center touch-manipulation"
                     title={`Remove "${item.cleanName}" from suggestions`}
                     aria-label={`Remove "${item.cleanName}" from suggestions`}
                   >
@@ -345,7 +345,7 @@ export const QuickAddBar: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsQuickAddOptionsOpen(false)}
-                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 cursor-pointer"
+                className="min-w-[38px] min-h-[38px] p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 cursor-pointer flex items-center justify-center touch-manipulation"
                 title="Close options"
               >
                 <X className="w-3.5 h-3.5" />
@@ -361,10 +361,10 @@ export const QuickAddBar: React.FC = () => {
             type="button"
             onClick={openReplenishmentDrawer}
             disabled={hasZeroHistory}
-            className={`p-2.5 rounded-2xl border transition-all cursor-pointer shadow-2xs shrink-0 ${
+            className={`w-11 h-11 min-w-[44px] min-h-[44px] p-2.5 rounded-2xl border transition-all cursor-pointer shadow-2xs shrink-0 flex items-center justify-center touch-manipulation ${
               hasZeroHistory
                 ? 'opacity-30 pointer-events-none bg-slate-100 dark:bg-slate-800 border-slate-200/80 dark:border-slate-700/70 text-slate-400'
-                : 'bg-slate-100 hover:bg-emerald-50 dark:bg-slate-800 dark:hover:bg-emerald-950/60 border-slate-200/80 dark:border-slate-700/70 text-slate-600 hover:text-emerald-600 dark:text-slate-300 dark:hover:text-emerald-400 active:scale-95'
+                : 'bg-emerald-50/70 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/60 border-emerald-200/80 dark:border-emerald-800/60 text-emerald-700 hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-200 active:scale-95'
             }`}
             title={hasZeroHistory ? 'No past purchase history for this device' : 'Past Bought Items (Quick Replenish)'}
             aria-label="Past Bought Items"
@@ -415,7 +415,7 @@ export const QuickAddBar: React.FC = () => {
             <button
               type="button"
               onClick={() => setIsQuickAddOptionsOpen(!isQuickAddOptionsOpen)}
-              className={`ml-1.5 p-1.5 rounded-xl transition-colors shrink-0 cursor-pointer ${
+              className={`ml-1.5 w-9 h-9 min-w-[36px] min-h-[36px] p-1.5 rounded-xl transition-colors shrink-0 cursor-pointer flex items-center justify-center touch-manipulation relative before:absolute before:-inset-1 before:content-[''] ${
                 isQuickAddOptionsOpen || note || isCategoryCustomized
                   ? 'text-emerald-600 bg-emerald-100/80 dark:bg-emerald-950/80'
                   : 'text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-200/50 dark:hover:bg-slate-800'
@@ -430,7 +430,7 @@ export const QuickAddBar: React.FC = () => {
           <button
             type="submit"
             disabled={!inputText.trim()}
-            className="h-11 px-4 rounded-2xl bg-emerald-600 hover:bg-emerald-500 dark:bg-emerald-500 dark:hover:bg-emerald-400 disabled:opacity-30 text-white text-sm font-semibold flex items-center justify-center gap-1.5 shadow-sm shadow-emerald-600/20 active:scale-95 transition-all shrink-0 cursor-pointer"
+            className="h-11 px-4 rounded-2xl bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-700 dark:hover:bg-emerald-800 active:bg-emerald-900 disabled:opacity-30 text-white text-sm font-semibold flex items-center justify-center gap-1.5 shadow-sm shadow-emerald-700/20 active:scale-95 transition-all shrink-0 cursor-pointer touch-manipulation"
           >
             <Plus className="w-4 h-4 stroke-[2.5]" />
             <span className="hidden sm:inline tracking-tight">Add</span>

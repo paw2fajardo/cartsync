@@ -121,13 +121,13 @@ export const LockScreen: React.FC = () => {
         <div className="relative">
           <div className="w-16 h-16 rounded-3xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shadow-xl shadow-emerald-500/10 mb-1">
             {isBiometricsActive ? (
-              <Fingerprint className="w-8 h-8 stroke-[2.2] animate-pulse" />
+              <Fingerprint className="w-8 h-8 stroke-[2.2] animate-pulse motion-reduce:animate-none" />
             ) : (
               <Lock className="w-8 h-8 stroke-[2.2]" />
             )}
           </div>
           {isBiometricsActive && (
-            <div className="absolute -bottom-1 -right-1 p-1 rounded-full bg-emerald-500 text-slate-900 shadow-sm">
+            <div className="absolute -bottom-1 -right-1 p-1 rounded-full bg-emerald-600 text-white shadow-sm">
               <Sparkles className="w-2.5 h-2.5 stroke-[3]" />
             </div>
           )}
@@ -178,7 +178,7 @@ export const LockScreen: React.FC = () => {
               key={num}
               type="button"
               onClick={() => handleKeyPress(num)}
-              className="h-14 rounded-2xl bg-slate-800/80 hover:bg-slate-750 active:bg-slate-700 border border-slate-700/60 active:scale-95 transition-all text-xl font-bold text-white shadow-xs flex items-center justify-center cursor-pointer"
+              className="h-14 rounded-2xl bg-slate-800/80 hover:bg-slate-750 active:bg-slate-700 border border-slate-700/60 active:scale-95 transition-all text-xl font-bold text-white shadow-xs flex items-center justify-center cursor-pointer touch-manipulation"
             >
               {num}
             </button>
@@ -188,7 +188,7 @@ export const LockScreen: React.FC = () => {
           <button
             type="button"
             onClick={handleDelete}
-            className="h-14 rounded-2xl bg-slate-800/40 hover:bg-slate-800/80 active:bg-slate-700 border border-transparent hover:border-slate-700/60 active:scale-95 transition-all text-slate-400 hover:text-white flex items-center justify-center cursor-pointer"
+            className="h-14 rounded-2xl bg-slate-800/40 hover:bg-slate-800/80 active:bg-slate-700 border border-transparent hover:border-slate-700/60 active:scale-95 transition-all text-slate-400 hover:text-white flex items-center justify-center cursor-pointer touch-manipulation"
             title="Delete digit"
             aria-label="Delete digit"
           >
@@ -199,7 +199,7 @@ export const LockScreen: React.FC = () => {
           <button
             type="button"
             onClick={() => handleKeyPress('0')}
-            className="h-14 rounded-2xl bg-slate-800/80 hover:bg-slate-750 active:bg-slate-700 border border-slate-700/60 active:scale-95 transition-all text-xl font-bold text-white shadow-xs flex items-center justify-center cursor-pointer"
+            className="h-14 rounded-2xl bg-slate-800/80 hover:bg-slate-750 active:bg-slate-700 border border-slate-700/60 active:scale-95 transition-all text-xl font-bold text-white shadow-xs flex items-center justify-center cursor-pointer touch-manipulation"
           >
             0
           </button>
@@ -209,7 +209,7 @@ export const LockScreen: React.FC = () => {
             <button
               type="button"
               onClick={handleBiometricScan}
-              className="h-14 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 active:bg-emerald-500/40 border border-emerald-500/40 active:scale-95 transition-all text-emerald-400 flex flex-col items-center justify-center cursor-pointer group shadow-lg shadow-emerald-500/10"
+              className="h-14 rounded-2xl bg-emerald-500/20 hover:bg-emerald-500/30 active:bg-emerald-500/40 border border-emerald-500/40 active:scale-95 transition-all text-emerald-400 flex flex-col items-center justify-center cursor-pointer group shadow-lg shadow-emerald-500/10 touch-manipulation"
               title="Unlock with Fingerprint / Touch ID"
               aria-label="Unlock with Fingerprint"
             >
@@ -236,7 +236,8 @@ export const LockScreen: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsKeyModalOpen(false)}
-                className="text-slate-400 hover:text-white p-1 cursor-pointer"
+                className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center text-slate-400 hover:text-white p-2 rounded-full cursor-pointer touch-manipulation"
+                aria-label="Close"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -257,7 +258,7 @@ export const LockScreen: React.FC = () => {
                 value={keyInput}
                 onChange={(e) => setKeyInput(e.target.value)}
                 placeholder="Enter secret key..."
-                className="w-full px-3 py-2 text-xs font-mono rounded-xl bg-slate-900 border border-slate-700 text-white placeholder:font-sans focus:outline-hidden focus:border-emerald-500"
+                className="w-full px-3 py-2 min-h-[44px] text-xs font-mono rounded-xl bg-slate-900 border border-slate-700 text-white placeholder:font-sans focus:outline-hidden focus:border-emerald-500"
               />
               <div className="flex items-center justify-between pt-1">
                 {householdKey ? (
@@ -268,7 +269,7 @@ export const LockScreen: React.FC = () => {
                       setHouseholdKey('');
                       setIsKeyModalOpen(false);
                     }}
-                    className="text-xs text-rose-400 hover:text-rose-300 font-medium cursor-pointer"
+                    className="text-xs text-rose-400 hover:text-rose-300 font-medium cursor-pointer min-h-[44px] py-2 px-1 touch-manipulation"
                   >
                     Clear
                   </button>
@@ -277,13 +278,13 @@ export const LockScreen: React.FC = () => {
                   <button
                     type="button"
                     onClick={() => setIsKeyModalOpen(false)}
-                    className="px-3 py-1.5 text-xs text-slate-400 hover:text-white cursor-pointer"
+                    className="px-3.5 py-2 min-h-[44px] text-xs text-slate-400 hover:text-white cursor-pointer touch-manipulation"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-3.5 py-1.5 text-xs font-bold rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer shadow-xs"
+                    className="px-4 py-2 min-h-[44px] text-xs font-bold rounded-xl bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white cursor-pointer shadow-xs touch-manipulation"
                   >
                     Save Key
                   </button>
