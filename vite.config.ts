@@ -4,11 +4,13 @@ import react from '@vitejs/plugin-react';
 import { execSync } from 'child_process';
 import packageJson from './package.json';
 
-let gitCommit = 'unknown';
-try {
-  gitCommit = execSync('git rev-parse --short HEAD').toString().trim();
-} catch (_) {
-  gitCommit = process.env.VITE_GIT_COMMIT || 'docker';
+let gitCommit = process.env.VITE_GIT_COMMIT || '';
+if (!gitCommit) {
+  try {
+    gitCommit = execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+  } catch (_) {
+    gitCommit = 'docker';
+  }
 }
 
 const buildTime = new Date().toISOString();

@@ -72,8 +72,7 @@ if ($choice -eq "minor" -or $choice -eq "big") {
 # Update package.json if bumped
 if ($newVersion -ne $currentVersion) {
     Write-Host "==> Bumping version from v$currentVersion to v$newVersion..." -ForegroundColor Green
-    $pkg.version = $newVersion
-    $pkg | ConvertTo-Json -Depth 10 | Set-Content "package.json" -Encoding UTF8
+    & node -e "const fs = require('fs'); const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8')); pkg.version = '$newVersion'; fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n', 'utf8');"
 
     try {
         git add package.json
