@@ -481,6 +481,56 @@ export class CartSyncDatabase {
     };
   }
 
+  getItems(filters = {}) {
+    let query = 'SELECT * FROM items';
+    const conditions = [];
+    const params = [];
+
+    if (filters.listId) {
+      conditions.push('list_id = ?');
+      params.push(filters.listId);
+    }
+
+    if (filters.status) {
+      conditions.push('status = ?');
+      params.push(filters.status);
+    }
+
+    if (filters.completed !== undefined) {
+      conditions.push('completed = ?');
+      params.push(filters.completed ? 1 : 0);
+    }
+
+    if (conditions.length > 0) {
+      query += ' WHERE ' + conditions.join(' AND ');
+    }
+
+    query += ' ORDER BY created_at DESC';
+
+    const rows = this.db.prepare(query).all(...params);
+    return rows.map((row) => ({
+      id: row.id,
+      listId: row.list_id,
+      name: row.name,
+      quantity: Number(row.quantity),
+      unit: row.unit || undefined,
+      category: row.category || 'Other',
+      note: row.note || undefined,
+      completed: Boolean(row.completed),
+      completedAt: row.completed_at ? Number(row.completed_at) : null,
+      completedBy: row.completed_by ? JSON.parse(row.completed_by) : null,
+      addedBy: row.added_by ? JSON.parse(row.added_by) : undefined,
+      createdAt: Number(row.created_at),
+      updatedAt: Number(row.updated_at),
+      contentUpdatedAt: row.content_updated_at ? Number(row.content_updated_at) : undefined,
+      contributors: row.contributors ? JSON.parse(row.contributors) : [],
+      status: row.status || 'active',
+      isUnavailableRevert: Boolean(row.is_unavailable_revert),
+      unavailableBy: row.unavailable_by || null,
+      unavailableAt: row.unavailable_at ? Number(row.unavailable_at) : null,
+    }));
+  }
+
   getDeviceHistory(deviceName) {
     if (!deviceName) return [];
     const trimmed = String(deviceName).trim();

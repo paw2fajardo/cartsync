@@ -69,6 +69,28 @@ app.get('/api/health', (req, res) => {
 // Intercept and authenticate all other /api routes
 app.use('/api', authMiddleware);
 
+// API v1: External Integration Endpoints
+app.get('/api/v1/items', (req, res) => {
+  const { listId, status, completed } = req.query;
+  const filters = {};
+
+  if (listId) {
+    filters.listId = String(listId);
+  }
+  if (status) {
+    filters.status = String(status);
+  }
+  if (completed !== undefined) {
+    filters.completed = completed === 'true' || completed === '1';
+  }
+
+  const items = cartSyncDb.getItems(filters);
+  res.json({
+    items,
+    count: items.length,
+  });
+});
+
 app.get('/api/state', (req, res) => {
   res.json(cartSyncDb.getState());
 });
